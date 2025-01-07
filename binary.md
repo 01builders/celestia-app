@@ -5,13 +5,17 @@
 Replace directives to local copies are used for now until the app builds.
 
 ```text
+.
 ├── celestia-app
 ├── cosmos-sdk @ release/v0.52.x
 ├── ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
 └── ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
+└── ibc-go-capability @ 324e3d853ad5a88aeb3a2d9b972b9cba88d894ff
 ```
 
-ibc-apps d8473b7e9e39b5d35cd1024920c0878aec8775e6 is at <https://github.com/01builders/ibc-apps/tree/v9>
+- ibc-apps d8473b7e9e39b5d35cd1024920c0878aec8775e6 is at <https://github.com/01builders/ibc-apps/tree/v9>
+- ibc-go is main @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
+- ibc-go-capability branches off `modules/capability/v1.0.1` at 324e3d853ad5a88aeb3a2d9b972b9cba88d894ff on `01builders/kocu/capability/v2`
 
 ## Progress
 
@@ -21,8 +25,9 @@ ibc-apps d8473b7e9e39b5d35cd1024920c0878aec8775e6 is at <https://github.com/01bu
 
 ### WIP
 
-- Created <https://github.com/01builders/ibc-apps/tree/v9> for PFM, pretty rough so far.  `go mod tidy` in middleware/packet-forward-middleware will show the progress so far.
 - Started <https://github.com/01builders/celestia-app/tree/sdk-v0.52.x>, also stuck on `go mod tidy` still.
+- Created <https://github.com/01builders/ibc-apps/tree/v9/middleware/packet-forward-middleware> for PFM, pretty rough so far.  `go mod tidy` in middleware/packet-forward-middleware will show the progress so far.
+- Created <https://github.com/01builders/ibc-go/tree/kocu/capability/v2> to try to remove some legacy module import paths so thhat PFM can build.
 
 ## Problems
 

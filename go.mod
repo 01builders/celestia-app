@@ -268,7 +268,7 @@ replace (
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
 	github.com/cosmos/ibc-go/v9 => ../ibc-go
 	github.com/cosmos/ibc-go/v8 => ../ibc-go
-	// ibc-apps @ 64c5cd5a9fb98a6abab5e467159a55497693b68d
+	// ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 => ../ibc-apps/middleware/packet-forward-middleware
 
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2

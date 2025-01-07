@@ -19,6 +19,11 @@ ibc-apps d8473b7e9e39b5d35cd1024920c0878aec8775e6 is at <https://github.com/01bu
 - Goal #2: build celestia-app
 - Status: neither goal yet reached.
 
+### WIP
+
+- Created <https://github.com/01builders/ibc-apps/tree/v9> for PFM, pretty rough so far.  `go mod tidy` in middleware/packet-forward-middleware will show the progress so far.
+- Started <https://github.com/01builders/celestia-app/tree/sdk-v0.52.x>, also stuck on `go mod tidy` still.
+
 ## Problems
 
 - SDK 0.52 has modules with `cosmossdk.io/*` import paths

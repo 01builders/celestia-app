@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	sdkerrors "cosmossdk.io/errors"
+	govtypes "cosmossdk.io/x/gov/types/v1beta1"
+	paramskeeper "cosmossdk.io/x/params/keeper"
+	"cosmossdk.io/x/params/types/proposal"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacysdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 )
 
 // ParamBlockList keeps track of parameters that cannot be changed by governance

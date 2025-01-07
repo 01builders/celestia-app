@@ -4,9 +4,9 @@ import (
 	"context"
 	"math/rand"
 
+	bank "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/cosmos/cosmos-sdk/types"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/gogo/protobuf/grpc"
 )
 

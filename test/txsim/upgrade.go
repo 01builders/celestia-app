@@ -5,9 +5,9 @@ import (
 	"errors"
 	"math/rand"
 
+	stakingtypes "cosmossdk.io/x/staking/types"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gogo/protobuf/grpc"
 )
 

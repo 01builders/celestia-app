@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"time"
 
+	banktypes "cosmossdk.io/x/bank/types"
+	govtypes "cosmossdk.io/x/gov/types"
+	v1 "cosmossdk.io/x/gov/types/v1"
+	slashingtypes "cosmossdk.io/x/slashing/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	bstypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 
 // Modifier allows for arbitrary changes to be made on the genesis state

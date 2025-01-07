@@ -2,9 +2,9 @@ package ante
 
 import (
 	"cosmossdk.io/errors"
+	gov "cosmossdk.io/x/gov/types"
+	govv1 "cosmossdk.io/x/gov/types/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 // GovProposalDecorator ensures that a tx with a MsgSubmitProposal has at least

@@ -3,8 +3,8 @@ package minfee
 import (
 	"context"
 
+	"cosmossdk.io/x/params/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/params/keeper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

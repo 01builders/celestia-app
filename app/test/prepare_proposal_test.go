@@ -9,11 +9,11 @@ import (
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 
 	tmrand "github.com/tendermint/tendermint/libs/rand"

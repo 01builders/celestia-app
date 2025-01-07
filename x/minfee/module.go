@@ -10,12 +10,12 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	params "cosmossdk.io/x/params/keeper"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
-	params "github.com/cosmos/cosmos-sdk/x/params/keeper"
 )
 
 var (

@@ -4,10 +4,10 @@ import (
 	"context"
 	"math/rand"
 
+	distribution "cosmossdk.io/x/distribution/types"
+	staking "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/cosmos/cosmos-sdk/types"
-	distribution "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gogo/protobuf/grpc"
 )
 

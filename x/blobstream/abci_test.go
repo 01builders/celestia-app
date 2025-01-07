@@ -9,10 +9,10 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 
+	"cosmossdk.io/x/staking"
+	stakingkeeper "cosmossdk.io/x/staking/keeper"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"cosmossdk.io/errors"
+	staking "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 )
 

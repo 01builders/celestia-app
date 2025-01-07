@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/x/authz"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
@@ -13,7 +14,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"

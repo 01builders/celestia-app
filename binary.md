@@ -45,6 +45,9 @@ Replace directives to local copies are used for now until the app builds.
 - Delete capability module imports and scoped keepers from celestia-app
 - Remove legacy proposal handlers
 - Delete rosetta (should be re-enabled later)
+- Update proto-builder to latest in makefile + re-generate proto files.
+  buf.yaml was updated to v1 to give the correct fully qualified name
+  buf.yaml was moved to proto/ because there is no excluding folder in v1 (and specs contains invalid protos)
 
 ## Problems
 

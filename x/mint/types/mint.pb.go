@@ -8,8 +8,8 @@ import (
 	_ "github.com/cosmos/cosmos-proto"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
@@ -200,7 +200,7 @@ func (m *Minter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x2a
 	}
 	if m.PreviousBlockTime != nil {
-		n1, err1 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.PreviousBlockTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.PreviousBlockTime):])
+		n1, err1 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.PreviousBlockTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.PreviousBlockTime):])
 		if err1 != nil {
 			return 0, err1
 		}
@@ -253,7 +253,7 @@ func (m *GenesisTime) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.GenesisTime != nil {
-		n2, err2 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.GenesisTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.GenesisTime):])
+		n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.GenesisTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.GenesisTime):])
 		if err2 != nil {
 			return 0, err2
 		}
@@ -287,7 +287,7 @@ func (m *Minter) Size() (n int) {
 	l = m.AnnualProvisions.Size()
 	n += 1 + l + sovMint(uint64(l))
 	if m.PreviousBlockTime != nil {
-		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.PreviousBlockTime)
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.PreviousBlockTime)
 		n += 1 + l + sovMint(uint64(l))
 	}
 	l = len(m.BondDenom)
@@ -304,7 +304,7 @@ func (m *GenesisTime) Size() (n int) {
 	var l int
 	_ = l
 	if m.GenesisTime != nil {
-		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.GenesisTime)
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.GenesisTime)
 		n += 1 + l + sovMint(uint64(l))
 	}
 	return n
@@ -445,7 +445,7 @@ func (m *Minter) Unmarshal(dAtA []byte) error {
 			if m.PreviousBlockTime == nil {
 				m.PreviousBlockTime = new(time.Time)
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.PreviousBlockTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.PreviousBlockTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -563,7 +563,7 @@ func (m *GenesisTime) Unmarshal(dAtA []byte) error {
 			if m.GenesisTime == nil {
 				m.GenesisTime = new(time.Time)
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.GenesisTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.GenesisTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

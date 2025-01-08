@@ -7,10 +7,10 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -163,7 +163,7 @@ type QueryAttestationRequestByNonceResponse struct {
 	// AttestationRequestI is either a Data Commitment or a Valset.
 	// This was decided as part of the universal nonce approach under:
 	// https://github.com/celestiaorg/celestia-app/issues/468#issuecomment-1156887715
-	Attestation *types.Any `protobuf:"bytes,1,opt,name=attestation,proto3" json:"attestation,omitempty"`
+	Attestation *any.Any `protobuf:"bytes,1,opt,name=attestation,proto3" json:"attestation,omitempty"`
 }
 
 func (m *QueryAttestationRequestByNonceResponse) Reset() {
@@ -201,7 +201,7 @@ func (m *QueryAttestationRequestByNonceResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAttestationRequestByNonceResponse proto.InternalMessageInfo
 
-func (m *QueryAttestationRequestByNonceResponse) GetAttestation() *types.Any {
+func (m *QueryAttestationRequestByNonceResponse) GetAttestation() *any.Any {
 	if m != nil {
 		return m.Attestation
 	}
@@ -1261,6 +1261,7 @@ func _Query_EVMAddress_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "celestia.qgb.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -2306,7 +2307,7 @@ func (m *QueryAttestationRequestByNonceResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Attestation == nil {
-				m.Attestation = &types.Any{}
+				m.Attestation = &any.Any{}
 			}
 			if err := m.Attestation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

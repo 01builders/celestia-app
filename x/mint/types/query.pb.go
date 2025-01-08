@@ -8,9 +8,9 @@ import (
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -459,6 +459,7 @@ func _Query_GenesisTime_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "celestia.mint.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -636,7 +637,7 @@ func (m *QueryGenesisTimeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	var l int
 	_ = l
 	if m.GenesisTime != nil {
-		n1, err1 := github_com_gogo_protobuf_types.StdTimeMarshalTo(*m.GenesisTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(*m.GenesisTime):])
+		n1, err1 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.GenesisTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.GenesisTime):])
 		if err1 != nil {
 			return 0, err1
 		}
@@ -715,7 +716,7 @@ func (m *QueryGenesisTimeResponse) Size() (n int) {
 	var l int
 	_ = l
 	if m.GenesisTime != nil {
-		l = github_com_gogo_protobuf_types.SizeOfStdTime(*m.GenesisTime)
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.GenesisTime)
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
@@ -1104,7 +1105,7 @@ func (m *QueryGenesisTimeResponse) Unmarshal(dAtA []byte) error {
 			if m.GenesisTime == nil {
 				m.GenesisTime = new(time.Time)
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(m.GenesisTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.GenesisTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

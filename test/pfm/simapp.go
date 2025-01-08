@@ -88,17 +88,11 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v9/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v9/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v9/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
 	ibcmock "github.com/cosmos/ibc-go/v9/testing/mock"
-	simapp "github.com/cosmos/ibc-go/v9/testing/simapp"
-	simappparams "github.com/cosmos/ibc-go/v9/testing/simapp/params"
-	simappupgrades "github.com/cosmos/ibc-go/v9/testing/simapp/upgrades"
-	_ "github.com/cosmos/ibc-go/v9/testing/simapp/upgrades/v9"
-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
 )
 
 // App implements the common methods for a Cosmos SDK-based application
@@ -245,7 +239,7 @@ func init() {
 // NewSimApp returns a reference to an initialized SimApp.
 func NewSimApp(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
-	homePath string, invCheckPeriod uint, encodingConfig simappparams.EncodingConfig,
+	homePath string, invCheckPeriod uint, encodingConfig interface{}, /* to update to each type, temporary to fix go mod tidy */
 	appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *SimApp {
 	appCodec := encodingConfig.Marshaler
@@ -538,23 +532,23 @@ func NewSimApp(
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
-	anteHandler, err := simapp.NewAnteHandler(
-		simapp.HandlerOptions{
-			HandlerOptions: ante.HandlerOptions{
-				AccountKeeper:   app.AccountKeeper,
-				BankKeeper:      app.BankKeeper,
-				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-				FeegrantKeeper:  app.FeeGrantKeeper,
-				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
-			},
-			IBCKeeper: app.IBCKeeper,
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
+	// anteHandler, err := simapp.NewAnteHandler(
+	// 	simapp.HandlerOptions{
+	// 		HandlerOptions: ante.HandlerOptions{
+	// 			AccountKeeper:   app.AccountKeeper,
+	// 			BankKeeper:      app.BankKeeper,
+	// 			SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+	// 			FeegrantKeeper:  app.FeeGrantKeeper,
+	// 			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+	// 		},
+	// 		IBCKeeper: app.IBCKeeper,
+	// 	},
+	// )
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	app.SetAnteHandler(anteHandler)
+	// app.SetAnteHandler(anteHandler)
 
 	app.SetEndBlocker(app.EndBlocker)
 
@@ -582,9 +576,11 @@ func (app *SimApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Re
 	return app.mm.EndBlock(ctx, req)
 }
 
+type GenesisState map[string]json.RawMessage
+
 // InitChainer application update at chain initialization
 func (app *SimApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
-	var genesisState simapp.GenesisState
+	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
@@ -677,11 +673,6 @@ func (app *SimApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
-// GetStakingKeeper implements the TestingApp interface.
-func (app *SimApp) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.StakingKeeper
-}
-
 // GetIBCKeeper implements the TestingApp interface.
 func (app *SimApp) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper
@@ -770,10 +761,10 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 
 // setupUpgradeHandlers sets all necessary upgrade handlers for testing purposes
 func (app *SimApp) setupUpgradeHandlers() {
-	app.UpgradeKeeper.SetUpgradeHandler(
-		simappupgrades.DefaultUpgradeName,
-		simappupgrades.CreateDefaultUpgradeHandler(app.mm, app.configurator),
-	)
+	// app.UpgradeKeeper.SetUpgradeHandler(
+	// 	simappupgrades.DefaultUpgradeName,
+	// 	simappupgrades.CreateDefaultUpgradeHandler(app.mm, app.configurator),
+	// )
 
 	// NOTE: The moduleName arg of v6.CreateUpgradeHandler refers to the auth module ScopedKeeper name to which the channel capability should be migrated from.
 	// This should be the same string value provided upon instantiation of the ScopedKeeper with app.CapabilityKeeper.ScopeToModule()

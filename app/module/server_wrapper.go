@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	pbgrpc "github.com/gogo/protobuf/grpc"
+	pbgrpc "github.com/cosmos/gogoproto/grpc"
 	"google.golang.org/grpc"
 )
 

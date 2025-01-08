@@ -19,15 +19,16 @@ Replace directives to local copies are used for now until the app builds.
 
 ## Goals
 
-- Goal #1: fix import paths and go.mod until `go mod tidy` will run without error.
-- Goal #2: build celestia-app
-- Goal #3: regen modules using cosmos/gogoproto fork
-- Goal #3: Create necessary migrations
+- [ ] Goal #1: fix import paths and go.mod until `go mod tidy` will run without error.
+- [ ] Goal #2: build celestia-app
+- [x] Goal #3: regen modules using cosmos/gogoproto fork
+- [ ] Goal #3: Create necessary migrations
   - crisis state (kv storekey) should be purged
   - capability state (kv / mem storekey) should be purged
-- Goal #4: Re-enable rosetta
-
-- Status: neither goal yet reached.
+- [ ] Goal #4: Re-enable rosetta
+- [ ] Goal #5: Re-enable upgrades and ante handlers in test/pfm
+- [ ] Goal #6: Upgrade modules to core v1
+- [ ] Goal #7: Upgrade proposals to gov v1 and relevant tests
 
 ### Progress
 
@@ -40,7 +41,7 @@ Replace directives to local copies are used for now until the app builds.
 ### 2025-01-08
 
 - Do not use local copies of components, so easier to pick up changes cold.
-- Removed simapp dependency from celestia-app
+- Removed simapp (cosmos-sdk and ibc-go) dependency from celestia-app
 - Deleted crisis module import from celestia-app
 - Delete capability module imports and scoped keepers from celestia-app
 - Remove legacy proposal handlers
@@ -48,6 +49,7 @@ Replace directives to local copies are used for now until the app builds.
 - Update proto-builder to latest in makefile + re-generate proto files.
   buf.yaml was updated to v1 to give the correct fully qualified name
   buf.yaml was moved to proto/ because there is no excluding folder in v1 (and specs contains invalid protos)
+- Re-gen mocks manually (`mockgen -source=modules/core/05-port/types/module.go -package mock_types -destination ../../01builders/celestia-app/app/module/mocks/versioned_ibc.go` )
 
 ## Problems
 

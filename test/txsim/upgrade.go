@@ -8,7 +8,7 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/gogo/protobuf/grpc"
+	"github.com/cosmos/gogoproto/grpc"
 )
 
 var _ Sequence = &UpgradeSequence{}

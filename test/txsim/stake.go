@@ -8,7 +8,7 @@ import (
 	staking "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/gogo/protobuf/grpc"
+	"github.com/cosmos/gogoproto/grpc"
 )
 
 var _ Sequence = &StakeSequence{}

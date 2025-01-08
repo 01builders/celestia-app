@@ -80,7 +80,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -637,11 +636,6 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 // GetBaseApp implements the TestingApp interface.
 func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
-}
-
-// GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.StakingKeeper
 }
 
 // GetIBCKeeper implements the TestingApp interface.

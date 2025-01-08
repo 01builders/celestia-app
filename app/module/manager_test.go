@@ -15,15 +15,15 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app/module"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/tests/mocks"
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func TestManagerOrderSetters(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(6).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
@@ -58,8 +58,8 @@ func TestManager_RegisterInvariants(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -73,7 +73,7 @@ func TestManager_RegisterInvariants(t *testing.T) {
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
 	// test RegisterInvariants
-	mockInvariantRegistry := mocks.NewMockInvariantRegistry(mockCtrl)
+	mockInvariantRegistry := mock.NewMockInvariantRegistry(mockCtrl)
 	mockAppModule1.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
 	mockAppModule2.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
 	mm.RegisterInvariants(mockInvariantRegistry)
@@ -83,8 +83,8 @@ func TestManager_RegisterQueryServices(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(3).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(3).Return("module2")
@@ -97,8 +97,8 @@ func TestManager_RegisterQueryServices(t *testing.T) {
 	require.NotNil(t, mm)
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
-	msgRouter := mocks.NewMockServer(mockCtrl)
-	queryRouter := mocks.NewMockServer(mockCtrl)
+	msgRouter := mock.NewMockServer(mockCtrl)
+	queryRouter := mock.NewMockServer(mockCtrl)
 	interfaceRegistry := types.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 	cfg := module.NewConfigurator(cdc, msgRouter, queryRouter)
@@ -112,8 +112,8 @@ func TestManager_InitGenesis(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -150,8 +150,8 @@ func TestManager_ExportGenesis(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 		mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 		mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 		mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -180,8 +180,8 @@ func TestManager_ExportGenesis(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 		mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 		mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(1))
 		mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -217,8 +217,8 @@ func TestManager_BeginBlock(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -245,8 +245,8 @@ func TestManager_EndBlock(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -279,8 +279,8 @@ func TestManager_UpgradeSchedule(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("blob")
 	mockAppModule2.EXPECT().Name().Times(2).Return("blob")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(3))
@@ -296,8 +296,8 @@ func TestManager_ModuleNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Return(uint64(1))
@@ -320,8 +320,8 @@ func TestManager_SupportedVersions(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(10))

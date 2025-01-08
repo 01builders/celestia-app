@@ -19,7 +19,6 @@ import (
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/cosmos/ibc-go/v9/testing/mock"
-	"github.com/cosmos/ibc-go/v9/testing/simapp"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -89,7 +88,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 	// create current header and call begin block
 	header := tmproto.Header{
 		Version: tmprotoversion.Consensus{
-			App: simapp.DefaultAppVersion,
+			App: 1,
 		},
 		ChainID: chainID,
 		Height:  1,
@@ -126,7 +125,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
 func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) ibctesting.TestingApp {
-	return SetupWithGenesisValSetAndConsensusParams(t, simapp.DefaultConsensusParams, valSet, genAccs, chainID, powerReduction, balances...)
+	return SetupWithGenesisValSetAndConsensusParams(t, simtestutil.DefaultConsensusParams, valSet, genAccs, chainID, powerReduction, balances...)
 }
 
 func SetupWithGenesisValSetAndConsensusParams(t *testing.T, consensusParams *abci.ConsensusParams, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) ibctesting.TestingApp {
@@ -225,5 +224,5 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := dbm.NewMemDB()
 	encCdc := moduletestutil.MakeTestEncodingConfig(codectestutil.CodecOptions{})
 	app := NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, 5, encCdc, simtestutil.EmptyAppOptions{})
-	return app, simapp.NewDefaultGenesisState(encCdc.Marshaler)
+	return app, app.ModuleManager.DefaultGenesis()
 }

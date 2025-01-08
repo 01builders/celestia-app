@@ -2,20 +2,18 @@
 
 ## Setup
 
-Replace directives to local copies are used for now until the app builds.
-
 ```text
 .
 ├── celestia-app
 ├── cosmos-sdk @ release/v0.52.x
 ├── ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
 └── ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
-└── ibc-go-capability @ 324e3d853ad5a88aeb3a2d9b972b9cba88d894ff
 ```
 
 - ibc-apps d8473b7e9e39b5d35cd1024920c0878aec8775e6 is at <https://github.com/01builders/ibc-apps/tree/v9>
 - ibc-go is main @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
-- ibc-go-capability branches off `modules/capability/v1.0.1` at 324e3d853ad5a88aeb3a2d9b972b9cba88d894ff on `01builders/kocu/capability/v2`
+
+Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 
 ## Goals
 
@@ -36,7 +34,7 @@ Replace directives to local copies are used for now until the app builds.
 
 - Started <https://github.com/01builders/celestia-app/tree/sdk-v0.52.x>, also stuck on `go mod tidy` still.
 - Created <https://github.com/01builders/ibc-apps/tree/v9/middleware/packet-forward-middleware> for PFM, pretty rough so far.  `go mod tidy` in middleware/packet-forward-middleware will show the progress so far.
-- Created <https://github.com/01builders/ibc-go/tree/kocu/capability/v2> to try to remove some legacy module import paths so thhat PFM can build.
+- Created <https://github.com/01builders/ibc-go/tree/kocu/capability/v2> to try to remove some legacy module import paths so thhat PFM can build. NOTE(@julienrbrt): We should not need to migrate capability.
 
 ### 2025-01-08
 
@@ -57,5 +55,6 @@ Replace directives to local copies are used for now until the app builds.
 - celestia-app needs ibc-go v9 (checked out at decc8ec9ae8eeda9cf3791d45d3005a6e929a990 locally) for `cosmossdk.io/*` import paths
 - celestia-app also depends on `github.com/cosmos/ibc-apps/middleware/packet-forward-middleware`
 - `packet-forward-middleware` depends on ibc-go.  the latest version available of PFM is v8, which uses `github.com/cosmos/cosmos-sdk/*` import paths.  therefore a PFM v9 which depends on cosmos-sdk @ 0.52 is needed.
-- PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree
+- PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree. PFM needs to be refactored to work without capability.
 - crisis module doesn't exist in v0.52, which is fine, but need to be thought about for the multiplexer (if in process)
+- capability module doesn't exist in ibc v9, which is fine, but need to be thought about for the multiplexer (if in process)

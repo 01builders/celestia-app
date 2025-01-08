@@ -39,14 +39,10 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
@@ -64,13 +60,11 @@ var (
 		auth.AppModuleBasic{},
 		genutil.AppModuleBasic{},
 		bankModule{},
-		capability.AppModuleBasic{},
 		stakingModule{},
 		mintModule{},
 		distributionModule{},
 		newGovModule(),
 		params.AppModuleBasic{},
-		crisisModule{},
 		slashingModule{},
 		authzmodule.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
@@ -110,18 +104,18 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AccountKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
-		{
-			Module:      capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
-			FromVersion: v1, ToVersion: v3,
-		},
+		// {
+		// 	Module:      capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
+		// 	FromVersion: v1, ToVersion: v3,
+		// },
 		{
 			Module:      feegrantmodule.NewAppModule(app.appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
-		{
-			Module:      crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
-			FromVersion: v1, ToVersion: v3,
-		},
+		// {
+		// 	Module:      crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
+		// 	FromVersion: v1, ToVersion: v3,
+		// },
 		{
 			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
 			FromVersion: v1, ToVersion: v3,
@@ -199,7 +193,6 @@ func (app *App) setModuleOrder() {
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.manager.SetOrderBeginBlockers(
-		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -210,7 +203,6 @@ func (app *App) setModuleOrder() {
 		feegrant.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		blobtypes.ModuleName,
@@ -225,10 +217,8 @@ func (app *App) setModuleOrder() {
 	)
 
 	app.manager.SetOrderEndBlockers(
-		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -252,13 +242,9 @@ func (app *App) setModuleOrder() {
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
-	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
-	// can do so safely.
 	// NOTE: The minfee module must occur before genutil so DeliverTx can
 	// successfully pass the fee checking logic
 	app.manager.SetOrderInitGenesis(
-		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -266,7 +252,6 @@ func (app *App) setModuleOrder() {
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
-		crisistypes.ModuleName,
 		ibchost.ModuleName,
 		minfee.ModuleName,
 		genutiltypes.ModuleName,
@@ -289,7 +274,7 @@ func allStoreKeys() []string {
 		authtypes.StoreKey, authzkeeper.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, capabilitytypes.StoreKey,
+		evidencetypes.StoreKey,
 		blobstreamtypes.StoreKey,
 		ibctransfertypes.StoreKey,
 		ibchost.StoreKey,
@@ -309,7 +294,6 @@ func versionedStoreKeys() map[uint64][]string {
 			banktypes.StoreKey,
 			blobstreamtypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
@@ -326,7 +310,6 @@ func versionedStoreKeys() map[uint64][]string {
 			authzkeeper.StoreKey,
 			banktypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
@@ -346,7 +329,6 @@ func versionedStoreKeys() map[uint64][]string {
 			authzkeeper.StoreKey,
 			banktypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,

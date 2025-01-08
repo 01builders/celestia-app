@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/store/snapshots"
+	snapshottypes "cosmossdk.io/store/snapshots/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -37,9 +37,6 @@ func TestNew(t *testing.T) {
 
 	t.Run("initializes ICAHostKeeper", func(t *testing.T) {
 		assert.NotNil(t, got.ICAHostKeeper)
-	})
-	t.Run("initializes ScopedICAHostKeeper", func(t *testing.T) {
-		assert.NotNil(t, got.ScopedICAHostKeeper)
 	})
 	t.Run("initializes StakingKeeper", func(t *testing.T) {
 		assert.NotNil(t, got.StakingKeeper)

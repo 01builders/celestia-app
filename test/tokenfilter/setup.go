@@ -17,6 +17,7 @@ import (
 
 	banktypes "cosmossdk.io/x/bank/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
@@ -29,7 +30,6 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/ibc-go/v9/testing/mock"
-	"github.com/cosmos/ibc-go/v9/testing/simapp"
 )
 
 // NewTestChainWithValSet initializes a new TestChain instance with the given validator set
@@ -146,7 +146,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	db := dbm.NewMemDB()
 	encCdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	genesisState := app.NewDefaultGenesisState(encCdc.Codec)
-	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, simapp.EmptyAppOptions{})
+	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, simtestutil.EmptyAppOptions{})
 
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)

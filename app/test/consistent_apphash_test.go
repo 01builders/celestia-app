@@ -34,7 +34,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	crisisTypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -197,10 +196,6 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	)
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgGrant)
-
-	// MsgVerifyInvariant - verifies the nonnegative-outstanding invariant within the bank module for the account-0
-	msgVerifyInvariant := crisisTypes.NewMsgVerifyInvariant(accountAddresses[0], banktypes.ModuleName, "nonnegative-outstanding")
-	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgVerifyInvariant)
 
 	// MsgGrantAllowance - creates a grant allowance for account-1
 	basicAllowance := feegrant.BasicAllowance{

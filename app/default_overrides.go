@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/x/bank"
 	banktypes "cosmossdk.io/x/bank/types"
 	distribution "cosmossdk.io/x/distribution"
-	distrclient "cosmossdk.io/x/distribution/client"
 	distributiontypes "cosmossdk.io/x/distribution/types"
 	"cosmossdk.io/x/gov"
 	govclient "cosmossdk.io/x/gov/client"
@@ -24,12 +23,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
 	icagenesistypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/genesis/types"
 	ibc "github.com/cosmos/ibc-go/v9/modules/core"
-	ibcclientclient "github.com/cosmos/ibc-go/v9/modules/core/02-client/client"
 	ibctypes "github.com/cosmos/ibc-go/v9/modules/core/types"
 	tmcfg "github.com/tendermint/tendermint/config"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -107,17 +103,6 @@ func (slashingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 	return cdc.MustMarshalJSON(&slashingtypes.GenesisState{
 		Params: params,
-	})
-}
-
-type crisisModule struct {
-	crisis.AppModuleBasic
-}
-
-// DefaultGenesis returns custom x/crisis module genesis state.
-func (crisisModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(&crisistypes.GenesisState{
-		ConstantFee: sdk.NewCoin(BondDenom, sdk.NewInt(1000)),
 	})
 }
 
@@ -204,9 +189,6 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 func getLegacyProposalHandlers() (result []govclient.ProposalHandler) {
 	result = append(result,
 		paramsclient.ProposalHandler,
-		distrclient.ProposalHandler,
-		ibcclientclient.UpdateClientProposalHandler,
-		ibcclientclient.UpgradeProposalHandler,
 	)
 
 	return result

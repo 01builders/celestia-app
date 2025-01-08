@@ -2,7 +2,6 @@ package module
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	exported "github.com/cosmos/ibc-go/v9/modules/core/exported"
@@ -33,14 +32,13 @@ func (v *VersionedIBCModule) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
-	channelCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
 	if v.isVersionSupported(ctx) {
-		return v.wrappedModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
+		return v.wrappedModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, counterparty, version)
 	}
-	return v.nextModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
+	return v.nextModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, counterparty, version)
 }
 
 func (v *VersionedIBCModule) OnChanOpenTry(
@@ -49,14 +47,13 @@ func (v *VersionedIBCModule) OnChanOpenTry(
 	connectionHops []string,
 	portID,
 	channelID string,
-	channelCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (version string, err error) {
 	if v.isVersionSupported(ctx) {
-		return v.wrappedModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, counterpartyVersion)
+		return v.wrappedModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, counterparty, counterpartyVersion)
 	}
-	return v.nextModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, counterpartyVersion)
+	return v.nextModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, counterparty, counterpartyVersion)
 }
 
 func (v *VersionedIBCModule) OnChanOpenAck(

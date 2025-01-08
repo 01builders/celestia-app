@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	simdcmd "cosmossdk.io/simapp/simd/cmd"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -18,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/cmd/cometbft/commands"
@@ -109,7 +107,7 @@ func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config)
 		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
 		genutilcli.MigrateGenesisCmd(),
-		simdcmd.AddGenesisAccountCmd(app.DefaultNodeHome),
+		genutilcli.AddGenesisAccountCmd(),
 		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
 		tmcli.NewCompletionCmd(rootCommand, true),
@@ -141,7 +139,6 @@ func setDefaultConsensusParams(command *cobra.Command) error {
 
 // addStartFlags adds flags to the start command.
 func addStartFlags(startCmd *cobra.Command) {
-	crisis.AddModuleInitFlags(startCmd)
 	startCmd.Flags().Int64(UpgradeHeightFlag, 0, "Upgrade height to switch from v1 to v2. Must be coordinated amongst all validators")
 	startCmd.Flags().Duration(TimeoutCommitFlag, 0, "Override the application configured timeout_commit. Note: only for testing purposes.")
 }

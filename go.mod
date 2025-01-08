@@ -15,10 +15,9 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.52.0-rc.1
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.0
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9 v9.0.0
 	github.com/cosmos/ibc-go/v9 v9.0.2
 	github.com/ethereum/go-ethereum v1.14.12
-	github.com/gogo/protobuf v1.3.3
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.1
@@ -255,23 +254,29 @@ require (
 
 replace (
 	// checkout cosmos/cosmos-sdk at release/0.52.x
-	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
-	cosmossdk.io/simapp => ../cosmos-sdk/simapp
-	cosmossdk.io/client/v2 => ../cosmos-sdk/client/v2
-	cosmossdk.io/x/protocolpool => ../cosmos-sdk/x/protocolpool
-	cosmossdk.io/x/gov => ../cosmos-sdk/x/gov
-	cosmossdk.io/x/upgrade => ../cosmos-sdk/x/upgrade
-	cosmossdk.io/x/params => ../cosmos-sdk/x/params
-	cosmossdk.io/x/distribution => ../cosmos-sdk/x/distribution
-	cosmossdk.io/x/feegrant => ../cosmos-sdk/x/feegrant
-	cosmossdk.io/x/evidence => ../cosmos-sdk/x/evidence
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250107080912-2bcc7678255f
+	cosmossdk.io/client/v2 => cosmossdk.io/client/v2 v2.10.0-beta.1
+	cosmossdk.io/x/protocolpool => cosmossdk.io/x/protocolpool v0.2.0-rc.1
+	cosmossdk.io/x/gov => cosmossdk.io/x/gov  v0.2.0-rc.1
+	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
+	cosmossdk.io/x/params => cosmossdk.io/x/params v0.2.0-rc.1
+	cosmossdk.io/x/distribution => cosmossdk.io/x/distribution v0.2.0-rc.1
+	cosmossdk.io/x/feegrant => cosmossdk.io/x/feegrant v0.2.0-rc.1
+	cosmossdk.io/x/evidence => cosmossdk.io/x/evidence v0.2.0-rc.1
+	cosmossdk.io/x/group => cosmossdk.io/x/group v0.2.0-rc.1
+	cosmossdk.io/x/mint => cosmossdk.io/x/mint v0.2.0-rc.1
+	cosmossdk.io/x/consensus => cosmossdk.io/x/consensus v0.2.0-rc.1
+	cosmossdk.io/x/nft => cosmossdk.io/x/nft v0.2.0-rc.1
+	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
+	cosmossdk.io/x/authz => cosmossdk.io/x/authz v0.2.0-rc.1
+	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
+	cosmossdk.io/x/accounts => cosmossdk.io/x/accounts v0.2.0-rc.1
+	cosmossdk.io/x/accounts/defaults/lockup => cosmossdk.io/x/accounts/defaults/lockup v0.2.0-rc.1
+	cosmossdk.io/x/accounts/defaults/multisig => cosmossdk.io/x/accounts/defaults/multisig v0.2.0-rc.1 
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
-	github.com/cosmos/ibc-go/v9 => ../ibc-go
-	github.com/cosmos/ibc-go/v8 => ../ibc-go
+	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 decc8ec9ae8eeda9cf3791d45d3005a6e929a990
 	// ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 => ../ibc-apps/middleware/packet-forward-middleware
-
-	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9 =>  github.com/01builders/ibc-apps/middleware/packet-forward-middleware/v9 v9.0.0-20250107215950-d8473b7e9e39
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.44.1-tm-v0.34.35
 )

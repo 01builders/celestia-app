@@ -14,8 +14,8 @@ import (
 	paramtypes "cosmossdk.io/x/params/types/proposal"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -198,9 +198,9 @@ func SetupTxClient(
 	encCfg encoding.Config,
 	options ...Option,
 ) (*TxClient, error) {
-	resp, err := tmservice.NewServiceClient(conn).GetLatestBlock(
+	resp, err := cmtservice.NewServiceClient(conn).GetLatestBlock(
 		ctx,
-		&tmservice.GetLatestBlockRequest{},
+		&cmtservice.GetLatestBlockRequest{},
 	)
 	if err != nil {
 		return nil, err

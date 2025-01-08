@@ -5,7 +5,6 @@ import (
 	"io"
 	"time"
 
-	"cosmossdk.io/simapp"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -13,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	tmconfig "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -177,7 +177,7 @@ func DefaultAppCreator(opts ...AppCreationOptions) srvtypes.AppCreator {
 			encodingConfig,
 			0, // v2 upgrade height
 			0, // timeout commit
-			simapp.EmptyAppOptions{},
+			simtestutil.EmptyAppOptions{},
 			baseapp.SetMinGasPrices(fmt.Sprintf("%v%v", appconsts.DefaultMinGasPrice, app.BondDenom)),
 		)
 
@@ -200,7 +200,7 @@ func CustomAppCreator(minGasPrice string) srvtypes.AppCreator {
 			encodingConfig,
 			0, // v2 upgrade height
 			0, // timeout commit
-			simapp.EmptyAppOptions{},
+			simtestutil.EmptyAppOptions{},
 			baseapp.SetMinGasPrices(minGasPrice),
 		)
 		app.SetEndBlocker(wrapEndBlocker(app, time.Millisecond*0))

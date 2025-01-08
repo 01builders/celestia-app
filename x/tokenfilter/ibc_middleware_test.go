@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
@@ -81,7 +80,6 @@ func (m *MockIBCModule) OnChanOpenInit(
 	_ []string,
 	_ string,
 	_ string,
-	_ *capabilitytypes.Capability,
 	_ channeltypes.Counterparty,
 	_ string,
 ) (string, error) {
@@ -95,7 +93,6 @@ func (m *MockIBCModule) OnChanOpenTry(
 	_ []string,
 	_,
 	_ string,
-	_ *capabilitytypes.Capability,
 	_ channeltypes.Counterparty,
 	_ string,
 ) (version string, err error) {

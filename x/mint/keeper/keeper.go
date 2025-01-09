@@ -1,10 +1,9 @@
 package keeper
 
 import (
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
-	"github.com/tendermint/tendermint/libs/log"
 
-	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,8 +11,9 @@ import (
 
 // Keeper of the mint store
 type Keeper struct {
+	appmodule.Environment
+
 	cdc              codec.BinaryCodec
-	storeKey         storetypes.StoreKey
 	stakingKeeper    types.StakingKeeper
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
@@ -21,8 +21,8 @@ type Keeper struct {
 
 // NewKeeper creates a new mint Keeper instance.
 func NewKeeper(
+	env appmodule.Environment,
 	cdc codec.BinaryCodec,
-	storeKey storetypes.StoreKey,
 	stakingKeeper types.StakingKeeper,
 	ak types.AccountKeeper,
 	bankKeeper types.BankKeeper,
@@ -34,24 +34,19 @@ func NewKeeper(
 	}
 
 	return Keeper{
+		Environment:      env,
 		cdc:              cdc,
-		storeKey:         storeKey,
 		stakingKeeper:    stakingKeeper,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
 	}
 }
 
-// Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+types.ModuleName)
-}
-
 // GetMinter returns the minter.
 func (k Keeper) GetMinter(ctx sdk.Context) (minter types.Minter) {
-	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.KeyMinter)
-	if b == nil {
+	store := k.KVStoreService.OpenKVStore(ctx)
+	b, err := store.Get(types.KeyMinter)
+	if b == nil || err != nil {
 		panic("stored minter should not have been nil")
 	}
 
@@ -61,16 +56,16 @@ func (k Keeper) GetMinter(ctx sdk.Context) (minter types.Minter) {
 
 // SetMinter sets the minter.
 func (k Keeper) SetMinter(ctx sdk.Context, minter types.Minter) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.KVStoreService.OpenKVStore(ctx)
 	b := k.cdc.MustMarshal(&minter)
 	store.Set(types.KeyMinter, b)
 }
 
 // GetGenesisTime returns the genesis time.
 func (k Keeper) GetGenesisTime(ctx sdk.Context) (gt types.GenesisTime) {
-	store := ctx.KVStore(k.storeKey)
-	b := store.Get(types.KeyGenesisTime)
-	if b == nil {
+	store := k.KVStoreService.OpenKVStore(ctx)
+	b, err := store.Get(types.KeyGenesisTime)
+	if b == nil || err != nil {
 		panic("stored genesis time should not have been nil")
 	}
 
@@ -80,7 +75,7 @@ func (k Keeper) GetGenesisTime(ctx sdk.Context) (gt types.GenesisTime) {
 
 // SetGenesisTime sets the genesis time.
 func (k Keeper) SetGenesisTime(ctx sdk.Context, gt types.GenesisTime) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.KVStoreService.OpenKVStore(ctx)
 	b := k.cdc.MustMarshal(&gt)
 	store.Set(types.KeyGenesisTime, b)
 }

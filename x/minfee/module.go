@@ -40,14 +40,14 @@ func NewAppModule(cdc codec.Codec, k params.Keeper) AppModule {
 	}
 }
 
+func (AppModule) IsAppModule() {}
+
+func (AppModule) IsOnePerModuleType() {}
+
 // Name returns the minfee module's name.
 func (AppModule) Name() string {
 	return ModuleName
 }
-
-func (AppModule) IsAppModule() {}
-
-func (AppModule) IsOnePerModuleType() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {

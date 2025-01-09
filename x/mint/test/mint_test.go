@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
@@ -74,15 +75,15 @@ func (s *IntegrationTestSuite) TestInflationRate() {
 
 	type testCase struct {
 		year int64
-		want sdktypes.Dec
+		want math.LegacyDec
 	}
 	testCases := []testCase{
-		{year: 0, want: sdktypes.MustNewDecFromStr("8.00")},
-		{year: 1, want: sdktypes.MustNewDecFromStr("7.20")},
-		{year: 2, want: sdktypes.MustNewDecFromStr("6.48")},
-		{year: 3, want: sdktypes.MustNewDecFromStr("5.832")},
-		{year: 4, want: sdktypes.MustNewDecFromStr("5.2488")},
-		{year: 5, want: sdktypes.MustNewDecFromStr("4.72392")},
+		{year: 0, want: math.LegacyMustNewDecFromStr("8.00")},
+		{year: 1, want: math.LegacyMustNewDecFromStr("7.20")},
+		{year: 2, want: math.LegacyMustNewDecFromStr("6.48")},
+		{year: 3, want: math.LegacyMustNewDecFromStr("5.832")},
+		{year: 4, want: math.LegacyMustNewDecFromStr("5.2488")},
+		{year: 5, want: math.LegacyMustNewDecFromStr("4.72392")},
 		// Note: since the testnode takes time to create blocks, test cases
 		// for years 6+ will time out give the current TimeIotaMs.
 	}
@@ -106,7 +107,7 @@ func (s *IntegrationTestSuite) TestInflationRate() {
 
 		inflationRate := s.estimateInflationRate(startHeight, endHeight)
 		actualError := inflationRate.Sub(tc.want).Abs()
-		marginOfError := sdktypes.MustNewDecFromStr("0.01")
+		marginOfError := math.LegacyMustNewDecFromStr("0.01")
 		if marginOfError.GT(actualError) {
 			s.Failf("TestInflationRate failure", "inflation rate for year %v is %v, want %v with a .01 margin of error", tc.year, inflationRate, tc.want)
 		}
@@ -125,12 +126,12 @@ func (s *IntegrationTestSuite) getTotalSupply(height int64) sdktypes.Coins {
 	return resp.Supply
 }
 
-func (s *IntegrationTestSuite) estimateInflationRate(startHeight int64, endHeight int64) sdktypes.Dec {
+func (s *IntegrationTestSuite) estimateInflationRate(startHeight int64, endHeight int64) math.LegacyDec {
 	startSupply := s.getTotalSupply(startHeight).AmountOf(app.BondDenom)
 	endSupply := s.getTotalSupply(endHeight).AmountOf(app.BondDenom)
 	diffSupply := endSupply.Sub(startSupply)
 
-	return sdktypes.NewDecFromBigInt(diffSupply.BigInt()).QuoInt(startSupply)
+	return math.LegacyNewDecFromBigInt(diffSupply.BigInt()).QuoInt(startSupply)
 }
 
 // In order for 'go test' to run this suite, we need to create

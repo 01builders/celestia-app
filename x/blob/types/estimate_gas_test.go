@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
@@ -47,11 +47,13 @@ func TestPFBGasEstimation(t *testing.T) {
 			blobTx, ok, err := blobtx.UnmarshalBlobTx(tx)
 			require.NoError(t, err)
 			require.True(t, ok)
-			resp := testApp.DeliverTx(abci.RequestDeliverTx{
-				Tx: blobTx.Tx,
+			resp, err := testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+				Txs: [][]byte{blobTx.Tx},
 			})
-			require.EqualValues(t, 0, resp.Code, resp.Log)
-			require.Less(t, resp.GasUsed, int64(gas))
+			require.NoError(t, err)
+			result := resp.TxResults[0]
+			require.EqualValues(t, 0, result.Code, result.Log)
+			require.Less(t, result.GasUsed, int64(gas))
 		})
 	}
 }
@@ -91,11 +93,13 @@ func FuzzPFBGasEstimation(f *testing.F) {
 		blobTx, ok, err := blobtx.UnmarshalBlobTx(tx)
 		require.NoError(t, err)
 		require.True(t, ok)
-		resp := testApp.DeliverTx(abci.RequestDeliverTx{
-			Tx: blobTx.Tx,
+		resp, err := testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+			Txs: [][]byte{blobTx.Tx},
 		})
-		require.EqualValues(t, 0, resp.Code, resp.Log)
-		require.Less(t, resp.GasUsed, int64(gas))
+		require.NoError(t, err)
+		result := resp.TxResults[0]
+		require.EqualValues(t, 0, result.Code, result.Log)
+		require.Less(t, result.GasUsed, int64(gas))
 	})
 }
 

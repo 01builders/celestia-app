@@ -1,12 +1,13 @@
-package blobstream
+package keeper
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -23,18 +24,22 @@ const (
 // SignificantPowerDifferenceThreshold is the threshold of change in the
 // validator set power that would trigger the creation of a new valset
 // request.
-var SignificantPowerDifferenceThreshold = sdk.NewDecWithPrec(5, 2) // 0.05
+var SignificantPowerDifferenceThreshold = math.LegacyNewDecWithPrec(5, 2) // 0.05
 
 // EndBlocker is called at the end of every block.
-func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+func (k Keeper) EndBlocker(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// we always want to create the valset at first so that if there is a new
 	// validator set, then it is the one responsible for signing from now on.
-	handleValsetRequest(ctx, k)
-	handleDataCommitmentRequest(ctx, k)
-	pruneAttestations(ctx, k)
+	handleValsetRequest(sdkCtx, k)
+	handleDataCommitmentRequest(sdkCtx, k)
+	pruneAttestations(sdkCtx, k)
+
+	return nil
 }
 
-func handleDataCommitmentRequest(ctx sdk.Context, k keeper.Keeper) {
+func handleDataCommitmentRequest(ctx sdk.Context, k Keeper) {
 	setDataCommitmentAttestation := func() {
 		dataCommitment, err := k.NextDataCommitment(ctx)
 		if err != nil {
@@ -81,7 +86,7 @@ func handleDataCommitmentRequest(ctx sdk.Context, k keeper.Keeper) {
 	}
 }
 
-func handleValsetRequest(ctx sdk.Context, k keeper.Keeper) {
+func handleValsetRequest(ctx sdk.Context, k Keeper) {
 	// get the latest valsets to compare against
 	var latestValset *types.Valset
 	if k.CheckLatestAttestationNonce(ctx) && k.GetLatestAttestationNonce(ctx) != 0 {
@@ -137,7 +142,7 @@ func handleValsetRequest(ctx sdk.Context, k keeper.Keeper) {
 
 // pruneAttestations runs basic checks on saved attestations to see if we need
 // to prune or not. Then, it prunes all expired attestations from state.
-func pruneAttestations(ctx sdk.Context, k keeper.Keeper) {
+func pruneAttestations(ctx sdk.Context, k Keeper) {
 	// If the attestation nonce hasn't been initialized yet, no pruning is
 	// required
 	if !k.CheckLatestAttestationNonce(ctx) {

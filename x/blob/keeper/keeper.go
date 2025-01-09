@@ -34,8 +34,9 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		cdc:        cdc,
-		paramStore: ps,
+		Environment: env,
+		cdc:         cdc,
+		paramStore:  ps,
 	}
 }
 

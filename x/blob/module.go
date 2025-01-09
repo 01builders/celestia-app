@@ -17,7 +17,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
@@ -25,8 +24,9 @@ var (
 	_ module.HasAminoCodec  = AppModule{}
 	_ module.HasGRPCGateway = AppModule{}
 
-	_ appmodule.AppModule  = AppModule{}
-	_ appmodule.HasGenesis = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // AppModule implements the AppModule interface for the blob module.
@@ -51,14 +51,14 @@ func (AppModule) IsAppModule() {}
 
 func (AppModule) IsOnePerModuleType() {}
 
-// RegisterLegacyAminoCodec registers the module's types for amino codec
-func (AppModule) RegisterLegacyAminoCodec(cdc registry.AminoRegistrar) {
-	types.RegisterLegacyAminoCodec(cdc)
+// RegisterLegacyAminoCodec registers the blob module's types on the LegacyAmino codec.
+func (AppModule) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	types.RegisterLegacyAminoCodec(registrar)
 }
 
-// RegisterInterfaces registers the module's interface types
-func (AppModule) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
-	types.RegisterInterfaces(reg)
+// RegisterInterfaces registers interfaces and implementations of the blob module.
+func (AppModule) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registrar)
 }
 
 // DefaultGenesis returns the blob module's default genesis state.
@@ -101,8 +101,7 @@ func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
 	types.RegisterQueryServer(registrar, am.keeper)
 }
 
-// InitGenesis performs the blob module's genesis initialization. It
-// returns an empty list of validator updates.
+// InitGenesis performs the blob module's genesis initialization.
 func (am AppModule) InitGenesis(ctx context.Context, gs json.RawMessage) error {
 	var genState types.GenesisState
 	if err := am.cdc.UnmarshalJSON(gs, &genState); err != nil {

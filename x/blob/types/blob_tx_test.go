@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -149,7 +150,7 @@ func TestValidateBlobTx(t *testing.T) {
 		{
 			name: "complex transaction with one send and one pfb",
 			getTx: func() *tx.BlobTx {
-				sendMsg := banktypes.NewMsgSend(addr, addr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(10))))
+				sendMsg := banktypes.NewMsgSend(addr.String(), addr.String(), sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(10))))
 				transaction := blobfactory.ComplexBlobTxWithOtherMsgs(
 					t,
 					tmrand.NewRand(),

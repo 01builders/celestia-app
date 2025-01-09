@@ -15,18 +15,18 @@ func RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
 	registrar.RegisterConcrete(&MsgPayForBlobs{}, URLMsgPayForBlobs)
 }
 
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgPayForBlobs{},
 	)
 
 	registry.RegisterInterface(
 		"cosmos.auth.v1beta1.BaseAccount",
-		(*authtypes.AccountI)(nil),
+		(*sdk.AccountI)(nil),
 	)
 
 	registry.RegisterImplementations(
-		(*authtypes.AccountI)(nil),
+		(*sdk.AccountI)(nil),
 		&authtypes.BaseAccount{},
 	)
 

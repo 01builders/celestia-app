@@ -28,7 +28,14 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 - [ ] Goal #6: Upgrade modules to core v1
 - [ ] Goal #7: Upgrade proposals to gov v1 and relevant tests
 - [ ] Goal #8: Create params migration
-- [ ] Goal #9: Simplify code (integration autocli, depinject, possibly collections for indexer support etc..)
+- [ ] Goal #9: Simplify code & hygiene
+  - [ ] integration autocli
+  - [ ] runtime x depinject
+  - [ ] possibly collections for indexer support
+  - [ ] address codec instead of sdk config
+  - [ ] Cleanp sdk.Context to context.Context
+  - [ ] Use environment services
+  - [ ] Remove panics for errors
 
 ### Progress
 

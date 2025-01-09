@@ -6,8 +6,11 @@ import (
 	"math/big"
 
 	"cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	cosmosmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -59,7 +62,7 @@ func (k Keeper) GetLatestValset(ctx sdk.Context) (*types.Valset, error) {
 // this value is not saved to state or loaded at genesis. This value is reset to
 // zero on chain upgrade.
 func (k Keeper) SetLatestUnBondingBlockHeight(ctx sdk.Context, unbondingBlockHeight uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
 	store.Set([]byte(types.LatestUnBondingBlockHeight), types.UInt64Bytes(unbondingBlockHeight))
 }
 
@@ -67,12 +70,12 @@ func (k Keeper) SetLatestUnBondingBlockHeight(ctx sdk.Context, unbondingBlockHei
 // zero if not set. This value is not saved or loaded at genesis. This value is
 // reset to zero on chain upgrade.
 func (k Keeper) GetLatestUnBondingBlockHeight(ctx sdk.Context) uint64 {
-	store := ctx.KVStore(k.storeKey)
-	bytes := store.Get([]byte(types.LatestUnBondingBlockHeight))
-
-	if len(bytes) == 0 {
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
+	bytes, err := store.Get([]byte(types.LatestUnBondingBlockHeight))
+	if len(bytes) == 0 || err != nil { // TODO(@julienrbrt): Shall we panic on errors?
 		return 0
 	}
+
 	return UInt64FromBytes(bytes)
 }
 
@@ -85,16 +88,17 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) (types.Valset, error) {
 	// that we have an array with extra capacity but the correct length
 	// depending on how many validators have keys set.
 	bridgeValidators := make([]*types.InternalBridgeValidator, 0, len(validators))
-	totalPower := sdk.NewInt(0)
+	totalPower := math.NewInt(0)
 	for _, validator := range validators {
 		val := validator.GetOperator()
-		if err := sdk.VerifyAddressFormat(val); err != nil {
+		valAddr, err := k.StakingKeeper.ValidatorAddressCodec().StringToBytes(val)
+		if err != nil {
 			return types.Valset{}, errors.Wrap(err, types.ErrInvalidValAddress.Error())
 		}
 
-		p := sdk.NewInt(k.StakingKeeper.GetLastValidatorPower(ctx, val))
+		p := math.NewInt(k.StakingKeeper.GetLastValidatorPower(ctx, valAddr))
 
-		evmAddress, exists := k.GetEVMAddress(ctx, val)
+		evmAddress, exists := k.GetEVMAddress(ctx, valAddr)
 		if !exists {
 			// This should never happen and indicates a bug in the design of
 			// the system (most likely that a hook wasn't called or a migration
@@ -102,8 +106,8 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) (types.Valset, error) {
 			// should always have an associated EVM address. Fortunately we can
 			// safely recover from this by deriving the default again.
 			ctx.Logger().Error("validator does not have an evm address set")
-			evmAddress = types.DefaultEVMAddress(val)
-			k.SetEVMAddress(ctx, val, evmAddress)
+			evmAddress = types.DefaultEVMAddress(valAddr)
+			k.SetEVMAddress(ctx, valAddr, evmAddress)
 		}
 
 		bv := types.BridgeValidator{Power: p.Uint64(), EvmAddress: evmAddress.Hex()}
@@ -206,16 +210,21 @@ func (k Keeper) GetLatestValsetBeforeNonce(ctx sdk.Context, nonce uint64) (*type
 }
 
 func (k Keeper) SetEVMAddress(ctx sdk.Context, valAddress sdk.ValAddress, evmAddress gethcommon.Address) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
 	store.Set(types.GetEVMKey(valAddress), evmAddress.Bytes())
 }
 
 func (k Keeper) GetEVMAddress(ctx sdk.Context, valAddress sdk.ValAddress) (gethcommon.Address, bool) {
-	store := ctx.KVStore(k.storeKey)
-	if !store.Has(types.GetEVMKey(valAddress)) {
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
+	if ok, err := store.Has(types.GetEVMKey(valAddress)); !ok || err != nil {
 		return gethcommon.Address{}, false
 	}
-	addrBytes := store.Get(types.GetEVMKey(valAddress))
+
+	addrBytes, err := store.Get(types.GetEVMKey(valAddress))
+	if err != nil {
+		panic(errors.Wrap(err, "failed to get evm address"))
+	}
+
 	return gethcommon.BytesToAddress(addrBytes), true
 }
 
@@ -223,9 +232,9 @@ func (k Keeper) GetEVMAddress(ctx sdk.Context, valAddress sdk.ValAddress) (gethc
 // includes the defaults we set validators when they initially create a validator
 // before registering
 func (k Keeper) IsEVMAddressUnique(ctx sdk.Context, evmAddress gethcommon.Address) bool {
-	store := ctx.KVStore(k.storeKey)
+	store := runtime.KVStoreAdapter(k.Environment.KVStoreService.OpenKVStore(ctx))
 	addrBytes := evmAddress.Bytes()
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.EVMAddress))
+	iterator := storetypes.KVStorePrefixIterator(store, []byte(types.EVMAddress))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		if bytes.Equal(iterator.Value(), addrBytes) {

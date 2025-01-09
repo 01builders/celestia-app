@@ -2,34 +2,35 @@ package keeper
 
 import (
 	"encoding/binary"
-	"fmt"
 
+	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/store/types"
 	paramtypes "cosmossdk.io/x/params/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 type Keeper struct {
+	appmodule.Environment
+
 	cdc        codec.BinaryCodec
-	storeKey   storetypes.StoreKey
 	paramSpace paramtypes.Subspace
 
 	StakingKeeper StakingKeeper
 }
 
-func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper) *Keeper {
+func NewKeeper(env appmodule.Environment, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper) *Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
 	return &Keeper{
+		Environment:   env,
 		cdc:           cdc,
-		storeKey:      storeKey,
 		StakingKeeper: stakingKeeper,
 		paramSpace:    paramSpace,
 	}
@@ -62,10 +63,7 @@ type StakingKeeper interface {
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
 	GetLastValidatorPower(ctx sdk.Context, valAddr sdk.ValAddress) int64
-}
-
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+	ValidatorAddressCodec() addresscodec.Codec
 }
 
 // UInt64FromBytes create uint from binary big endian representation.

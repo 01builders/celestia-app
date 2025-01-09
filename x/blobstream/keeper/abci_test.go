@@ -1,15 +1,12 @@
-package blobstream_test
+package keeper_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
-
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 
-	"cosmossdk.io/x/staking"
 	stakingkeeper "cosmossdk.io/x/staking/keeper"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
@@ -24,7 +21,7 @@ func TestFirstAttestationIsValset(t *testing.T) {
 	ctx = ctx.WithBlockHeight(1)
 	expectedTime := ctx.BlockTime()
 	// EndBlocker should set a new validator set
-	blobstream.EndBlocker(ctx, pk)
+	pk.EndBlocker(ctx)
 
 	require.Equal(t, uint64(1), pk.GetLatestAttestationNonce(ctx))
 	attestation, found, err := pk.GetAttestationByNonce(ctx, 1)
@@ -46,8 +43,8 @@ func TestValsetCreationWhenValidatorUnbonds(t *testing.T) {
 
 	ctx = ctx.WithBlockHeight(1)
 	// run abci methods after chain init
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, pk)
+	input.StakingKeeper.EndBlocker(ctx)
+	pk.EndBlocker(ctx)
 
 	// current attestation expectedNonce should be 1 because a valset has been emitted upon chain init.
 	currentAttestationNonce := pk.GetLatestAttestationNonce(ctx)
@@ -59,8 +56,8 @@ func TestValsetCreationWhenValidatorUnbonds(t *testing.T) {
 	undelegateMsg := testutil.NewTestMsgUnDelegateValidator(testutil.ValAddrs[0], testutil.StakingAmount)
 	_, err := msgServer.Undelegate(ctx, undelegateMsg)
 	require.NoError(t, err)
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, pk)
+	input.StakingKeeper.EndBlocker(ctx)
+	pk.EndBlocker(ctx)
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 10)
 
 	assert.Equal(t, currentAttestationNonce+1, pk.GetLatestAttestationNonce(ctx))
@@ -73,8 +70,8 @@ func TestValsetCreationWhenEditingEVMAddr(t *testing.T) {
 	ctx = ctx.WithBlockHeight(1)
 
 	// run abci methods after chain init
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, pk)
+	input.StakingKeeper.EndBlocker(ctx)
+	pk.EndBlocker(ctx)
 
 	// current attestation expectedNonce should be 1 because a valset has been emitted upon chain init.
 	currentAttestationNonce := pk.GetLatestAttestationNonce(ctx)
@@ -90,8 +87,8 @@ func TestValsetCreationWhenEditingEVMAddr(t *testing.T) {
 	)
 	_, err := msgServer.RegisterEVMAddress(ctx, registerMsg)
 	require.NoError(t, err)
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, pk)
+	input.StakingKeeper.EndBlocker(ctx)
+	pk.EndBlocker(ctx)
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 10)
 
 	assert.Equal(t, currentAttestationNonce+1, pk.GetLatestAttestationNonce(ctx))
@@ -229,8 +226,8 @@ func TestDataCommitmentCreation(t *testing.T) {
 	ctx = ctx.WithBlockHeight(1)
 
 	// run abci methods after chain init
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, qk)
+	input.StakingKeeper.EndBlocker(ctx)
+	qk.EndBlocker(ctx)
 
 	// current attestation nonce should be 1 because a valset has been emitted
 	// upon chain init.
@@ -240,7 +237,7 @@ func TestDataCommitmentCreation(t *testing.T) {
 	// increment height to be the same as the data commitment window
 	newHeight := int64(qk.GetDataCommitmentWindowParam(ctx))
 	ctx = ctx.WithBlockHeight(newHeight)
-	blobstream.EndBlocker(ctx, qk)
+	qk.EndBlocker(ctx)
 
 	require.LessOrEqual(t, newHeight, ctx.BlockHeight())
 	assert.Equal(t, uint64(2), qk.GetLatestAttestationNonce(ctx))
@@ -252,8 +249,8 @@ func TestDataCommitmentRange(t *testing.T) {
 
 	ctx = ctx.WithBlockHeight(1)
 	// run abci methods after chain init
-	staking.EndBlocker(ctx, input.StakingKeeper)
-	blobstream.EndBlocker(ctx, qk)
+	input.StakingKeeper.EndBlocker(ctx)
+	qk.EndBlocker(ctx)
 
 	// current attestation nonce should be 1 because a valset has been emitted
 	// upon chain init.
@@ -263,7 +260,7 @@ func TestDataCommitmentRange(t *testing.T) {
 	// increment height to be the same as the data commitment window
 	newHeight := int64(qk.GetDataCommitmentWindowParam(ctx)) + 1
 	ctx = ctx.WithBlockHeight(newHeight)
-	blobstream.EndBlocker(ctx, qk)
+	qk.EndBlocker(ctx)
 
 	require.LessOrEqual(t, newHeight, ctx.BlockHeight())
 	assert.Equal(t, uint64(2), qk.GetLatestAttestationNonce(ctx))
@@ -280,7 +277,7 @@ func TestDataCommitmentRange(t *testing.T) {
 	// increment height to 2*data commitment window
 	newHeight = int64(qk.GetDataCommitmentWindowParam(ctx))*2 + 1
 	ctx = ctx.WithBlockHeight(newHeight)
-	blobstream.EndBlocker(ctx, qk)
+	qk.EndBlocker(ctx)
 
 	att2, found, err := qk.GetAttestationByNonce(ctx, 3)
 	require.NoError(t, err)
@@ -558,7 +555,7 @@ func TestPruning(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, found)
 		// make sure the remaining attestations have not expired yet
-		assert.True(t, initialBlockTime.Before(at.BlockTime().Add(blobstream.AttestationExpiryTime)))
+		assert.True(t, initialBlockTime.Before(at.BlockTime().Add(keeper.AttestationExpiryTime)))
 	}
 
 	// check that no valset exists in store

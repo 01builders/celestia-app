@@ -1,8 +1,13 @@
 package keeper
 
 import (
+	"context"
+
 	"cosmossdk.io/errors"
+	"cosmossdk.io/math"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -11,18 +16,22 @@ type Hooks struct {
 	k Keeper
 }
 
+var _ stakingtypes.StakingHooks = Hooks{}
+
 // Hooks Create new Blobstream hooks
 func (k Keeper) Hooks() Hooks {
 	// if startup is mis-ordered in app.go this hook will halt the chain when
 	// called. Keep this check to make such a mistake obvious
-	if k.storeKey == nil {
+	if k.Environment.KVStoreService == nil {
 		panic("hooks initialized before BlobstreamKeeper")
 	}
 	return Hooks{k}
 }
 
-func (h Hooks) AfterValidatorBeginUnbonding(ctx sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
-	if ctx.BlockHeader().Version.App > 1 {
+func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if sdkCtx.BlockHeader().Version.App > 1 {
 		// no-op if the app version is greater than 1 because blobstream was disabled in v2.
 		return nil
 	}
@@ -35,16 +44,18 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx sdk.Context, _ sdk.ConsAddress, 
 	// This hook is called for jailing or unbonding triggered by users but it is
 	// NOT called for jailing triggered in the endblocker therefore we call the
 	// keeper function ourselves there.
-	h.k.SetLatestUnBondingBlockHeight(ctx, uint64(ctx.BlockHeight()))
+	h.k.SetLatestUnBondingBlockHeight(sdkCtx, uint64(sdkCtx.BlockHeight()))
 	return nil
 }
 
-func (h Hooks) BeforeDelegationCreated(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationCreated(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorCreated(ctx sdk.Context, addr sdk.ValAddress) error {
-	if ctx.BlockHeader().Version.App > 1 {
+func (h Hooks) AfterValidatorCreated(ctx context.Context, addr sdk.ValAddress) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if sdkCtx.BlockHeader().Version.App > 1 {
 		// no-op if the app version is greater than 1 because blobstream was disabled in v2.
 		return nil
 	}
@@ -52,37 +63,42 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, addr sdk.ValAddress) error
 	// This should practically never happen that we have a collision. It may be
 	// bad UX to reject the attempt to create a validator and require the user to
 	// generate a new set of keys but this ensures EVM address uniqueness
-	if !h.k.IsEVMAddressUnique(ctx, defaultEvmAddr) {
+	if !h.k.IsEVMAddressUnique(sdkCtx, defaultEvmAddr) {
 		return errors.Wrapf(types.ErrEVMAddressAlreadyExists, "create a validator with a different operator address to %s (pubkey collision)", addr.String())
 	}
-	h.k.SetEVMAddress(ctx, addr, defaultEvmAddr)
+
+	h.k.SetEVMAddress(sdkCtx, addr, defaultEvmAddr)
 	return nil
 }
 
-func (h Hooks) BeforeValidatorModified(_ sdk.Context, _ sdk.ValAddress) error {
+func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBonded(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBonded(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationRemoved(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorRemoved(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorRemoved(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeValidatorSlashed(_ sdk.Context, _ sdk.ValAddress, _ sdk.Dec) error {
+func (h Hooks) BeforeValidatorSlashed(_ context.Context, _ sdk.ValAddress, _ math.LegacyDec) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationSharesModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationSharesModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterDelegationModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterDelegationModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+	return nil
+}
+
+func (h Hooks) AfterConsensusPubKeyUpdate(ctx context.Context, oldPubKey, newPubKey cryptotypes.PubKey, rotationFee sdk.Coin) error {
 	return nil
 }

@@ -5,11 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
-
-	"cosmossdk.io/x/staking"
 	stakingkeeper "cosmossdk.io/x/staking/keeper"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
+	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -83,10 +81,10 @@ func TestCheckingEarliestAvailableAttestationNonceInValsets(t *testing.T) {
 		testutil.StakingAmount,
 	)
 	// Run the staking endblocker to ensure valset is correct in state
-	staking.EndBlocker(input.Context, input.StakingKeeper)
+	input.StakingKeeper.EndBlocker(input.Context)
 
 	// init the latest attestation nonce
-	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, blobstream.InitialLatestAttestationNonce)
+	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, keeper.InitialLatestAttestationNonce)
 
 	tests := []struct {
 		name          string
@@ -133,7 +131,7 @@ func TestCheckingAttestationNonceInValsets(t *testing.T) {
 		testutil.StakingAmount,
 	)
 	// Run the staking endblocker to ensure valset is correct in state
-	staking.EndBlocker(input.Context, input.StakingKeeper)
+	input.StakingKeeper.EndBlocker(input.Context)
 	tests := []struct {
 		name          string
 		requestFunc   func() error

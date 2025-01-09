@@ -167,7 +167,7 @@ func initEVMAddrs(count int) []gethcommon.Address {
 type TestInput struct {
 	BlobstreamKeeper keeper.Keeper
 	AccountKeeper    authkeeper.AccountKeeper
-	StakingKeeper    stakingkeeper.Keeper
+	StakingKeeper    *stakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
 	DistKeeper       distrkeeper.Keeper
 	BankKeeper       bankkeeper.BaseKeeper

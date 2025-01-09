@@ -8,23 +8,23 @@ import (
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-	"cosmossdk.io/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	storetypes "cosmossdk.io/store/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
+	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/x/signal"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	storetypes "cosmossdk.io/store/types"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 func TestGetVotingPowerThreshold(t *testing.T) {
@@ -67,7 +67,7 @@ func TestGetVotingPowerThreshold(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 			stakingKeeper := newMockStakingKeeper(tc.validators)
-			k := signal.NewKeeper(config.Codec, nil, stakingKeeper)
+			k := signal.NewKeeper(runtime.NewEnvironment(nil, log.NewNopLogger()), config.Codec, stakingKeeper)
 			got := k.GetVotingPowerThreshold(sdk.Context{})
 			assert.Equal(t, tc.want, got, fmt.Sprintf("want %v, got %v", tc.want.String(), got.String()))
 		})
@@ -189,7 +189,7 @@ func TestTallyingLogic(t *testing.T) {
 
 	// update the version to 2
 	ctx = ctx.WithBlockHeader(cmtproto.Header{
-		Version: version.Consensus{
+		Version: cmtversion.Consensus{
 			Block: 1,
 			App:   2,
 		},
@@ -456,12 +456,10 @@ func TestTallyAfterTryUpgrade(t *testing.T) {
 }
 
 func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper) {
-	signalStore := sdk.NewKVStoreKey(types.StoreKey)
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(signalStore, storetypes.StoreTypeIAVL, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
-	mockCtx := sdk.NewContext(stateStore, false, log.NewNopLogger())
+	keys := storetypes.NewKVStoreKeys(types.StoreKey)
+	cms := moduletestutil.CreateMultiStore(keys, log.NewNopLogger())
+
+	mockCtx := sdk.NewContext(cms, false, log.NewNopLogger())
 	mockStakingKeeper := newMockStakingKeeper(
 		map[string]int64{
 			testutil.ValAddrs[0].String(): 40,
@@ -472,7 +470,7 @@ func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper) {
 	)
 
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	upgradeKeeper := signal.NewKeeper(config.Codec, signalStore, mockStakingKeeper)
+	upgradeKeeper := signal.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[types.StoreKey]), log.NewNopLogger()), config.Codec, mockStakingKeeper)
 	return upgradeKeeper, mockCtx, mockStakingKeeper
 }
 

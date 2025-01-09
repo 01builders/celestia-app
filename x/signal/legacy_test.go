@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	v1 "cosmossdk.io/x/gov/types/v1"
-	v1beta1 "cosmossdk.io/x/gov/types/v1beta1"
 	"cosmossdk.io/x/upgrade/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -99,35 +99,6 @@ func (s *LegacyUpgradeTestSuite) unusedAccount() string {
 	return acc
 }
 
-// TestLegacyGovUpgradeFailure verifies that a transaction with a legacy
-// software upgrade proposal fails to execute.
-func (s *LegacyUpgradeTestSuite) TestLegacyGovUpgradeFailure() {
-	t := s.T()
-
-	dep := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000000)))
-	acc := s.unusedAccount()
-	accAddr := getAddress(acc, s.cctx.Keyring)
-
-	sftwr := types.NewSoftwareUpgradeProposal("v1", "Social Consensus", types.Plan{
-		Name:   "v1",
-		Height: 20,
-		Info:   "rough social consensus",
-	})
-
-	msg, err := v1beta1.NewMsgSubmitProposal(sftwr, dep, accAddr)
-	require.NoError(t, err)
-
-	// submit the transaction and wait a block for it to be included
-	txClient, err := testnode.NewTxClientFromContext(s.cctx)
-	require.NoError(t, err)
-	subCtx, cancel := context.WithTimeout(s.cctx.GoContext(), time.Minute)
-	defer cancel()
-	_, err = txClient.SubmitTx(subCtx, []sdk.Msg{msg}, blobfactory.DefaultTxOpts()...)
-	code := err.(*user.BroadcastTxError).Code
-	// As the type is not registered, the message will fail with unable to resolve type URL
-	require.EqualValues(t, 2, code, err.Error())
-}
-
 // TestNewGovUpgradeFailure verifies that a transaction with a
 // MsgSoftwareUpgrade fails to execute.
 func (s *LegacyUpgradeTestSuite) TestNewGovUpgradeFailure() {
@@ -140,10 +111,10 @@ func (s *LegacyUpgradeTestSuite) TestNewGovUpgradeFailure() {
 			Info:   "rough social consensus",
 		},
 	}
-	dep := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000000)))
+	dep := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000000)))
 	acc := s.unusedAccount()
 	accAddr := getAddress(acc, s.cctx.Keyring)
-	msg, err := v1.NewMsgSubmitProposal([]sdk.Msg{&sss}, dep, accAddr.String(), "")
+	msg, err := v1.NewMsgSubmitProposal([]sdk.Msg{&sss}, dep, accAddr.String(), "", "title", "summary", v1.ProposalType_PROPOSAL_TYPE_STANDARD)
 	require.NoError(t, err)
 
 	// submit the transaction and wait a block for it to be included

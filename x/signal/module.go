@@ -4,22 +4,17 @@ import (
 	"context"
 	"encoding/json"
 
+	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/core/registry"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
+	"google.golang.org/grpc"
 
 	"github.com/celestiaorg/celestia-app/v3/x/signal/cli"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
-
-func init() {
-	types.RegisterLegacyAminoCodec(codec.NewLegacyAmino())
-}
 
 const (
 	// consensusVersion defines the current x/signal module consensus version.
@@ -27,83 +22,71 @@ const (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.HasAminoCodec  = AppModule{}
+	_ module.HasGRPCGateway = AppModule{}
+
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasGenesisBasics      = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
-// AppModuleBasic implements the sdk.AppModuleBasic interface
-type AppModuleBasic struct{}
+// AppModule implements the AppModule interface for the blobstream module.
+type AppModule struct {
+	keeper Keeper
+}
 
 // Name returns the ModuleName
-func (AppModuleBasic) Name() string {
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
+func (AppModule) IsAppModule() {}
+
+func (AppModule) IsOnePerModuleType() {}
+
 // RegisterLegacyAminoCodec registers the upgrade types on the LegacyAmino codec
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
+func (AppModule) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	types.RegisterLegacyAminoCodec(registrar)
+}
+
+// RegisterInterfaces registers the module's interface types on the InterfaceRegistry.
+func (AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the upgrade module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // GetQueryCmd returns the CLI query commands for this module.
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+// TODO(@julienrbrt): Use AutoCLI
+func (AppModule) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
 
 // GetTxCmd returns the CLI transaction commands for this module.
-func (AppModuleBasic) GetTxCmd() *cobra.Command {
+func (AppModule) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
 
 // DefaultGenesis returns an empty object.
-func (AppModuleBasic) DefaultGenesis(_ codec.JSONCodec) json.RawMessage {
+func (AppModule) DefaultGenesis() json.RawMessage {
 	return []byte("{}")
 }
 
 // ValidateGenesis is always successful, as we ignore the value.
-func (AppModuleBasic) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, _ json.RawMessage) error {
+func (AppModule) ValidateGenesis(_ json.RawMessage) error {
 	return nil
 }
 
-// RegisterInterfaces registers the module's interface types on the InterfaceRegistry.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(registry)
-}
-
-// AppModule implements the sdk.AppModule interface
-type AppModule struct {
-	AppModuleBasic
-	keeper Keeper
-}
-
-// NewAppModule creates a new AppModule object
-func NewAppModule(keeper Keeper) AppModule {
-	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         keeper,
-	}
-}
-
-// RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), &am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-}
-
-// InitGenesis does nothing because there is no sense in serializing future upgrades.
-func (AppModule) InitGenesis(_ sdk.Context, _ codec.JSONCodec, _ json.RawMessage) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
-
-// ExportGenesis is always empty, as InitGenesis does nothing either.
-func (am AppModule) ExportGenesis(_ sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return am.DefaultGenesis(cdc)
+// RegisterServices registers a GRPC query service to respond to the
+// module-specific GRPC queries.
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+	types.RegisterMsgServer(registrar, &am.keeper)
+	types.RegisterQueryServer(registrar, &am.keeper)
 }
 
 // ConsensusVersion returns the consensus version of this module.

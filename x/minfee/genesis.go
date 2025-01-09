@@ -3,6 +3,7 @@ package minfee
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	params "cosmossdk.io/x/params/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -31,7 +32,7 @@ func ExportGenesis(ctx sdk.Context, k params.Keeper) *GenesisState {
 	}
 	subspace = RegisterMinFeeParamTable(subspace)
 
-	var networkMinGasPrice sdk.Dec
+	var networkMinGasPrice math.LegacyDec
 	subspace.Get(ctx, KeyNetworkMinGasPrice, &networkMinGasPrice)
 
 	return &GenesisState{NetworkMinGasPrice: networkMinGasPrice}

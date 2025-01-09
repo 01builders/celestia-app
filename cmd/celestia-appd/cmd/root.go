@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
@@ -17,7 +16,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/cmd/cometbft/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
@@ -103,13 +104,10 @@ func NewRootCmd() *cobra.Command {
 
 // initRootCommand performs a bunch of side-effects on the root command.
 func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config) {
+	genesisModule := app.ModuleBasics.Modules[genutiltypes.ModuleName].(genutil.AppModule)
+	genesisCmd := genutilcli.Commands(genesisModule, app.ModuleBasics, appExporter)
 	rootCommand.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.AddGenesisAccountCmd(),
-		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
+		genesisCmd,
 		tmcli.NewCompletionCmd(rootCommand, true),
 		debug.Cmd(),
 		clientconfig.Cmd(),

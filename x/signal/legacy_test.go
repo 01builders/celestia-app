@@ -10,14 +10,15 @@ import (
 	v1 "cosmossdk.io/x/gov/types/v1"
 	"cosmossdk.io/x/upgrade/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	codectestutil "github.com/cosmos/cosmos-sdk/codec/testutil"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -46,7 +47,7 @@ type LegacyUpgradeTestSuite struct {
 
 	accounts []string
 	cctx     testnode.Context
-	ecfg     encoding.Config
+	ecfg     moduletestutil.TestEncodingConfig
 
 	govModuleAddress string
 
@@ -59,7 +60,7 @@ type LegacyUpgradeTestSuite struct {
 func (s *LegacyUpgradeTestSuite) SetupSuite() {
 	t := s.T()
 
-	s.ecfg = encoding.MakeConfig(app.ModuleBasics)
+	s.ecfg = moduletestutil.MakeTestEncodingConfig(codectestutil.CodecOptions{})
 
 	// we create an arbitrary number of funded accounts
 	accounts := make([]string, 3)
@@ -83,7 +84,7 @@ func (s *LegacyUpgradeTestSuite) SetupSuite() {
 		s.cctx.GoContext(), &authtypes.QueryModuleAccountByNameRequest{Name: "gov"},
 	)
 	s.Require().NoError(err)
-	var acc authtypes.AccountI
+	var acc sdk.AccountI
 	err = s.ecfg.InterfaceRegistry.UnpackAny(resp.Account, &acc)
 	s.Require().NoError(err)
 

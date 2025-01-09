@@ -5,24 +5,23 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
+	paramtypes "cosmossdk.io/x/params/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/x/blob/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-
-	paramtypes "cosmossdk.io/x/params/types"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 // TestPayForBlobs verifies the attributes on the emitted event.
@@ -73,35 +72,26 @@ func createMsgPayForBlob(t *testing.T, signer string, namespace share.Namespace,
 }
 
 func CreateKeeper(t *testing.T, version uint64) (*keeper.Keeper, store.CommitMultiStore, sdk.Context) {
-	storeKey := sdk.NewKVStoreKey(paramtypes.StoreKey)
+	keys := storetypes.NewKVStoreKeys(types.StoreKey, paramtypes.StoreKey)
 	tStoreKey := storetypes.NewTransientStoreKey(paramtypes.TStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(tStoreKey, storetypes.StoreTypeTransient, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
-
+	cms := moduletestutil.CreateMultiStore(keys, log.NewNopLogger())
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
-	ctx := sdk.NewContext(stateStore, tmproto.Header{
-		Version: tmversion.Consensus{
-			Block: 1,
-			App:   version,
-		},
-	}, false, nil)
+	ctx := sdk.NewContext(cms, false, log.NewNopLogger())
 
 	paramsSubspace := paramtypes.NewSubspace(cdc,
 		testutil.MakeTestCodec(),
-		storeKey,
+		keys[paramtypes.StoreKey],
 		tStoreKey,
 		types.ModuleName,
 	)
 	k := keeper.NewKeeper(
+		runtime.NewEnvironment(runtime.NewKVStoreService(keys[types.StoreKey]), log.NewNopLogger()),
 		cdc,
 		paramsSubspace,
 	)
 	k.SetParams(ctx, types.DefaultParams())
 
-	return k, stateStore, ctx
+	return k, cms, ctx
 }

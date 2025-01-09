@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
@@ -106,8 +107,8 @@ func (s *IntegrationTestSuite) TestSubmitPayForBlob() {
 				hex.EncodeToString(share.RandomBlobNamespaceID()),
 				hexBlob,
 				fmt.Sprintf("--from=%s", username),
-				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
-				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(1000))).String()),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000))).String()),
 				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
 			},
 			expectErr:    false,
@@ -118,8 +119,8 @@ func (s *IntegrationTestSuite) TestSubmitPayForBlob() {
 			name: "multiple blobs valid transaction",
 			args: []string{
 				fmt.Sprintf("--from=%s", username),
-				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
-				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(1000))).String()),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000))).String()),
 				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
 				fmt.Sprintf("--%s=%s", paycli.FlagFileInput, validPropFile.Name()),
 			},
@@ -131,8 +132,8 @@ func (s *IntegrationTestSuite) TestSubmitPayForBlob() {
 			name: "multiple blobs with invalid file path extension",
 			args: []string{
 				fmt.Sprintf("--from=%s", username),
-				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
-				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(1000))).String()),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000))).String()),
 				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
 				fmt.Sprintf("--%s=%s", paycli.FlagFileInput, invalidPropFile.Name()),
 			},

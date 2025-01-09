@@ -90,24 +90,6 @@ func NewAppModule(keeper Keeper) AppModule {
 	}
 }
 
-// RegisterInvariants does nothing because there are no invariants to enforce.
-func (AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
-
-// Route returns an empty route for this module.
-func (AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
-
-// QuerierRoute returns the query routing key used for ABCI queries.
-func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
-}
-
-// LegacyQuerierHandler returns nil because there are no legacy queriers.
-func (AppModule) LegacyQuerierHandler(_ *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), &am.keeper)

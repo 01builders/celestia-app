@@ -27,6 +27,8 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 - [ ] Goal #5: Re-enable upgrades and ante handlers in test/pfm
 - [ ] Goal #6: Upgrade modules to core v1
 - [ ] Goal #7: Upgrade proposals to gov v1 and relevant tests
+- [ ] Goal #8: Create params migration
+- [ ] Goal #9: Simplify code (integration autocli, depinject, possibly collections for indexer support etc..)
 
 ### Progress
 
@@ -52,6 +54,7 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 ### 2025-01-09
 
 - Comment out pfm in celestia-app for unblocking progress
+- Migrate modules to 0.52
 
 ## Problems
 

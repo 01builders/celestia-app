@@ -90,24 +90,6 @@ func NewAppModule(k params.Keeper) AppModule {
 	}
 }
 
-// RegisterInvariants registers the minfee module invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
-
-// Route returns the message routing key for the minfee module.
-func (am AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
-
-// QuerierRoute returns the minfee module's querier route name.
-func (am AppModule) QuerierRoute() string {
-	return ModuleName
-}
-
-// LegacyQuerierHandler returns the minfee module's Querier.
-func (am AppModule) LegacyQuerierHandler(_ *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg sdkmodule.Configurator) {
 	RegisterQueryServer(cfg.QueryServer(), NewQueryServerImpl(am.paramsKeeper))

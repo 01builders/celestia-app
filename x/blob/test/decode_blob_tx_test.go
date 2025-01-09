@@ -44,10 +44,6 @@ func TestDecodeBlobTx(t *testing.T) {
 			assert.Equal(t, wantHash, gotHash)
 
 			msg := tx.GetMsgs()[0]
-			wantSigner := "celestia18y3ydyn7uslhuxu4lcm2x83gkdhrrcyaqvg6gk"
-			gotSigner := msg.GetSigners()[0].String()
-			assert.Equal(t, gotSigner, wantSigner)
-
 			msgPayForBlobs, ok := msg.(*blobtypes.MsgPayForBlobs)
 			if !ok {
 				t.Errorf("expected MsgPayForBlobs, got %T", msg)

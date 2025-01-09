@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -13,8 +15,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const (
@@ -120,11 +120,7 @@ func TestPFBAnteHandler(t *testing.T) {
 					gasPerBlobByte = appconsts.GasPerBlobByte(currentVersion)
 				}
 
-				ctx := sdk.NewContext(nil, tmproto.Header{
-					Version: version.Consensus{
-						App: currentVersion,
-					},
-				}, true, nil).WithGasMeter(sdk.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
+				ctx := sdk.NewContext(nil, true, log.NewNopLogger()).WithGasMeter(storetypes.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
 
 				ctx.GasMeter().ConsumeGas(tc.gasConsumed, "test")
 				txBuilder := txConfig.NewTxBuilder()

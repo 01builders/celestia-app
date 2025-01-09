@@ -28,12 +28,3 @@ func (msg MsgRegisterEVMAddress) ValidateBasic() error {
 
 	return nil
 }
-
-// GetSigners fulfills the sdk.Msg interface. The signer must be the validator address
-func (msg MsgRegisterEVMAddress) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{sdk.AccAddress(valAddr)}
-}

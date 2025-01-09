@@ -2,15 +2,14 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	paramtypes "cosmossdk.io/x/params/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -19,12 +18,15 @@ const (
 
 // Keeper handles all the state changes for the blob module.
 type Keeper struct {
-	cdc        codec.BinaryCodec
+	appmodule.Environment
+
+	cdc        codec.Codec
 	paramStore paramtypes.Subspace
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec,
+	env appmodule.Environment,
+	cdc codec.Codec,
 	ps paramtypes.Subspace,
 ) *Keeper {
 	if !ps.HasKeyTable() {
@@ -35,10 +37,6 @@ func NewKeeper(
 		cdc:        cdc,
 		paramStore: ps,
 	}
-}
-
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
 // PayForBlobs consumes gas based on the blob sizes in the MsgPayForBlobs.

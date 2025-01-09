@@ -15,12 +15,12 @@ import (
 	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const (
@@ -158,7 +158,7 @@ func TestBlobShareDecorator(t *testing.T) {
 			decorator := ante.NewBlobShareDecorator(mockBlobKeeper{})
 			ctx := sdk.Context{}.
 				WithIsCheckTx(true).
-				WithBlockHeader(tmproto.Header{Version: version.Consensus{App: tc.appVersion}}).
+				WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: tc.appVersion}}).
 				WithTxBytes(btx.Tx)
 			_, err = decorator.AnteHandle(ctx, sdkTx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)

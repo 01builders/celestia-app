@@ -36,6 +36,10 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
   - [ ] Cleanp sdk.Context to context.Context
   - [ ] Use environment services
   - [ ] Remove panics for errors
+- [ ] Goal #10: Remove core logic of custom mint module to use x/mint.
+  - [ ] Wrap x/mint within celestia mint and set minting function.
+  - [ ] Wrap x/mint within celestia mint for extending queries and keeping query path identical
+- [ ] Goal #11: Wire circuit breaker to block some (staking & bank) MsgUpdateParams now that x/paramfilter is removed
 
 ### Progress
 
@@ -61,7 +65,8 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 ### 2025-01-09
 
 - Comment out pfm in celestia-app for unblocking progress
-- Migrate modules to 0.52
+- Migrate all modules to 0.52
+- Remove x/paramfilter (should be replaced by the circuit breaker)
 
 ### 2025-01-09
 

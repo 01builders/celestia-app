@@ -2,17 +2,16 @@ package app
 
 import (
 	"context"
-	appmodulev2 "cosmossdk.io/core/appmodule/v2"
-	"cosmossdk.io/x/accounts/defaults/multisig"
-	"cosmossdk.io/x/accounts/testing/account_abstraction"
-	"cosmossdk.io/x/accounts/testing/counter"
-	"cosmossdk.io/x/consensus"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	"io"
 	"slices"
 	"time"
+
+	appmodulev2 "cosmossdk.io/core/appmodule/v2"
+	"cosmossdk.io/x/accounts/defaults/multisig"
+	"cosmossdk.io/x/consensus"
+	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/runtime"
 
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -39,8 +38,6 @@ import (
 	oldgovtypes "cosmossdk.io/x/gov/types/v1beta1"
 	paramskeeper "cosmossdk.io/x/params/keeper"
 	paramstypes "cosmossdk.io/x/params/types"
-	paramproposal "cosmossdk.io/x/params/types/proposal"
-	"cosmossdk.io/x/protocolpool"
 	poolkeeper "cosmossdk.io/x/protocolpool/keeper"
 	pooltypes "cosmossdk.io/x/protocolpool/types"
 	slashingkeeper "cosmossdk.io/x/slashing/keeper"
@@ -67,13 +64,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
 	mintkeeper "github.com/celestiaorg/celestia-app/v3/x/mint/keeper"
 	minttypes "github.com/celestiaorg/celestia-app/v3/x/mint/types"
-	"github.com/celestiaorg/celestia-app/v3/x/paramfilter"
 	"github.com/celestiaorg/celestia-app/v3/x/signal"
-	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
-	"github.com/celestiaorg/celestia-app/v3/x/tokenfilter"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -85,7 +78,6 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ibcfee "github.com/cosmos/ibc-go/v9/modules/apps/29-fee"
 	ibcfeekeeper "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/keeper"
 	ibcfeetypes "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/types"
 	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
@@ -97,7 +89,6 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
@@ -109,7 +100,6 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 // maccPerms is short for module account permissions. It is a map from module
@@ -421,13 +411,10 @@ func New(
 		govModuleAddr,
 	)
 
-	paramBlockList := paramfilter.NewParamBlockList(app.BlockedParams()...)
-
 	// Register the proposal types.
 	govRouter := oldgovtypes.NewRouter()
-	govRouter.AddRoute(paramproposal.RouterKey, paramBlockList.GovHandler(app.ParamsKeeper)).
-		// TODO below now absent
-		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+	// TODO below now absent, replaced by gov v1 proposals
+	govRouter.AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	// Create Transfer Keepers.

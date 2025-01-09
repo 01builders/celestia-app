@@ -1,6 +1,7 @@
 package module
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -143,7 +144,7 @@ func (m *Manager) getAppVersionsForModule(moduleName string, moduleVersion uint6
 // InitGenesis performs init genesis functionality for modules. Exactly one
 // module must return a non-empty validator set update to correctly initialize
 // the chain.
-func (m *Manager) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, genesisData map[string]json.RawMessage, appVersion uint64) abci.ResponseInitChain {
+func (m *Manager) InitGenesis(ctx context.Context, cdc codec.JSONCodec, genesisData map[string]json.RawMessage, appVersion uint64) abci.ResponseInitChain {
 	var validatorUpdates []abci.ValidatorUpdate
 	ctx.Logger().Info("initializing blockchain state from genesis.json")
 	modules, versionSupported := m.versionedModules[appVersion]

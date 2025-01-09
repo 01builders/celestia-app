@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/bank"
 	banktypes "cosmossdk.io/x/bank/types"
 	distribution "cosmossdk.io/x/distribution"
@@ -35,7 +36,7 @@ import (
 // bankModule defines a custom wrapper around the x/bank module's AppModuleBasic
 // implementation to provide custom default genesis state.
 type bankModule struct {
-	bank.AppModuleBasic
+	bank.AppModule
 }
 
 // DefaultGenesis returns custom x/bank module genesis state.
@@ -71,7 +72,7 @@ func (bankModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type stakingModule struct {
-	staking.AppModuleBasic
+	staking.AppModule
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
@@ -79,7 +80,7 @@ func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := stakingtypes.DefaultParams()
 	params.UnbondingTime = appconsts.DefaultUnbondingTime
 	params.BondDenom = BondDenom
-	params.MinCommissionRate = sdk.NewDecWithPrec(5, 2) // 5%
+	params.MinCommissionRate = math.LegacyNewDecWithPrec(5, 2) // 5%
 
 	return cdc.MustMarshalJSON(&stakingtypes.GenesisState{
 		Params: params,
@@ -89,17 +90,17 @@ func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type slashingModule struct {
-	slashing.AppModuleBasic
+	slashing.AppModule
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
 func (slashingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := slashingtypes.DefaultParams()
-	params.MinSignedPerWindow = sdk.NewDecWithPrec(75, 2) // 75%
+	params.MinSignedPerWindow = math.LegacyNewDecWithPrec(75, 2) // 75%
 	params.SignedBlocksWindow = 5000
 	params.DowntimeJailDuration = time.Minute * 1
-	params.SlashFractionDoubleSign = sdk.NewDecWithPrec(2, 2) // 2%
-	params.SlashFractionDowntime = sdk.ZeroDec()              // 0%
+	params.SlashFractionDoubleSign = math.LegacyNewDecWithPrec(2, 2) // 2%
+	params.SlashFractionDowntime = math.LegacyZeroDec()              // 0%
 
 	return cdc.MustMarshalJSON(&slashingtypes.GenesisState{
 		Params: params,
@@ -107,21 +108,21 @@ func (slashingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 type distributionModule struct {
-	distribution.AppModuleBasic
+	distribution.AppModule
 }
 
 // DefaultGenesis returns custom x/distribution module genesis state.
 func (distributionModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := distributiontypes.DefaultParams()
-	params.BaseProposerReward = sdk.ZeroDec()  // 0%
-	params.BonusProposerReward = sdk.ZeroDec() // 0%
+	params.BaseProposerReward = math.LegacyZeroDec()  // 0%
+	params.BonusProposerReward = math.LegacyZeroDec() // 0%
 	return cdc.MustMarshalJSON(&distributiontypes.GenesisState{
 		Params: params,
 	})
 }
 
 type ibcModule struct {
-	ibc.AppModuleBasic
+	ibc.AppModule
 }
 
 // DefaultGenesis returns custom x/ibc module genesis state.
@@ -139,7 +140,7 @@ func (ibcModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // icaModule defines a custom wrapper around the ica module to provide custom
 // default genesis state.
 type icaModule struct {
-	ica.AppModuleBasic
+	ica.AppModule
 }
 
 // DefaultGenesis returns custom ica module genesis state.
@@ -152,7 +153,7 @@ func (icaModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 type mintModule struct {
-	mint.AppModuleBasic
+	mint.AppModule
 }
 
 // DefaultGenesis returns custom x/mint module genesis state.
@@ -170,7 +171,7 @@ func newGovModule() govModule {
 // govModule is a custom wrapper around the x/gov module's AppModuleBasic
 // implementation to provide custom default genesis state.
 type govModule struct {
-	gov.AppModuleBasic
+	gov.AppModule
 }
 
 // DefaultGenesis returns custom x/gov module genesis state.
@@ -179,7 +180,7 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	day := time.Hour * 24
 	oneWeek := day * 7
 
-	genState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, sdk.NewInt(10_000_000_000))) // 10,000 TIA
+	genState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, math.NewInt(10_000_000_000))) // 10,000 TIA
 	genState.DepositParams.MaxDepositPeriod = &oneWeek
 	genState.VotingParams.VotingPeriod = &oneWeek
 

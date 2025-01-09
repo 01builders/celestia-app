@@ -3,6 +3,9 @@ package app
 import (
 	"fmt"
 
+	"cosmossdk.io/core/comet"
+	"github.com/cosmos/cosmos-sdk/client"
+
 	"cosmossdk.io/x/authz"
 	authzkeeper "cosmossdk.io/x/authz/keeper"
 	authzmodule "cosmossdk.io/x/authz/module"
@@ -51,29 +54,30 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v9/modules/core"
 	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 )
 
 var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	ModuleBasics = sdkmodule.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
+	ModuleBasics = sdkmodule.NewManager(
+		auth.AppModule{},
+		genutil.AppModule{},
 		bankModule{},
 		stakingModule{},
 		mintModule{},
 		distributionModule{},
 		newGovModule(),
-		params.AppModuleBasic{},
+		params.AppModule{},
 		slashingModule{},
-		authzmodule.AppModuleBasic{},
-		feegrantmodule.AppModuleBasic{},
+		authzmodule.AppModule{},
+		feegrantmodule.AppModule{},
 		ibcModule{},
-		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
-		vesting.AppModuleBasic{},
-		blob.AppModuleBasic{},
+		evidence.AppModule{},
+		transfer.AppModule{},
+		vesting.AppModule{},
+		blob.AppModule{},
 		blobstream.AppModuleBasic{},
 		signal.AppModuleBasic{},
 		minfee.AppModuleBasic{},
@@ -86,23 +90,27 @@ var (
 	ModuleEncodingRegisters = extractRegisters(ModuleBasics)
 )
 
-func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
+func (app *App) setupModuleManager(
+	txConfig client.TxConfig,
+	cometService comet.Service,
+	skipGenesisInvariants bool,
+) error {
 	var err error
 	app.manager, err = module.NewManager([]module.VersionedModule{
 		{
-			Module:      genutil.NewAppModule(app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx, app.txConfig),
+			Module:      genutil.NewAppModule(app.appCodec, app.AuthKeeper, app.StakingKeeper, app, txConfig, genutiltypes.DefaultMessageValidator),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      auth.NewAppModule(app.appCodec, app.AccountKeeper, nil),
+			Module:      auth.NewAppModule(app.appCodec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
+			Module:      vesting.NewAppModule(app.AuthKeeper, app.BankKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AccountKeeper),
+			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AuthKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		// {
@@ -110,7 +118,7 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 		// 	FromVersion: v1, ToVersion: v3,
 		// },
 		{
-			Module:      feegrantmodule.NewAppModule(app.appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+			Module:      feegrantmodule.NewAppModule(app.appCodec, app.FeeGrantKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		// {
@@ -118,35 +126,36 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 		// 	FromVersion: v1, ToVersion: v3,
 		// },
 		{
-			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      mint.NewAppModule(app.appCodec, app.MintKeeper, app.AccountKeeper),
+			Module:      mint.NewAppModule(app.appCodec, app.MintKeeper, app.AuthKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+			Module: slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AuthKeeper,
+				app.BankKeeper, app.StakingKeeper, app.interfaceRegistry, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      distr.NewAppModule(app.appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+			Module:      distr.NewAppModule(app.appCodec, app.DistrKeeper, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      staking.NewAppModule(app.appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+			Module:      staking.NewAppModule(app.appCodec, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      evidence.NewAppModule(app.EvidenceKeeper),
+			Module:      evidence.NewAppModule(app.appCodec, app.EvidenceKeeper, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+			Module:      authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      ibc.NewAppModule(app.IBCKeeper),
+			Module:      ibc.NewAppModule(app.appCodec, app.IBCKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -154,7 +163,7 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      transfer.NewAppModule(app.TransferKeeper),
+			Module:      transfer.NewAppModule(app.appCodec, app.TransferKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -182,10 +191,7 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			FromVersion: v2, ToVersion: v3,
 		},
 	})
-	if err != nil {
-		return err
-	}
-	return app.manager.AssertMatchingModules(ModuleBasics)
+	return err
 }
 
 func (app *App) setModuleOrder() {
@@ -199,7 +205,7 @@ func (app *App) setModuleOrder() {
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authtypes.ModuleName,
@@ -224,7 +230,7 @@ func (app *App) setModuleOrder() {
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authtypes.ModuleName,
@@ -253,7 +259,7 @@ func (app *App) setModuleOrder() {
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		minfee.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -278,7 +284,7 @@ func allStoreKeys() []string {
 		evidencetypes.StoreKey,
 		blobstreamtypes.StoreKey,
 		ibctransfertypes.StoreKey,
-		ibchost.StoreKey,
+		ibcexported.StoreKey,
 		// packetforwardtypes.StoreKey,
 		icahosttypes.StoreKey,
 		signaltypes.StoreKey,

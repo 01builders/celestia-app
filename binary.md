@@ -17,7 +17,7 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 
 ## Goals
 
-- [ ] Goal #1: fix import paths and go.mod until `go mod tidy` will run without error.
+- [x] Goal #1: fix import paths and go.mod until `go mod tidy` will run without error.
 - [ ] Goal #2: build celestia-app
 - [x] Goal #3: regen modules using cosmos/gogoproto fork
 - [ ] Goal #3: Create necessary migrations

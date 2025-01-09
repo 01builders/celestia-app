@@ -65,9 +65,10 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
-	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+
+	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
+	// packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	icahost "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
@@ -133,25 +134,25 @@ type App struct {
 	memKeys     map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper       authkeeper.AccountKeeper
-	BankKeeper          bankkeeper.Keeper
-	AuthzKeeper         authzkeeper.Keeper
-	StakingKeeper       stakingkeeper.Keeper
-	SlashingKeeper      slashingkeeper.Keeper
-	MintKeeper          mintkeeper.Keeper
-	DistrKeeper         distrkeeper.Keeper
-	GovKeeper           govkeeper.Keeper
-	UpgradeKeeper       upgradekeeper.Keeper // This is included purely for the IBC Keeper. It is not used for upgrading
-	SignalKeeper        signal.Keeper
-	ParamsKeeper        paramskeeper.Keeper
-	IBCKeeper           *ibckeeper.Keeper // IBCKeeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper      evidencekeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
-	FeeGrantKeeper      feegrantkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	PacketForwardKeeper *packetforwardkeeper.Keeper
-	BlobKeeper          blobkeeper.Keeper
-	BlobstreamKeeper    blobstreamkeeper.Keeper
+	AccountKeeper  authkeeper.AccountKeeper
+	BankKeeper     bankkeeper.Keeper
+	AuthzKeeper    authzkeeper.Keeper
+	StakingKeeper  stakingkeeper.Keeper
+	SlashingKeeper slashingkeeper.Keeper
+	MintKeeper     mintkeeper.Keeper
+	DistrKeeper    distrkeeper.Keeper
+	GovKeeper      govkeeper.Keeper
+	UpgradeKeeper  upgradekeeper.Keeper // This is included purely for the IBC Keeper. It is not used for upgrading
+	SignalKeeper   signal.Keeper
+	ParamsKeeper   paramskeeper.Keeper
+	IBCKeeper      *ibckeeper.Keeper // IBCKeeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper evidencekeeper.Keeper
+	TransferKeeper ibctransferkeeper.Keeper
+	FeeGrantKeeper feegrantkeeper.Keeper
+	ICAHostKeeper  icahostkeeper.Keeper
+	// PacketForwardKeeper *packetforwardkeeper.Keeper
+	BlobKeeper       blobkeeper.Keeper
+	BlobstreamKeeper blobstreamkeeper.Keeper
 
 	manager      *module.Manager
 	configurator module.Configurator
@@ -296,16 +297,16 @@ func New(
 	// Create Transfer Keepers.
 	tokenFilterKeeper := tokenfilter.NewKeeper(app.IBCKeeper.ChannelKeeper)
 
-	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
-		appCodec,
-		keys[packetforwardtypes.StoreKey],
-		app.GetSubspace(packetforwardtypes.ModuleName),
-		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
-		app.IBCKeeper.ChannelKeeper,
-		app.DistrKeeper,
-		app.BankKeeper,
-		tokenFilterKeeper,
-	)
+	// app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
+	// 	appCodec,
+	// 	keys[packetforwardtypes.StoreKey],
+	// 	app.GetSubspace(packetforwardtypes.ModuleName),
+	// 	app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
+	// 	app.IBCKeeper.ChannelKeeper,
+	// 	app.DistrKeeper,
+	// 	app.BankKeeper,
+	// 	tokenFilterKeeper,
+	// )
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
@@ -316,17 +317,17 @@ func New(
 	// - Token Filter
 	// - Packet Forwarding Middleware
 	// - Transfer
-	var transferStack ibcporttypes.IBCModule
-	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	packetForwardMiddleware := packetforward.NewIBCMiddleware(
-		transferStack,
-		app.PacketForwardKeeper,
-		0, // retries on timeout
-		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
-		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
-	)
-	// PacketForwardMiddleware is used only for version >= 2.
-	transferStack = module.NewVersionedIBCModule(packetForwardMiddleware, transferStack, v2, v3)
+	// var transferStack ibcporttypes.IBCModule
+	// transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	// packetForwardMiddleware := packetforward.NewIBCMiddleware(
+	// 	transferStack,
+	// 	app.PacketForwardKeeper,
+	// 	0, // retries on timeout
+	// 	packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+	// 	packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	// )
+	// // PacketForwardMiddleware is used only for version >= 2.
+	// transferStack = module.NewVersionedIBCModule(packetForwardMiddleware, transferStack, v2, v3)
 	// Token filter wraps packet forward middleware and is thus the first module in the transfer stack.
 	tokenFilterMiddelware := tokenfilter.NewIBCMiddleware(transferStack)
 	transferStack = module.NewVersionedIBCModule(tokenFilterMiddelware, transferStack, v1, v3)
@@ -355,9 +356,9 @@ func New(
 		app.GetSubspace(blobtypes.ModuleName),
 	)
 
-	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
-	ibcRouter := ibcporttypes.NewRouter()                                                   // Create static IBC router
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)                          // Add transfer route
+	// app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
+	ibcRouter := ibcporttypes.NewRouter() // Create static IBC router
+	// ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)                          // Add transfer route
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(app.ICAHostKeeper)) // Add ICA route
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -759,7 +760,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(blobtypes.ModuleName)
 	paramsKeeper.Subspace(blobstreamtypes.ModuleName)
 	paramsKeeper.Subspace(minfee.ModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName)
+	// paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 
 	return paramsKeeper
 }

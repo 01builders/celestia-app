@@ -16,7 +16,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/cosmos/ibc-go/v9/testing/mock"
 	"github.com/stretchr/testify/require"
@@ -184,8 +185,8 @@ func SetupWithGenesisValSetAndConsensusParams(t *testing.T, consensusParams *abc
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
 	// packet forward
-	packetForwardGenesis := packetforwardtypes.NewGenesisState(packetforwardtypes.DefaultParams(), nil)
-	genesisState[packetforwardtypes.ModuleName] = app.AppCodec().MustMarshalJSON(packetForwardGenesis)
+	// packetForwardGenesis := packetforwardtypes.NewGenesisState(packetforwardtypes.DefaultParams(), nil)
+	// genesisState[packetforwardtypes.ModuleName] = app.AppCodec().MustMarshalJSON(packetForwardGenesis)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)

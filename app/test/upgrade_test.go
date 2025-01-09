@@ -23,7 +23,8 @@ import (
 	"github.com/celestiaorg/go-square/v2/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -177,12 +178,12 @@ func TestAppUpgradeV2(t *testing.T) {
 			key:           string(icahosttypes.KeyHostEnabled),
 			expectedValue: "true",
 		},
-		{
-			module:        "PFM",
-			subspace:      packetforwardtypes.ModuleName,
-			key:           string(packetforwardtypes.KeyFeePercentage),
-			expectedValue: "0.000000000000000000",
-		},
+		// {
+		// 	module:        "PFM",
+		// 	subspace:      packetforwardtypes.ModuleName,
+		// 	key:           string(packetforwardtypes.KeyFeePercentage),
+		// 	expectedValue: "0.000000000000000000",
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.module, func(t *testing.T) {

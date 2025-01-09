@@ -80,9 +80,9 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
-	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
+	// packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	transfer "github.com/cosmos/ibc-go/v9/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
@@ -195,22 +195,22 @@ type SimApp struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper       authkeeper.AccountKeeper
-	BankKeeper          bankkeeper.Keeper
-	StakingKeeper       stakingkeeper.Keeper
-	SlashingKeeper      slashingkeeper.Keeper
-	MintKeeper          mintkeeper.Keeper
-	DistrKeeper         distrkeeper.Keeper
-	GovKeeper           govkeeper.Keeper
-	GroupKeeper         groupkeeper.Keeper
-	UpgradeKeeper       upgradekeeper.Keeper
-	ParamsKeeper        paramskeeper.Keeper
-	AuthzKeeper         authzkeeper.Keeper
-	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper      evidencekeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
-	FeeGrantKeeper      feegrantkeeper.Keeper
-	PacketForwardKeeper *packetforwardkeeper.Keeper
+	AccountKeeper  authkeeper.AccountKeeper
+	BankKeeper     bankkeeper.Keeper
+	StakingKeeper  stakingkeeper.Keeper
+	SlashingKeeper slashingkeeper.Keeper
+	MintKeeper     mintkeeper.Keeper
+	DistrKeeper    distrkeeper.Keeper
+	GovKeeper      govkeeper.Keeper
+	GroupKeeper    groupkeeper.Keeper
+	UpgradeKeeper  upgradekeeper.Keeper
+	ParamsKeeper   paramskeeper.Keeper
+	AuthzKeeper    authzkeeper.Keeper
+	IBCKeeper      *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper evidencekeeper.Keeper
+	TransferKeeper ibctransferkeeper.Keeper
+	FeeGrantKeeper feegrantkeeper.Keeper
+	// PacketForwardKeeper *packetforwardkeeper.Keeper
 
 	// make IBC modules public for test purposes
 	// these modules are never directly routed to by the IBC Router
@@ -353,16 +353,16 @@ func NewSimApp(
 
 	// Middleware Stacks
 
-	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
-		appCodec,
-		keys[packetforwardtypes.StoreKey],
-		app.GetSubspace(packetforwardtypes.ModuleName),
-		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
-		app.IBCKeeper.ChannelKeeper,
-		app.DistrKeeper,
-		app.BankKeeper,
-		app.IBCKeeper.ChannelKeeper,
-	)
+	// app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
+	// 	appCodec,
+	// 	keys[packetforwardtypes.StoreKey],
+	// 	app.GetSubspace(packetforwardtypes.ModuleName),
+	// 	app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
+	// 	app.IBCKeeper.ChannelKeeper,
+	// 	app.DistrKeeper,
+	// 	app.BankKeeper,
+	// 	app.IBCKeeper.ChannelKeeper,
+	// )
 
 	// Create Transfer Keeper and pass IBCFeeKeeper as expected Channel and PortKeeper
 	// since fee middleware will wrap the IBCKeeper for underlying application.
@@ -395,18 +395,18 @@ func NewSimApp(
 	// - Packet Forward Middleware
 
 	// create IBC module from bottom to top of stack
-	var transferStack porttypes.IBCModule
-	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = packetforward.NewIBCMiddleware(
-		transferStack,
-		app.PacketForwardKeeper,
-		0, // retries on timeout
-		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
-		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
-	)
+	// var transferStack porttypes.IBCModule
+	// transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	// transferStack = packetforward.NewIBCMiddleware(
+	// 	transferStack,
+	// 	app.PacketForwardKeeper,
+	// 	0, // retries on timeout
+	// 	packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+	// 	packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	// )
 
 	// Add transfer stack to IBC Router
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+	// ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is:
 	// channel.RecvPacket -> fee.OnRecvPacket -> icaHost.OnRecvPacket
@@ -427,7 +427,7 @@ func NewSimApp(
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
-	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
+	// app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 	// Seal the IBC Router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -462,7 +462,7 @@ func NewSimApp(
 
 		// IBC modules
 		transfer.NewAppModule(app.TransferKeeper),
-		packetforward.NewAppModule(app.PacketForwardKeeper),
+		// packetforward.NewAppModule(app.PacketForwardKeeper),
 		mockModule,
 	)
 
@@ -476,13 +476,13 @@ func NewSimApp(
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, ibctransfertypes.ModuleName, authtypes.ModuleName,
 		banktypes.ModuleName, govtypes.ModuleName, genutiltypes.ModuleName, authz.ModuleName, feegrant.ModuleName,
 		paramstypes.ModuleName, vestingtypes.ModuleName, ibcmock.ModuleName, group.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, ibctransfertypes.ModuleName,
 		authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		minttypes.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName, feegrant.ModuleName, paramstypes.ModuleName,
-		upgradetypes.ModuleName, vestingtypes.ModuleName, ibcmock.ModuleName, group.ModuleName, packetforwardtypes.ModuleName,
+		upgradetypes.ModuleName, vestingtypes.ModuleName, ibcmock.ModuleName, group.ModuleName, // packetforwardtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -491,7 +491,7 @@ func NewSimApp(
 		authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName, ibctransfertypes.ModuleName, ibcmock.ModuleName, feegrant.ModuleName, paramstypes.ModuleName, upgradetypes.ModuleName,
-		vestingtypes.ModuleName, group.ModuleName, packetforwardtypes.ModuleName,
+		vestingtypes.ModuleName, group.ModuleName, // packetforwardtypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -754,7 +754,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName)
+	// paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 
 	return paramsKeeper
 }

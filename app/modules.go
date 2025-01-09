@@ -41,8 +41,9 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+
+	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
@@ -76,7 +77,7 @@ var (
 		blobstream.AppModuleBasic{},
 		signal.AppModuleBasic{},
 		minfee.AppModuleBasic{},
-		packetforward.AppModuleBasic{},
+		// packetforward.AppModuleBasic{},
 		icaModule{},
 	)
 
@@ -172,10 +173,10 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			Module:      minfee.NewAppModule(app.ParamsKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
-		{
-			Module:      packetforward.NewAppModule(app.PacketForwardKeeper),
-			FromVersion: v2, ToVersion: v3,
-		},
+		// {
+		// 	Module:      packetforward.NewAppModule(app.PacketForwardKeeper),
+		// 	FromVersion: v2, ToVersion: v3,
+		// },
 		{
 			Module:      ica.NewAppModule(nil, &app.ICAHostKeeper),
 			FromVersion: v2, ToVersion: v3,
@@ -213,7 +214,7 @@ func (app *App) setModuleOrder() {
 		signaltypes.ModuleName,
 		minfee.ModuleName,
 		icatypes.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 	)
 
 	app.manager.SetOrderEndBlockers(
@@ -236,7 +237,7 @@ func (app *App) setModuleOrder() {
 		vestingtypes.ModuleName,
 		signaltypes.ModuleName,
 		minfee.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 	)
 
@@ -264,7 +265,7 @@ func (app *App) setModuleOrder() {
 		paramstypes.ModuleName,
 		authz.ModuleName,
 		signaltypes.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 	)
 }
@@ -278,7 +279,7 @@ func allStoreKeys() []string {
 		blobstreamtypes.StoreKey,
 		ibctransfertypes.StoreKey,
 		ibchost.StoreKey,
-		packetforwardtypes.StoreKey,
+		// packetforwardtypes.StoreKey,
 		icahosttypes.StoreKey,
 		signaltypes.StoreKey,
 		blobtypes.StoreKey,
@@ -318,8 +319,8 @@ func versionedStoreKeys() map[uint64][]string {
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey, // added in v2
 			minttypes.StoreKey,
-			packetforwardtypes.StoreKey, // added in v2
-			signaltypes.StoreKey,        // added in v2
+			// packetforwardtypes.StoreKey, // added in v2
+			signaltypes.StoreKey, // added in v2
 			slashingtypes.StoreKey,
 			stakingtypes.StoreKey,
 			upgradetypes.StoreKey,
@@ -337,7 +338,7 @@ func versionedStoreKeys() map[uint64][]string {
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey,
 			minttypes.StoreKey,
-			packetforwardtypes.StoreKey,
+			// packetforwardtypes.StoreKey,
 			signaltypes.StoreKey,
 			slashingtypes.StoreKey,
 			stakingtypes.StoreKey,

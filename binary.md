@@ -63,6 +63,27 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 - Comment out pfm in celestia-app for unblocking progress
 - Migrate modules to 0.52
 
+### 2025-01-09
+
+Made the following changes to app/app.go:
+
+- Remove `x/capability` module
+- Add `x/consensus` module
+- Add `x/accounts` module
+- Add `ibc-29/fee` module
+- Add `x/protocolpool` module
+- Update API breaks in existing keeper constructions
+- Remove in memory keys (no longer required with removal of x/capability)
+- Modify EndBlocker to reflect removal of `x/params`
+
+In app/modules.go:
+
+- Remove ModuleBasics references
+- Remove `x/capability` module
+- Remove `x/crisis` module
+
+In the root command, began to reason about and fix genesis commands including DefaultGenesis.
+
 ## Problems
 
 - SDK 0.52 has modules with `cosmossdk.io/*` import paths

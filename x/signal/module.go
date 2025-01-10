@@ -35,6 +35,10 @@ type AppModule struct {
 	keeper Keeper
 }
 
+func NewAppModule(k Keeper) AppModule {
+	return AppModule{k}
+}
+
 // Name returns the ModuleName
 func (AppModule) Name() string {
 	return types.ModuleName

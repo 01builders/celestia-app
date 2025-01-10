@@ -7,7 +7,6 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
-	sdkmath "cosmossdk.io/math"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
@@ -192,7 +191,7 @@ func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64
 
 // GetVotingPowerThreshold returns the voting power threshold required to
 // upgrade to a new version.
-func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) sdkmath.Int {
+func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) math.Int {
 	totalVotingPower := k.stakingKeeper.GetLastTotalPower(ctx)
 	thresholdFraction := Threshold(ctx.BlockHeader().Version.App)
 	return thresholdFraction.MulInt(totalVotingPower).Ceil().TruncateInt()

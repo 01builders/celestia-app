@@ -5,7 +5,7 @@
 ```text
 .
 ├── celestia-app
-├── cosmos-sdk @ release/v0.52.x
+├── cosmos-sdk @ 44d09b5f4dbf398c69fe0eb4661abcee397f9823 (branch: kocu/cdev)
 ├── ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
 └── ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
 ```
@@ -98,3 +98,7 @@ In the root command, began to reason about and fix genesis commands including De
 - PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree. PFM needs to be refactored to work without capability. It is unclear from IBC documentation what is the future of this module.
 - crisis module doesn't exist in v0.52, which is fine, but need to be thought about for the multiplexer (if in process)
 - capability module doesn't exist in ibc v9, which is fine, but need to be thought about for the multiplexer (if in process)
+
+## Upstream
+
+- <https://github.com/cosmos/cosmos-sdk/pull/23318> - Fixes encoding by providing support for indexWrapperDecoder

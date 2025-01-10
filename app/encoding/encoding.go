@@ -1,16 +1,24 @@
 package encoding
 
 import (
+	"cosmossdk.io/core/appmodule"
+	appmodulev2 "cosmossdk.io/core/appmodule/v2"
+	txdecode "cosmossdk.io/x/tx/decode"
+	"cosmossdk.io/x/tx/signing"
+	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 type ModuleRegister interface {
-	RegisterLegacyAminoCodec(*codec.LegacyAmino)
-	RegisterInterfaces(codectypes.InterfaceRegistry)
+	appmodule.HasAminoCodec
+	appmodulev2.HasRegisterInterfaces
 }
 
 // Config specifies the concrete encoding types to use for a given app.
@@ -24,8 +32,15 @@ type Config struct {
 
 // MakeConfig returns an encoding config for the app.
 func MakeConfig(moduleRegisters ...ModuleRegister) Config {
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	interfaceRegistry, _ := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec:          address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+			ValidatorAddressCodec: address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		},
+	})
 	amino := codec.NewLegacyAmino()
+	signingCtx := interfaceRegistry.SigningContext()
 
 	// Register the standard types from the Cosmos SDK on interfaceRegistry and
 	// amino.
@@ -39,10 +54,27 @@ func MakeConfig(moduleRegisters ...ModuleRegister) Config {
 	}
 
 	protoCodec := codec.NewProtoCodec(interfaceRegistry)
-	txConfig := tx.NewTxConfig(protoCodec, tx.DefaultSignModes)
-	txDecoder := txConfig.TxDecoder()
+	dec, err := txdecode.NewDecoder(txdecode.Options{
+		SigningContext: signingCtx,
+		ProtoCodec:     protoCodec,
+	})
+	if err != nil {
+		panic(err)
+	}
+	txDecoder := authtx.DefaultTxDecoder(signingCtx.AddressCodec(), protoCodec, dec)
 	txDecoder = indexWrapperDecoder(txDecoder)
-	txConfig.SetTxDecoder(txDecoder)
+
+	txConfig, err := authtx.NewTxConfigWithOptions(protoCodec, authtx.ConfigOptions{
+		EnabledSignModes: authtx.DefaultSignModes,
+		SigningOptions: &txsigning.Options{
+			AddressCodec:          signingCtx.AddressCodec(),
+			ValidatorAddressCodec: signingCtx.ValidatorAddressCodec(),
+		},
+		ProtoDecoder: txDecoder,
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	return Config{
 		InterfaceRegistry: interfaceRegistry,

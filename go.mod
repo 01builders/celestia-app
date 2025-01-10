@@ -330,7 +330,9 @@ replace (
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
 	// checkout cosmos/cosmos-sdk at release/0.52.x
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250107080912-2bcc7678255f
+	//github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250107080912-2bcc7678255f
+	// local replace to be removed pending merge and backport of PRs mentioned in binary.md, ## Upstream section
+	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e
 	// ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6

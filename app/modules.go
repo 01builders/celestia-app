@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cosmossdk.io/core/appmodule"
 	"fmt"
 
 	"cosmossdk.io/core/comet"
@@ -383,9 +384,11 @@ func (app *App) assertAllKeysArePresent() {
 
 // extractRegisters returns the encoding module registers from the basic
 // manager.
-func extractRegisters(manager sdkmodule.BasicManager) (modules []encoding.ModuleRegister) {
-	for _, module := range manager {
-		modules = append(modules, module)
+func extractRegisters(manager *sdkmodule.Manager) (modules []encoding.ModuleRegister) {
+	for _, m := range manager.Modules {
+		if r, ok := m.(encoding.ModuleRegister); ok {
+			modules = append(modules, r)
+		}
 	}
 	return modules
 }

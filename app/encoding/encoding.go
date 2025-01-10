@@ -5,7 +5,6 @@ import (
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	txdecode "cosmossdk.io/x/tx/decode"
 	"cosmossdk.io/x/tx/signing"
-	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -66,7 +65,7 @@ func MakeConfig(moduleRegisters ...ModuleRegister) Config {
 
 	txConfig, err := authtx.NewTxConfigWithOptions(protoCodec, authtx.ConfigOptions{
 		EnabledSignModes: authtx.DefaultSignModes,
-		SigningOptions: &txsigning.Options{
+		SigningOptions: &signing.Options{
 			AddressCodec:          signingCtx.AddressCodec(),
 			ValidatorAddressCodec: signingCtx.ValidatorAddressCodec(),
 		},

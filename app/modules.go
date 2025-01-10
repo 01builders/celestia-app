@@ -78,9 +78,9 @@ var (
 		transfer.AppModule{},
 		vesting.AppModule{},
 		blob.AppModule{},
-		blobstream.AppModuleBasic{},
-		signal.AppModuleBasic{},
-		minfee.AppModuleBasic{},
+		blobstream.AppModule{},
+		signal.AppModule{},
+		minfee.AppModule{},
 		// packetforward.AppModuleBasic{},
 		icaModule{},
 	)

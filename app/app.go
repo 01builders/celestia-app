@@ -322,16 +322,14 @@ func New(
 		signingCtx.AddressCodec(),
 		cometService,
 	)
-	// TODO: expecting same API as cosmos-sdk/x/mint, update once we have the new API
-	// also for consideration, can the fork be replaced by supplying a custom mint fn i.e. https://github.com/cosmos/cosmos-sdk/blob/4c6e34be28c15832adb5ee91bfb235073e73b60c/simapp/app.go#L385-L386
-	//app.MintKeeper = mintkeeper.NewKeeper(
-	//	appCodec,
-	//	envFactory.make(minttypes.ModuleName, minttypes.StoreKey),
-	//	app.AuthKeeper,
-	//	app.BankKeeper,
-	//	authtypes.FeeCollectorName,
-	//	govModuleAddr,
-	//)
+	app.MintKeeper = mintkeeper.NewKeeper(
+		envFactory.make(minttypes.ModuleName, minttypes.StoreKey),
+		appCodec,
+		app.StakingKeeper,
+		app.AuthKeeper,
+		app.BankKeeper,
+		authtypes.FeeCollectorName,
+	)
 	app.PoolKeeper = poolkeeper.NewKeeper(appCodec,
 		envFactory.make(pooltypes.ModuleName, pooltypes.StoreKey),
 		app.AuthKeeper,

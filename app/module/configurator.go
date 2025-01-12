@@ -1,10 +1,16 @@
 package module
 
 import (
+	"context"
 	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	pbgrpc "github.com/cosmos/gogoproto/grpc"
+	"google.golang.org/grpc"
+	protobuf "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
+	cosmosmsg "cosmossdk.io/api/cosmos/msg/v1"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -22,6 +28,7 @@ var _ module.Configurator = Configurator{}
 type Configurator struct {
 	fromVersion, toVersion uint64
 	cdc                    codec.Codec
+	err                    error
 	msgServer              pbgrpc.Server
 	queryServer            pbgrpc.Server
 	// acceptedMessages is a map from appVersion -> msgTypeURL -> struct{}.
@@ -41,7 +48,7 @@ func NewConfigurator(cdc codec.Codec, msgServer, queryServer pbgrpc.Server) Conf
 	}
 }
 
-func (c *Configurator) WithVersions(fromVersion, toVersion uint64) module.Configurator {
+func (c *Configurator) WithVersions(fromVersion, toVersion uint64) *Configurator {
 	c.fromVersion = fromVersion
 	c.toVersion = toVersion
 	return c
@@ -125,4 +132,49 @@ func (c Configurator) runModuleMigrations(ctx sdk.Context, moduleName string, fr
 	}
 
 	return nil
+}
+
+func (c Configurator) Error() error {
+	return c.err
+}
+
+// Register implements the Configurator.Register method
+// It allows to register modules migrations that have migrated to server/v2 but still be compatible with baseapp.
+func (c Configurator) Register(moduleName string, fromVersion uint64, handler appmodule.MigrationHandler) error {
+	return c.RegisterMigration(moduleName, fromVersion, func(sdkCtx sdk.Context) error {
+		return handler(sdkCtx)
+	})
+}
+
+// RegisterService implements the grpc.Server interface.
+func (c Configurator) RegisterService(sd *grpc.ServiceDesc, ss interface{}) {
+	c.registerServices(sd, ss)
+}
+
+func (c *Configurator) registerServices(sd *grpc.ServiceDesc, ss interface{}) {
+	desc, err := c.cdc.InterfaceRegistry().FindDescriptorByName(protoreflect.FullName(sd.ServiceName))
+	if err != nil {
+		c.err = err
+		return
+	}
+
+	if protobuf.HasExtension(desc.Options(), cosmosmsg.E_Service) {
+		msgs := make([]string, len(sd.Methods))
+		for idx, method := range sd.Methods {
+			// we execute the handler to extract the message type
+			_, _ = method.Handler(nil, context.Background(), func(i interface{}) error {
+				msg, ok := i.(sdk.Msg)
+				if !ok {
+					panic(fmt.Errorf("unable to register service method %s/%s: %T does not implement sdk.Msg", sd.ServiceName, method.MethodName, i))
+				}
+				msgs[idx] = sdk.MsgTypeURL(msg)
+				return nil
+			}, noopInterceptor)
+		}
+		c.addMessages(msgs)
+		// call the underlying msg server to actually register the grpc server
+		c.msgServer.RegisterService(sd, ss)
+	} else {
+		c.queryServer.RegisterService(sd, ss)
+	}
 }

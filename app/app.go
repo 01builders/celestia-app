@@ -1,16 +1,18 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"slices"
 	"time"
 
+	"cosmossdk.io/x/params"
+	paramproposal "cosmossdk.io/x/params/types/proposal"
+
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	"cosmossdk.io/x/accounts/defaults/multisig"
 	"cosmossdk.io/x/consensus"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+
 	"github.com/cosmos/cosmos-sdk/runtime"
 
 	corestore "cosmossdk.io/core/store"
@@ -25,7 +27,6 @@ import (
 	banktypes "cosmossdk.io/x/bank/types"
 	consensuskeeper "cosmossdk.io/x/consensus/keeper"
 	consensustypes "cosmossdk.io/x/consensus/types"
-	distr "cosmossdk.io/x/distribution"
 	distrkeeper "cosmossdk.io/x/distribution/keeper"
 	distrtypes "cosmossdk.io/x/distribution/types"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
@@ -35,7 +36,7 @@ import (
 	govkeeper "cosmossdk.io/x/gov/keeper"
 	govtypes "cosmossdk.io/x/gov/types"
 	govv1beta2 "cosmossdk.io/x/gov/types/v1"
-	oldgovtypes "cosmossdk.io/x/gov/types/v1beta1"
+	govv1beta1 "cosmossdk.io/x/gov/types/v1beta1"
 	paramskeeper "cosmossdk.io/x/params/keeper"
 	paramstypes "cosmossdk.io/x/params/types"
 	poolkeeper "cosmossdk.io/x/protocolpool/keeper"
@@ -85,18 +86,17 @@ import (
 	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
 	// packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
 	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	icahost "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -369,13 +369,12 @@ func New(
 			runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())),
 		nil, appCodec, "", app.BaseApp, govModuleAddr, app.ConsensusKeeper)
 
-	// TODO:
-	//app.BlobstreamKeeper = *blobstreamkeeper.NewKeeper(
-	//	appCodec,
-	//	keys[blobstreamtypes.StoreKey],
-	//	app.GetSubspace(blobstreamtypes.ModuleName),
-	//	&stakingKeeper,
-	//)
+	app.BlobstreamKeeper = *blobstreamkeeper.NewKeeper(
+		envFactory.make(blobstreamtypes.ModuleName, blobstreamtypes.StoreKey),
+		appCodec,
+		app.GetSubspace(blobstreamtypes.ModuleName),
+		app.StakingKeeper,
+	)
 
 	// Register the staking hooks. NOTE: stakingKeeper is passed by reference
 	// above so that it will contain these hooks.
@@ -409,24 +408,25 @@ func New(
 		govModuleAddr,
 	)
 
-	// Register the proposal types.
-	govRouter := oldgovtypes.NewRouter()
-	// TODO below now absent, replaced by gov v1 proposals
-	govRouter.AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+	govRouter := govv1beta1.NewRouter()
+	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
 
-	// Create Transfer Keepers.
-	//tokenFilterKeeper := tokenfilter.NewKeeper(app.IBCKeeper.ChannelKeeper)
-	// app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
-	// 	appCodec,
-	// 	keys[packetforwardtypes.StoreKey],
-	// 	app.GetSubspace(packetforwardtypes.ModuleName),
-	// 	app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
-	// 	app.IBCKeeper.ChannelKeeper,
-	// 	app.DistrKeeper,
-	// 	app.BankKeeper,
-	// 	tokenFilterKeeper,
-	// )
+	govConfig := govkeeper.DefaultConfig()
+	/*
+		Example of setting gov params:
+		govConfig.MaxMetadataLen = 10000
+	*/
+	app.GovKeeper = govkeeper.NewKeeper(appCodec, runtime.NewEnvironment(runtime.NewKVStoreService(keys[govtypes.StoreKey]), logger.With(log.ModuleKey, "x/gov"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())), app.AuthKeeper, app.BankKeeper, app.StakingKeeper, app.PoolKeeper, govConfig, govModuleAddr)
+
+	// Set legacy router for backwards compatibility with gov v1beta1
+	app.GovKeeper.SetLegacyRouter(govRouter)
+
+	app.GovKeeper = app.GovKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(
+		// register the governance hooks
+		),
+	)
 
 	// IBC Fee Module keeper
 	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
@@ -500,7 +500,7 @@ func New(
 	// we prefer to be more strict in what arguments the modules expect.
 
 	// NOTE: Modules can't be modified or else must be passed by reference to the module manager
-	err := app.setupModuleManager(true)
+	err = app.setupModuleManager(txConfig, cometService, true)
 	if err != nil {
 		panic(err)
 	}
@@ -540,9 +540,8 @@ func New(
 	))
 	app.SetPostHandler(posthandler.New())
 
-	// TODO: absent in cosmos-sdk@0.52, are these part of the forked behavior?
-	//app.SetMigrateStoreFn(app.migrateCommitStore)
-	//app.SetMigrateModuleFn(app.migrateModules)
+	app.SetMigrateStoreFn(app.migrateCommitStore)
+	app.SetMigrateModuleFn(app.migrateModules)
 
 	// assert that keys are present for all supported versions
 	app.assertAllKeysArePresent()
@@ -560,16 +559,16 @@ func New(
 func (app *App) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *App) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	if req.Header.Height == app.upgradeHeightV2 {
+func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	if ctx.BlockHeight() == app.upgradeHeightV2 {
 		app.BaseApp.Logger().Info("upgraded from app version 1 to 2")
 	}
-	return app.manager.BeginBlock(ctx, req)
+	return app.manager.BeginBlock(ctx)
 }
 
 // EndBlocker executes application updates at the end of every block.
-func (app *App) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	res := app.manager.EndBlock(ctx, req)
+func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	res := app.manager.EndBlock(ctx)
 	currentVersion, err := app.AppVersion(ctx)
 	if err != nil {
 		panic(err)
@@ -712,7 +711,7 @@ func (app *App) mountKeysAndInit(appVersion uint64) {
 }
 
 // InitChainer is middleware that gets invoked part-way through the baseapp's InitChain invocation.
-func (app *App) InitChainer(ctx context.Context, req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *App) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -838,7 +837,8 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
-	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	// TODO cometservice?
+	// tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -853,7 +853,8 @@ func (app *App) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
-	tmservice.RegisterTendermintService(clientCtx, app.BaseApp.GRPCQueryRouter(), app.interfaceRegistry, app.Query)
+	// TODO comet service?
+	// tmservice.RegisterTendermintService(clientCtx, app.BaseApp.GRPCQueryRouter(), app.interfaceRegistry, app.Query)
 }
 
 func (app *App) RegisterNodeService(clientCtx client.Context) {

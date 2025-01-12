@@ -1,18 +1,26 @@
 package module
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 
+	"google.golang.org/grpc"
+
+	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/core/genesis"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
+
+type hasServices interface {
+	RegisterServices(grpc.ServiceRegistrar) error
+}
 
 // Manager defines a module manager that provides the high level utility for
 // managing and executing operations for a group of modules. This implementation
@@ -48,7 +56,7 @@ func NewManager(modules []VersionedModule) (*Manager, error) {
 	uniqueModuleVersions := make(map[string]map[uint64][2]uint64)
 	for idx, module := range modules {
 		name := module.Module.Name()
-		moduleVersion := module.Module.ConsensusVersion()
+		moduleVersion := moduleConsensusVersion(module.Module)
 		if module.FromVersion == 0 {
 			return nil, sdkerrors.ErrInvalidVersion.Wrapf("v0 is not a valid version for module %s", module.Module.Name())
 		}
@@ -122,19 +130,31 @@ func (m *Manager) SetOrderMigrations(moduleNames ...string) {
 	m.OrderMigrations = moduleNames
 }
 
-// RegisterInvariants registers all module invariants.
-func (m *Manager) RegisterInvariants(ir sdk.InvariantRegistry) {
-	for _, module := range m.allModules {
-		module.RegisterInvariants(ir)
-	}
-}
-
 // RegisterServices registers all module services.
-func (m *Manager) RegisterServices(cfg Configurator) {
+func (m *Manager) RegisterServices(cfg Configurator) error {
 	for _, module := range m.allModules {
-		fromVersion, toVersion := m.getAppVersionsForModule(module.Name(), module.ConsensusVersion())
-		module.RegisterServices(cfg.WithVersions(fromVersion, toVersion))
+		fromVersion, toVersion := m.getAppVersionsForModule(module.Name(), moduleConsensusVersion(module))
+		c := cfg.WithVersions(fromVersion, toVersion)
+
+		if module, ok := module.(hasServices); ok {
+			err := module.RegisterServices(c)
+			if err != nil {
+				return err
+			}
+		}
+
+		if module, ok := module.(appmodule.HasMigrations); ok {
+			err := module.RegisterMigrations(c)
+			if err != nil {
+				return err
+			}
+		}
+
+		if cfg.Error() != nil {
+			return cfg.Error()
+		}
 	}
+	return nil
 }
 
 func (m *Manager) getAppVersionsForModule(moduleName string, moduleVersion uint64) (uint64, uint64) {
@@ -144,8 +164,8 @@ func (m *Manager) getAppVersionsForModule(moduleName string, moduleVersion uint6
 // InitGenesis performs init genesis functionality for modules. Exactly one
 // module must return a non-empty validator set update to correctly initialize
 // the chain.
-func (m *Manager) InitGenesis(ctx context.Context, cdc codec.JSONCodec, genesisData map[string]json.RawMessage, appVersion uint64) abci.ResponseInitChain {
-	var validatorUpdates []abci.ValidatorUpdate
+func (m *Manager) InitGenesis(ctx sdk.Context, genesisData map[string]json.RawMessage, appVersion uint64) (*abci.InitChainResponse, error) {
+	var validatorUpdates []sdkmodule.ValidatorUpdate
 	ctx.Logger().Info("initializing blockchain state from genesis.json")
 	modules, versionSupported := m.versionedModules[appVersion]
 	if !versionSupported {
@@ -155,20 +175,41 @@ func (m *Manager) InitGenesis(ctx context.Context, cdc codec.JSONCodec, genesisD
 		if genesisData[moduleName] == nil {
 			continue
 		}
-		if modules[moduleName] == nil {
-			continue
-		}
-		ctx.Logger().Debug("running initialization for module", "module", moduleName)
 
-		moduleValUpdates := modules[moduleName].InitGenesis(ctx, cdc, genesisData[moduleName])
-
-		// use these validator updates if provided, the module manager assumes
-		// only one module will update the validator set
-		if len(moduleValUpdates) > 0 {
-			if len(validatorUpdates) > 0 {
-				panic("validator InitGenesis updates already set by a previous module")
+		mod := modules[moduleName]
+		// we might get an adapted module, a native core API module or a legacy module
+		if module, ok := mod.(appmodule.HasGenesisAuto); ok {
+			ctx.Logger().Debug("running initialization for module", "module", moduleName)
+			// core API genesis
+			source, err := genesis.SourceFromRawJSON(genesisData[moduleName])
+			if err != nil {
+				return &abci.InitChainResponse{}, err
 			}
-			validatorUpdates = moduleValUpdates
+
+			err = module.InitGenesis(ctx, source)
+			if err != nil {
+				return &abci.InitChainResponse{}, err
+			}
+		} else if module, ok := mod.(appmodule.HasGenesis); ok {
+			ctx.Logger().Debug("running initialization for module", "module", moduleName)
+			if err := module.InitGenesis(ctx, genesisData[moduleName]); err != nil {
+				return &abci.InitChainResponse{}, err
+			}
+		} else if module, ok := mod.(appmodule.HasABCIGenesis); ok {
+			ctx.Logger().Debug("running initialization for module", "module", moduleName)
+			moduleValUpdates, err := module.InitGenesis(ctx, genesisData[moduleName])
+			if err != nil {
+				return &abci.InitChainResponse{}, err
+			}
+
+			// use these validator updates if provided, the module manager assumes
+			// only one module will update the validator set
+			if len(moduleValUpdates) > 0 {
+				if len(validatorUpdates) > 0 {
+					return &abci.InitChainResponse{}, errors.New("validator InitGenesis updates already set by a previous module")
+				}
+				validatorUpdates = moduleValUpdates
+			}
 		}
 	}
 
@@ -177,14 +218,23 @@ func (m *Manager) InitGenesis(ctx context.Context, cdc codec.JSONCodec, genesisD
 		panic(fmt.Sprintf("validator set is empty after InitGenesis, please ensure at least one validator is initialized with a delegation greater than or equal to the DefaultPowerReduction (%d)", sdk.DefaultPowerReduction))
 	}
 
-	return abci.ResponseInitChain{
-		Validators: validatorUpdates,
+	cometValidatorUpdates := make([]abci.ValidatorUpdate, len(validatorUpdates))
+	for i, v := range validatorUpdates {
+		cometValidatorUpdates[i] = abci.ValidatorUpdate{
+			PubKeyBytes: v.PubKey,
+			Power:       v.Power,
+			PubKeyType:  v.PubKeyType,
+		}
 	}
+
+	return &abci.InitChainResponse{
+		Validators: cometValidatorUpdates,
+	}, nil
 }
 
 // ExportGenesis performs export genesis functionality for the modules supported
 // in a particular version.
-func (m *Manager) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec, version uint64) map[string]json.RawMessage {
+func (m *Manager) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec, version uint64) (map[string]json.RawMessage, error) {
 	genesisData := make(map[string]json.RawMessage)
 	modules := m.versionedModules[version]
 	moduleNamesForVersion := m.ModuleNames(version)
@@ -193,10 +243,34 @@ func (m *Manager) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec, version ui
 		return slices.Contains(moduleNamesForVersion, moduleName)
 	})
 	for _, moduleName := range moduleNamesToExport {
-		genesisData[moduleName] = modules[moduleName].ExportGenesis(ctx, cdc)
+		mod := modules[moduleName]
+		if module, ok := mod.(appmodule.HasGenesisAuto); ok {
+			target := genesis.RawJSONTarget{}
+			err := module.ExportGenesis(ctx, target.Target())
+			if err != nil {
+				return nil, err
+			}
+			rawJSON, err := target.JSON()
+			if err != nil {
+				return nil, err
+			}
+			genesisData[moduleName] = rawJSON
+		} else if module, ok := mod.(appmodule.HasGenesis); ok {
+			jm, err := module.ExportGenesis(ctx)
+			if err != nil {
+				return nil, err
+			}
+			genesisData[moduleName] = jm
+		} else if module, ok := mod.(appmodule.HasABCIGenesis); ok {
+			jm, err := module.ExportGenesis(ctx)
+			if err != nil {
+				return nil, err
+			}
+			genesisData[moduleName] = jm
+		}
 	}
 
-	return genesisData
+	return genesisData, nil
 }
 
 // assertNoForgottenModules checks that we didn't forget any modules in the
@@ -220,11 +294,7 @@ func (m *Manager) assertNoForgottenModules(setOrderFnName string, moduleNames []
 
 // RunMigrations performs in-place store migrations for all modules. This
 // function MUST be called when the state machine changes appVersion
-func (m Manager) RunMigrations(ctx sdk.Context, cfg sdkmodule.Configurator, fromVersion, toVersion uint64) error {
-	c, ok := cfg.(Configurator)
-	if !ok {
-		return sdkerrors.ErrInvalidType.Wrapf("expected %T, got %T", Configurator{}, cfg)
-	}
+func (m Manager) RunMigrations(ctx sdk.Context, cfg Configurator, fromVersion, toVersion uint64) error {
 	modules := m.OrderMigrations
 	if modules == nil {
 		modules = defaultMigrationsOrder(m.ModuleNames(toVersion))
@@ -249,19 +319,29 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg sdkmodule.Configurator, from
 			// app version to module version. Now, using go.mod, each module will have only a single
 			// consensus version and each breaking upgrade will result in a new module and a new consensus
 			// version.
-			fromModuleVersion := currentModule.ConsensusVersion()
-			toModuleVersion := nextModule.ConsensusVersion()
-			err := c.runModuleMigrations(ctx, moduleName, fromModuleVersion, toModuleVersion)
+			fromModuleVersion := moduleConsensusVersion(currentModule)
+			toModuleVersion := moduleConsensusVersion(nextModule)
+			err := cfg.runModuleMigrations(ctx, moduleName, fromModuleVersion, toModuleVersion)
 			if err != nil {
 				return err
 			}
 		} else if !currentModuleExists && nextModuleExists {
 			ctx.Logger().Info(fmt.Sprintf("adding a new module: %s", moduleName))
-			moduleValUpdates := nextModule.InitGenesis(ctx, c.cdc, nextModule.DefaultGenesis(c.cdc))
-			// The module manager assumes only one module will update the
-			// validator set, and it can't be a new module.
-			if len(moduleValUpdates) > 0 {
-				return sdkerrors.ErrLogic.Wrap("validator InitGenesis update is already set by another module")
+			if mod, ok := nextModule.(appmodule.HasGenesis); ok {
+				if err := mod.InitGenesis(ctx, mod.DefaultGenesis()); err != nil {
+					return err
+				}
+			}
+			if mod, ok := nextModule.(appmodule.HasABCIGenesis); ok {
+				moduleValUpdates, err := mod.InitGenesis(ctx, mod.DefaultGenesis())
+				if err != nil {
+					return err
+				}
+				// The module manager assumes only one module will update the
+				// validator set, and it can't be a new module.
+				if len(moduleValUpdates) > 0 {
+					return sdkerrors.ErrLogic.Wrap("validator InitGenesis update is already set by another module")
+				}
 			}
 		}
 		// TODO: handle the case where a module is no longer supported (i.e. removed from the state machine)
@@ -273,7 +353,7 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg sdkmodule.Configurator, from
 // BeginBlock performs begin block functionality for all modules. It creates a
 // child context with an event manager to aggregate events emitted from all
 // modules.
-func (m *Manager) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (m *Manager) BeginBlock(ctx sdk.Context) (sdk.BeginBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 
 	modules := m.versionedModules[ctx.BlockHeader().Version.App]
@@ -281,50 +361,64 @@ func (m *Manager) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) abci.R
 		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App))
 	}
 	for _, moduleName := range m.OrderBeginBlockers {
-		module, ok := modules[moduleName].(sdkmodule.BeginBlockAppModule)
+		module, ok := modules[moduleName].(appmodule.HasBeginBlocker)
 		if ok {
-			module.BeginBlock(ctx, req)
+			if err := module.BeginBlock(ctx); err != nil {
+
+			}
 		}
 	}
 
-	return abci.ResponseBeginBlock{
-		Events: ctx.EventManager().ABCIEvents(),
-	}
+	return sdk.BeginBlock{Events: ctx.EventManager().ABCIEvents()}, nil
 }
 
 // EndBlock performs end block functionality for all modules. It creates a
 // child context with an event manager to aggregate events emitted from all
 // modules.
-func (m *Manager) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
+func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
-	validatorUpdates := []abci.ValidatorUpdate{}
+	var validatorUpdates []sdkmodule.ValidatorUpdate
 
 	modules := m.versionedModules[ctx.BlockHeader().Version.App]
 	if modules == nil {
 		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App))
 	}
 	for _, moduleName := range m.OrderEndBlockers {
-		module, ok := modules[moduleName].(sdkmodule.EndBlockAppModule)
-		if !ok {
-			continue
-		}
-		moduleValUpdates := module.EndBlock(ctx, req)
-
-		// use these validator updates if provided, the module manager assumes
-		// only one module will update the validator set
-		if len(moduleValUpdates) > 0 {
-			if len(validatorUpdates) > 0 {
-				panic("validator EndBlock updates already set by a previous module")
+		if module, ok := modules[moduleName].(appmodule.HasEndBlocker); ok {
+			err := module.EndBlock(ctx)
+			if err != nil {
+				return sdk.EndBlock{}, err
 			}
+		} else if module, ok := modules[moduleName].(sdkmodule.HasABCIEndBlock); ok {
+			moduleValUpdates, err := module.EndBlock(ctx)
+			if err != nil {
+				return sdk.EndBlock{}, err
+			}
+			// use these validator updates if provided, the module manager assumes
+			// only one module will update the validator set
+			if len(moduleValUpdates) > 0 {
+				if len(validatorUpdates) > 0 {
+					return sdk.EndBlock{}, errors.New("validator EndBlock updates already set by a previous module")
+				}
 
-			validatorUpdates = moduleValUpdates
+				validatorUpdates = append(validatorUpdates, moduleValUpdates...)
+			}
 		}
 	}
 
-	return abci.ResponseEndBlock{
-		ValidatorUpdates: validatorUpdates,
-		Events:           ctx.EventManager().ABCIEvents(),
+	cometValidatorUpdates := make([]abci.ValidatorUpdate, len(validatorUpdates))
+	for i, v := range validatorUpdates {
+		cometValidatorUpdates[i] = abci.ValidatorUpdate{
+			PubKeyBytes: v.PubKey,
+			PubKeyType:  v.PubKeyType,
+			Power:       v.Power,
+		}
 	}
+
+	return sdk.EndBlock{
+		ValidatorUpdates: cometValidatorUpdates,
+		Events:           ctx.EventManager().ABCIEvents(),
+	}, nil
 }
 
 // GetVersionMap gets consensus version from all modules
@@ -335,7 +429,7 @@ func (m *Manager) GetVersionMap(version uint64) sdkmodule.VersionMap {
 	}
 
 	for _, v := range m.versionedModules[version] {
-		version := v.ConsensusVersion()
+		version := moduleConsensusVersion(v)
 		name := v.Name()
 		vermap[name] = version
 	}
@@ -377,7 +471,7 @@ func (m *Manager) checkUpgradeSchedule() error {
 			if !exists {
 				continue
 			}
-			moduleVersion := module.ConsensusVersion()
+			moduleVersion := moduleConsensusVersion(module)
 			if moduleVersion < lastConsensusVersion {
 				return fmt.Errorf("error: module %s in appVersion %d goes from moduleVersion %d to %d", moduleName, appVersion, lastConsensusVersion, moduleVersion)
 			}
@@ -387,13 +481,22 @@ func (m *Manager) checkUpgradeSchedule() error {
 	return nil
 }
 
-// assertMatchingModules performs a sanity check that the basic module manager
-// contains all the same modules present in the module manager
-func (m *Manager) AssertMatchingModules(basicModuleManager sdkmodule.BasicManager) error {
+// assertMatchingModules performs a sanity check that the SDK module manager
+// contains all the same modules present in the versioned module manager
+func (m *Manager) AssertMatchingModules(mm sdkmodule.Manager) error {
 	for _, module := range m.allModules {
-		if _, exists := basicModuleManager[module.Name()]; !exists {
+		if _, exists := mm.Modules[module.Name()]; !exists {
 			return fmt.Errorf("module %s not found in basic module manager", module.Name())
 		}
 	}
 	return nil
+}
+
+func moduleConsensusVersion(sdkmodule.AppModule) uint64 {
+	// TODO: implement
+	// this is a placeholder function, circumventing the need to implement
+	// ConsensuVersion() uint64 in modules.
+	// A different approach is needed to determine the consensus version of a module
+	// which does not require forking an SDK module.
+	return 3
 }

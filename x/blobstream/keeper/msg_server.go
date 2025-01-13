@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/errors"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -38,7 +38,7 @@ func (k Keeper) RegisterEVMAddress(goCtx context.Context, msg *types.MsgRegister
 	}
 
 	if !k.IsEVMAddressUnique(ctx, evmAddr) {
-		return nil, sdkerrors.Wrapf(types.ErrEVMAddressAlreadyExists, "address %s", msg.EvmAddress)
+		return nil, errors.Wrapf(types.ErrEVMAddressAlreadyExists, "address %s", msg.EvmAddress)
 	}
 
 	k.SetEVMAddress(ctx, valAddr, evmAddr)

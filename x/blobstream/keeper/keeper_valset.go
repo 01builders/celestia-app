@@ -104,9 +104,6 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) (types.Valset, error) {
 			return types.Valset{}, err
 		}
 		p := math.NewInt(lastValidatorPower)
-		if err != nil {
-			return types.Valset{}, errors.Wrap(err, types.ErrInvalidValAddress.Error())
-		}
 
 		evmAddress, exists := k.GetEVMAddress(ctx, valAddr)
 		if !exists {

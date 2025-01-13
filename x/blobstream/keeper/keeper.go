@@ -1,11 +1,11 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
 
 	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
-	storetypes "cosmossdk.io/store/types"
 	paramtypes "cosmossdk.io/x/params/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
@@ -22,7 +22,7 @@ type Keeper struct {
 	StakingKeeper StakingKeeper
 }
 
-func NewKeeper(env appmodule.Environment, cdc codec.BinaryCodec, storeKey storetypes.StoreKey, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper) *Keeper {
+func NewKeeper(env appmodule.Environment, cdc codec.BinaryCodec, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper) *Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
@@ -60,9 +60,9 @@ func (k Keeper) DeserializeValidatorIterator(vals []byte) stakingtypes.ValAddres
 // StakingKeeper restricts the functionality of the bank keeper used in the blobstream
 // keeper
 type StakingKeeper interface {
-	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
-	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
-	GetLastValidatorPower(ctx sdk.Context, valAddr sdk.ValAddress) int64
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+	GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error)
+	GetLastValidatorPower(ctx context.Context, valAddr sdk.ValAddress) (int64, error)
 	ValidatorAddressCodec() addresscodec.Codec
 }
 

@@ -1,6 +1,7 @@
 package signal_test
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"math/big"
@@ -492,22 +493,22 @@ func newMockStakingKeeper(validators map[string]int64) *mockStakingKeeper {
 	}
 }
 
-func (m *mockStakingKeeper) GetLastTotalPower(_ sdk.Context) sdkmath.Int {
-	return m.totalVotingPower
+func (m *mockStakingKeeper) GetLastTotalPower(_ context.Context) (sdkmath.Int, error) {
+	return m.totalVotingPower, nil
 }
 
-func (m *mockStakingKeeper) GetLastValidatorPower(_ sdk.Context, addr sdk.ValAddress) int64 {
+func (m *mockStakingKeeper) GetLastValidatorPower(_ context.Context, addr sdk.ValAddress) (int64, error) {
 	addrStr := addr.String()
 	if power, ok := m.validators[addrStr]; ok {
-		return power
+		return power, nil
 	}
-	return 0
+	return 0, nil
 }
 
-func (m *mockStakingKeeper) GetValidator(_ sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool) {
+func (m *mockStakingKeeper) GetValidator(_ context.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, err error) {
 	addrStr := addr.String()
 	if _, ok := m.validators[addrStr]; ok {
-		return stakingtypes.Validator{Status: stakingtypes.Bonded}, true
+		return stakingtypes.Validator{Status: stakingtypes.Bonded}, nil
 	}
-	return stakingtypes.Validator{}, false
+	return stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound
 }

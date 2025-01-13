@@ -41,6 +41,10 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
   - [ ] Wrap x/mint within celestia mint for extending queries and keeping query path identical
 - [ ] Goal #11: Wire circuit breaker to block some (staking & bank) MsgUpdateParams now that x/paramfilter is removed
 
+### app.go checklist
+
+- [ ] Validate IBC wiring against [this simapp](https://github.com/cosmos/ibc-go/blob/main/simapp/app.go#L575). Dependent on PFM upgrade clarity.
+
 ### Progress
 
 ### 2025-01-07

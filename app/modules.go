@@ -1,9 +1,9 @@
 package app
 
 import (
-	"cosmossdk.io/core/appmodule"
-	pooltypes "cosmossdk.io/x/protocolpool/types"
 	"fmt"
+
+	pooltypes "cosmossdk.io/x/protocolpool/types"
 	ibcfeetypes "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/types"
 
 	"cosmossdk.io/core/comet"
@@ -56,7 +56,6 @@ import (
 	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v9/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 )
 
@@ -190,7 +189,7 @@ func (app *App) setupModuleManager(
 		// 	FromVersion: v2, ToVersion: v3,
 		// },
 		{
-			Module:      ica.NewAppModule(nil, &app.ICAHostKeeper),
+			Module:      ica.NewAppModule(nil, &app.ICAControllerKeeper, &app.ICAHostKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
 	})
@@ -315,7 +314,7 @@ func versionedStoreKeys() map[uint64][]string {
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			minttypes.StoreKey,
 			slashingtypes.StoreKey,
@@ -331,7 +330,7 @@ func versionedStoreKeys() map[uint64][]string {
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey, // added in v2
 			minttypes.StoreKey,
@@ -350,7 +349,7 @@ func versionedStoreKeys() map[uint64][]string {
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey,
 			minttypes.StoreKey,

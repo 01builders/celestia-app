@@ -56,7 +56,10 @@ func NewManager(modules []VersionedModule) (*Manager, error) {
 	uniqueModuleVersions := make(map[string]map[uint64][2]uint64)
 	for idx, module := range modules {
 		name := module.Module.Name()
-		moduleVersion := moduleConsensusVersion(module.Module)
+		moduleVersion, err := moduleConsensusVersion(module.Module)
+		if err != nil {
+			return nil, err
+		}
 		if module.FromVersion == 0 {
 			return nil, sdkerrors.ErrInvalidVersion.Wrapf("v0 is not a valid version for module %s", module.Module.Name())
 		}
@@ -133,7 +136,11 @@ func (m *Manager) SetOrderMigrations(moduleNames ...string) {
 // RegisterServices registers all module services.
 func (m *Manager) RegisterServices(cfg Configurator) error {
 	for _, module := range m.allModules {
-		fromVersion, toVersion := m.getAppVersionsForModule(module.Name(), moduleConsensusVersion(module))
+		moduleVersion, err := moduleConsensusVersion(module)
+		if err != nil {
+			return err
+		}
+		fromVersion, toVersion := m.getAppVersionsForModule(module.Name(), moduleVersion)
 		c := cfg.WithVersions(fromVersion, toVersion)
 
 		if module, ok := module.(hasServices); ok {
@@ -319,9 +326,15 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg Configurator, fromVersion, t
 			// app version to module version. Now, using go.mod, each module will have only a single
 			// consensus version and each breaking upgrade will result in a new module and a new consensus
 			// version.
-			fromModuleVersion := moduleConsensusVersion(currentModule)
-			toModuleVersion := moduleConsensusVersion(nextModule)
-			err := cfg.runModuleMigrations(ctx, moduleName, fromModuleVersion, toModuleVersion)
+			fromModuleVersion, err := moduleConsensusVersion(currentModule)
+			if err != nil {
+				return err
+			}
+			toModuleVersion, err := moduleConsensusVersion(nextModule)
+			if err != nil {
+				return err
+			}
+			err = cfg.runModuleMigrations(ctx, moduleName, fromModuleVersion, toModuleVersion)
 			if err != nil {
 				return err
 			}
@@ -422,19 +435,22 @@ func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 }
 
 // GetVersionMap gets consensus version from all modules
-func (m *Manager) GetVersionMap(version uint64) sdkmodule.VersionMap {
-	vermap := make(sdkmodule.VersionMap)
+func (m *Manager) GetVersionMap(version uint64) (appmodule.VersionMap, error) {
+	vermap := make(appmodule.VersionMap)
 	if version > m.lastVersion || version < m.firstVersion {
-		return vermap
+		return vermap, nil
 	}
 
 	for _, v := range m.versionedModules[version] {
-		version := moduleConsensusVersion(v)
+		version, err := moduleConsensusVersion(v)
+		if err != nil {
+			return nil, err
+		}
 		name := v.Name()
 		vermap[name] = version
 	}
 
-	return vermap
+	return vermap, nil
 }
 
 // ModuleNames returns the list of module names that are supported for a
@@ -471,7 +487,10 @@ func (m *Manager) checkUpgradeSchedule() error {
 			if !exists {
 				continue
 			}
-			moduleVersion := moduleConsensusVersion(module)
+			moduleVersion, err := moduleConsensusVersion(module)
+			if err != nil {
+				return err
+			}
 			if moduleVersion < lastConsensusVersion {
 				return fmt.Errorf("error: module %s in appVersion %d goes from moduleVersion %d to %d", moduleName, appVersion, lastConsensusVersion, moduleVersion)
 			}
@@ -492,11 +511,10 @@ func (m *Manager) AssertMatchingModules(mm sdkmodule.Manager) error {
 	return nil
 }
 
-func moduleConsensusVersion(sdkmodule.AppModule) uint64 {
-	// TODO: implement
-	// this is a placeholder function, circumventing the need to implement
-	// ConsensuVersion() uint64 in modules.
-	// A different approach is needed to determine the consensus version of a module
-	// which does not require forking an SDK module.
-	return 3
+func moduleConsensusVersion(mod sdkmodule.AppModule) (uint64, error) {
+	cv, ok := mod.(appmodule.HasConsensusVersion)
+	if !ok {
+		return 0, fmt.Errorf("module %s does not implement HasConsensusVersion", mod.Name())
+	}
+	return cv.ConsensusVersion(), nil
 }

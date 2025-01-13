@@ -3,11 +3,12 @@ package signal
 import (
 	"bytes"
 	"context"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"encoding/binary"
+	"errors"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
-	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -76,9 +77,9 @@ func (k Keeper) SignalVersion(ctx context.Context, req *types.MsgSignalVersion) 
 		return nil, types.ErrInvalidSignalVersion.Wrapf("signalled version %d, current version %d", req.Version, currentVersion)
 	}
 
-	_, found := k.stakingKeeper.GetValidator(sdkCtx, valAddr)
-	if !found {
-		return nil, stakingtypes.ErrNoValidatorFound
+	_, err = k.stakingKeeper.GetValidator(sdkCtx, valAddr)
+	if err != nil {
+		return nil, err
 	}
 
 	k.SetValidatorVersion(sdkCtx, valAddr, req.Version)
@@ -116,7 +117,10 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 // signalled for a particular version.
 func (k Keeper) VersionTally(ctx context.Context, req *types.QueryVersionTallyRequest) (*types.QueryVersionTallyResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	totalVotingPower := k.stakingKeeper.GetLastTotalPower(sdkCtx)
+	totalVotingPower, err := k.stakingKeeper.GetLastTotalPower(sdkCtx)
+	if err != nil {
+		return nil, err
+	}
 	currentVotingPower := math.NewInt(0)
 	store := runtime.KVStoreAdapter(k.Environment.KVStoreService.OpenKVStore(ctx))
 	iterator := store.Iterator(types.FirstSignalKey, nil)
@@ -126,7 +130,10 @@ func (k Keeper) VersionTally(ctx context.Context, req *types.QueryVersionTallyRe
 			continue
 		}
 		valAddress := sdk.ValAddress(iterator.Key())
-		power := k.stakingKeeper.GetLastValidatorPower(sdkCtx, valAddress)
+		power, err := k.stakingKeeper.GetLastValidatorPower(sdkCtx, valAddress)
+		if err != nil {
+			return nil, err
+		}
 		version := VersionFromBytes(iterator.Value())
 		if version == req.Version {
 			currentVotingPower = currentVotingPower.AddRaw(power)
@@ -166,16 +173,24 @@ func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64
 		}
 		valAddress := sdk.ValAddress(iterator.Key())
 		// check that the validator is still part of the bonded set
-		val, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-		if !found {
-			// if it no longer exists, delete the version
-			k.DeleteValidatorVersion(ctx, valAddress)
+		found := true
+		val, err := k.stakingKeeper.GetValidator(ctx, valAddress)
+		if err != nil {
+			if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+				k.DeleteValidatorVersion(ctx, valAddress)
+				found = false
+			} else {
+				panic(err)
+			}
 		}
 		// if the validator is not bonded, skip it's voting power
 		if !found || !val.IsBonded() {
 			continue
 		}
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, valAddress)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddress)
+		if err != nil {
+			panic(err)
+		}
 		version := VersionFromBytes(iterator.Value())
 		if _, ok := versionToPower[version]; !ok {
 			versionToPower[version] = power
@@ -192,7 +207,10 @@ func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64
 // GetVotingPowerThreshold returns the voting power threshold required to
 // upgrade to a new version.
 func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) math.Int {
-	totalVotingPower := k.stakingKeeper.GetLastTotalPower(ctx)
+	totalVotingPower, err := k.stakingKeeper.GetLastTotalPower(ctx)
+	if err != nil {
+		panic(err)
+	}
 	thresholdFraction := Threshold(ctx.BlockHeader().Version.App)
 	return thresholdFraction.MulInt(totalVotingPower).Ceil().TruncateInt()
 }

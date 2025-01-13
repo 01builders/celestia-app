@@ -80,7 +80,10 @@ func (k Keeper) GetLatestUnBondingBlockHeight(ctx sdk.Context) uint64 {
 }
 
 func (k Keeper) GetCurrentValset(ctx sdk.Context) (types.Valset, error) {
-	validators := k.StakingKeeper.GetBondedValidatorsByPower(ctx)
+	validators, err := k.StakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		return types.Valset{}, err
+	}
 	if len(validators) == 0 {
 		return types.Valset{}, types.ErrNoValidators
 	}
@@ -96,7 +99,14 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) (types.Valset, error) {
 			return types.Valset{}, errors.Wrap(err, types.ErrInvalidValAddress.Error())
 		}
 
-		p := math.NewInt(k.StakingKeeper.GetLastValidatorPower(ctx, valAddr))
+		lastValidatorPower, err := k.StakingKeeper.GetLastValidatorPower(ctx, valAddr)
+		if err != nil {
+			return types.Valset{}, err
+		}
+		p := math.NewInt(lastValidatorPower)
+		if err != nil {
+			return types.Valset{}, errors.Wrap(err, types.ErrInvalidValAddress.Error())
+		}
 
 		evmAddress, exists := k.GetEVMAddress(ctx, valAddr)
 		if !exists {

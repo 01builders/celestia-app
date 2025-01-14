@@ -16,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // This will detect any changes to the DeductFeeDecorator which may cause a
@@ -27,7 +26,7 @@ func TestNonceMismatchIntegration(t *testing.T) {
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	minGasPrice, err := sdk.ParseDecCoins(fmt.Sprintf("%v%s", appconsts.DefaultMinGasPrice, app.BondDenom))
 	require.NoError(t, err)
-	ctx := testApp.NewContext(true, tmproto.Header{}).WithMinGasPrices(minGasPrice)
+	ctx := testApp.NewContext(true).WithMinGasPrices(minGasPrice)
 	addr := testfactory.GetAddress(kr, account)
 	enc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	acc := testutil.DirectQueryAccount(testApp, addr)
@@ -44,7 +43,7 @@ func TestNonceMismatchIntegration(t *testing.T) {
 	rawTx, err := signer.CreateTx([]sdk.Msg{msg})
 	require.NoError(t, err)
 
-	decorator := ante.NewSigVerificationDecorator(testApp.AccountKeeper, encCfg.TxConfig.SignModeHandler())
+	decorator := ante.NewSigVerificationDecorator(testApp.AuthKeeper, encCfg.TxConfig.SignModeHandler(), ante.DefaultSigVerificationGasConsumer, testApp.AccountsKeeper)
 	anteHandler := sdk.ChainAnteDecorators(decorator)
 
 	sdkTx, err := signer.DecodeTx(rawTx)

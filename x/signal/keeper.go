@@ -3,12 +3,12 @@ package signal
 import (
 	"bytes"
 	"context"
-	stakingtypes "cosmossdk.io/x/staking/types"
 	"encoding/binary"
 	"errors"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/codec"

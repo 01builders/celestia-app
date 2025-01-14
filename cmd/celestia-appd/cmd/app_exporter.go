@@ -3,21 +3,22 @@ package cmd
 import (
 	"io"
 
+	corestore "cosmossdk.io/core/store"
+	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 )
 
 func appExporter(
 	logger log.Logger,
-	db dbm.DB,
+	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
 	height int64,
 	forZeroHeight bool,
 	jailWhiteList []string,
 	appOptions servertypes.AppOptions,
+	_ []string,
 ) (servertypes.ExportedApp, error) {
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	application := app.New(logger, db, traceStore, uint(1), config, 0, 0, appOptions)

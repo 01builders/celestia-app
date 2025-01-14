@@ -4,18 +4,25 @@ package cmd
 // start command flag.
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime/pprof"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	corestore "cosmossdk.io/core/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	celestiaserver "github.com/celestiaorg/celestia-app/v3/server"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -35,7 +42,6 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/rpc/client/local"
-	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -56,11 +62,12 @@ const (
 	flagGRPCAddress    = "grpc.address"
 	flagGRPCWebEnable  = "grpc-web.enable"
 	flagGRPCWebAddress = "grpc-web.address"
+	serverStartTime    = 5 * time.Second
 )
 
 // startCmd runs the service passed in, either stand-alone or in-process with
 // Tendermint.
-func startCmd(appCreator srvrtypes.AppCreator, defaultNodeHome string) *cobra.Command {
+func startCmd(appCreator celestiaserver.AppCreator, defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Run the full node",
@@ -145,12 +152,12 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 			err = wrapCPUProfile(serverCtx, func() error {
 				return startInProcess(serverCtx, clientCtx, appCreator)
 			})
-			errCode, ok := err.(server.ErrorCode)
+			errCode, ok := err.(quitSignal)
 			if !ok {
 				return err
 			}
 
-			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %d", errCode.Code))
+			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %d", errCode.code))
 			return nil
 		},
 	}
@@ -200,7 +207,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	return cmd
 }
 
-func startStandAlone(ctx *server.Context, appCreator srvrtypes.AppCreator) error {
+func startStandAlone(ctx *server.Context, appCreator celestiaserver.AppCreator) error {
 	addr := ctx.Viper.GetString(flagAddress)
 	transport := ctx.Viper.GetString(flagTransport)
 	home := ctx.Viper.GetString(flags.FlagHome)
@@ -251,11 +258,11 @@ func startStandAlone(ctx *server.Context, appCreator srvrtypes.AppCreator) error
 	}()
 
 	// Wait for SIGINT or SIGTERM signal
-	return server.WaitForQuitSignals()
+	return waitForQuitSignals()
 }
 
-func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator srvrtypes.AppCreator) error {
-	cfg := ctx.Config
+func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator celestiaserver.AppCreator) error {
+	cfg := deepConfigClone(ctx.Config)
 	home := cfg.RootDir
 
 	db, err := openDB(home, server.GetAppDBBackend(ctx.Viper))
@@ -306,7 +313,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 			genDocProvider,
 			node.DefaultDBProvider,
 			node.DefaultMetricsProvider(cfg.Instrumentation),
-			ctx.Logger,
+			&tmLogWrapper{ctx.Logger},
 		)
 		if err != nil {
 			return err
@@ -322,20 +329,19 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 	if (config.API.Enable || config.GRPC.Enable) && tmNode != nil {
 		// re-assign for making the client available below
 		// do not use := to avoid shadowing clientCtx
-		clientCtx = clientCtx.WithClient(local.New(tmNode))
+		clientCtx = clientCtx.WithClient(&tmLocalWrapper{local.New(tmNode)})
 
 		app.RegisterTxService(clientCtx)
 		app.RegisterTendermintService(clientCtx)
-
-		if a, ok := app.(srvrtypes.ApplicationQueryService); ok {
-			a.RegisterNodeService(clientCtx)
-		}
+		app.RegisterNodeService(clientCtx, config)
 	}
 
 	metrics, err := startTelemetry(config)
 	if err != nil {
 		return err
 	}
+	// TODO: sync with context, in WaitForSignals?
+	todoCtx := context.TODO()
 
 	var apiSrv *api.Server
 	if config.API.Enable {
@@ -386,9 +392,8 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 			apiSrv.SetTelemetry(metrics)
 		}
 		errCh := make(chan error)
-
 		go func() {
-			if err := apiSrv.Start(config); err != nil {
+			if err := apiSrv.Start(todoCtx, config); err != nil {
 				errCh <- err
 			}
 		}()
@@ -397,7 +402,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 		case err := <-errCh:
 			return err
 
-		case <-time.After(srvrtypes.ServerStartTime): // assume server started successfully
+		case <-time.After(serverStartTime): // assume server started successfully
 		}
 	}
 
@@ -407,30 +412,28 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 	)
 
 	if config.GRPC.Enable {
-		grpcSrv, err = servergrpc.StartGRPCServer(clientCtx, app, config.GRPC)
+		grpcSrv, err = servergrpc.NewGRPCServer(clientCtx, app, config.GRPC)
 		if err != nil {
 			return err
 		}
 		defer grpcSrv.Stop()
-		if config.GRPCWeb.Enable {
-			grpcWebSrv, err = servergrpc.StartGRPCWeb(grpcSrv, config)
-			if err != nil {
-				ctx.Logger.Error("failed to start grpc-web http server: ", err)
-				return err
-			}
-			defer func() {
-				if err := grpcWebSrv.Close(); err != nil {
-					ctx.Logger.Error("failed to close grpc-web http server: ", err)
-				}
-			}()
+		err = servergrpc.StartGRPCServer(todoCtx, ctx.Logger, config.GRPC, grpcSrv)
+		if err != nil {
+			ctx.Logger.Error("failed to start grpc-web http server: ", err)
+			return err
 		}
+		defer func() {
+			if err := grpcWebSrv.Close(); err != nil {
+				ctx.Logger.Error("failed to close grpc-web http server: ", err)
+			}
+		}()
 	}
 
 	// At this point it is safe to block the process if we're in gRPC only mode as
 	// we do not need to start Rosetta or handle any Tendermint related processes.
 	if gRPCOnly {
 		// wait for signal capture and gracefully return
-		return server.WaitForQuitSignals()
+		return waitForQuitSignals()
 	}
 
 	defer func() {
@@ -447,7 +450,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator sr
 	}()
 
 	// wait for signal capture and gracefully return
-	return server.WaitForQuitSignals()
+	return waitForQuitSignals()
 }
 
 func startTelemetry(cfg serverconfig.Config) (*telemetry.Metrics, error) {
@@ -488,16 +491,15 @@ func wrapCPUProfile(ctx *server.Context, callback func() error) error {
 	case err := <-errCh:
 		return err
 
-	case <-time.After(srvrtypes.ServerStartTime):
+	case <-time.After(serverStartTime):
 	}
 
-	return server.WaitForQuitSignals()
+	return waitForQuitSignals()
 }
 
 func addCommands(
 	rootCmd *cobra.Command,
 	defaultNodeHome string,
-	appCreator srvrtypes.AppCreator,
 	appExport srvrtypes.AppExporter,
 	addStartFlags srvrtypes.ModuleInitFlags,
 ) {
@@ -514,18 +516,18 @@ func addCommands(
 		server.VersionCmd(),
 		cmtcmd.ResetAllCmd,
 		cmtcmd.ResetStateCmd,
-		server.BootstrapStateCmd(appCreator),
+		server.BootstrapStateCmd(newCmdApplication),
 	)
 
-	startCmd := startCmd(appCreator, defaultNodeHome)
+	startCmd := startCmd(NewAppServer, defaultNodeHome)
 	addStartFlags(startCmd)
 
 	rootCmd.AddCommand(
 		startCmd,
 		tendermintCmd,
-		server.ExportCmd(appExport, defaultNodeHome),
+		server.ExportCmd(appExport),
 		version.NewVersionCommand(),
-		server.NewRollbackCmd(appCreator, defaultNodeHome),
+		server.NewRollbackCmd(newCmdApplication),
 	)
 }
 
@@ -574,7 +576,7 @@ If you need to bypass this check use the --force-no-bbr flag.
 	return nil
 }
 
-func openDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+func openDB(rootDir string, backendType dbm.BackendType) (corestore.KVStoreWithBatch, error) {
 	dataDir := filepath.Join(rootDir, "data")
 	return dbm.NewDB("application", backendType, dataDir)
 }
@@ -588,4 +590,20 @@ func openTraceWriter(traceWriterFile string) (w io.Writer, err error) {
 		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 		0o666,
 	)
+}
+
+type quitSignal struct {
+	code int
+}
+
+func (q quitSignal) Error() string {
+	return strconv.Itoa(q.code)
+}
+
+// waitForQuitSignals waits for SIGINT and SIGTERM and returns.
+func waitForQuitSignals() error {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigs
+	return quitSignal{code: int(sig.(syscall.Signal)) + 128}
 }

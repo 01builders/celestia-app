@@ -106,3 +106,8 @@ In the root command, began to reason about and fix genesis commands including De
 ## Upstream
 
 - <https://github.com/cosmos/cosmos-sdk/pull/23318> - Fixes encoding by providing support for indexWrapperDecoder
+
+## Design
+
+- celestia-core (Tendermint fork) will remain as the consensus engine, instead of cometbft v1 as referenced in 
+  SDK v0.52.  Therefore all ABCI methods in v0.52 BaseApp must be wrapped with celestia-core types and map to cometbft v1 types in order to call into BaseApp.

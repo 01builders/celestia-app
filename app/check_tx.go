@@ -15,7 +15,7 @@ import (
 // CheckTx implements the ABCI interface and executes a tx in CheckTx mode. This
 // method wraps the default Baseapp's method so that it can parse and check
 // transactions that contain blobs.
-func (app *App) CheckTx(req *abci.CheckTxRequest) (*abci.CheckTxResponse, error) {
+func (app *App) CheckTxV1(req *abci.CheckTxRequest) (*abci.CheckTxResponse, error) {
 	tx := req.Tx
 
 	ctx := app.NewContext(true)

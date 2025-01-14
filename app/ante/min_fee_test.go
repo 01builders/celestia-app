@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
 	banktypes "cosmossdk.io/x/bank/types"
@@ -20,8 +21,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 	tmdb "github.com/tendermint/tm-db"
 )
 
@@ -30,15 +29,15 @@ func TestValidateTxFee(t *testing.T) {
 
 	builder := encCfg.TxConfig.NewTxBuilder()
 	err := builder.SetMsgs(banktypes.NewMsgSend(
-		testnode.RandomAddress().(sdk.AccAddress),
-		testnode.RandomAddress().(sdk.AccAddress),
+		testnode.RandomAddress().String(),
+		testnode.RandomAddress().String(),
 		sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10))),
 	)
 	require.NoError(t, err)
 
 	// Set the validator's fee
 	validatorMinGasPrice := 0.8
-	validatorMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", validatorMinGasPrice))
+	validatorMinGasPriceDec, err := sdkmath.LegacyNewDecFromStr(fmt.Sprintf("%f", validatorMinGasPrice))
 	require.NoError(t, err)
 	validatorMinGasPriceCoin := sdk.NewDecCoinFromDec(appconsts.BondDenom, validatorMinGasPriceDec)
 
@@ -134,15 +133,11 @@ func TestValidateTxFee(t *testing.T) {
 			builder.SetFeeAmount(tc.fee)
 			tx := builder.GetTx()
 
-			ctx := sdk.NewContext(stateStore, tmproto.Header{
-				Version: version.Consensus{
-					App: tc.appVersion,
-				},
-			}, tc.isCheckTx, nil)
+			ctx := sdk.NewContext(stateStore, tc.isCheckTx, nil)
 
 			ctx = ctx.WithMinGasPrices(sdk.DecCoins{validatorMinGasPriceCoin})
 
-			networkMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
+			networkMinGasPriceDec, err := sdkmath.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
 			require.NoError(t, err)
 
 			subspace, _ := paramsKeeper.GetSubspace(minfee.ModuleName)

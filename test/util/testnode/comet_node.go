@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	server "github.com/cosmos/cosmos-sdk/server/log"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -40,7 +41,7 @@ func NewCometNode(baseDir string, config *UniversalTestingConfig) (*node.Node, s
 		node.DefaultGenesisDocProviderFunc(config.TmConfig),
 		node.DefaultDBProvider,
 		node.DefaultMetricsProvider(config.TmConfig.Instrumentation),
-		logger,
+		server.CometLoggerWrapper{logger},
 	)
 
 	return cometNode, app, err

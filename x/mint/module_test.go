@@ -22,7 +22,7 @@ func TestItCreatesModuleAccountOnInitBlock(t *testing.T) {
 	// 	},
 	// )
 
-	// ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	// ctx := app.BaseApp.NewContext(false)
 	// acc := app.AccountKeeper.GetAccount(ctx, authtypes.NewModuleAddress(types.ModuleName))
 	// require.NotNil(t, acc)
 }

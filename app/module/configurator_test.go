@@ -3,6 +3,7 @@ package module_test
 import (
 	"testing"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
@@ -15,8 +16,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 )
 
@@ -94,7 +93,7 @@ func TestConfigurator(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = manager.RunMigrations(sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger()), configurator, 1, 2)
+		err = manager.RunMigrations(sdk.NewContext(nil, false, log.NewNopLogger()), configurator, 1, 2)
 		require.NoError(t, err)
 		require.True(t, isCalled)
 

@@ -6,6 +6,7 @@ import (
 
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -19,7 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	coretypes "github.com/tendermint/tendermint/types"
 )
 
@@ -76,8 +76,8 @@ func RandBlobTxsWithAccounts(
 }
 
 func DirectQueryAccount(app *app.App, addr sdk.AccAddress) authtypes.AccountI {
-	ctx := app.NewContext(true, tmproto.Header{})
-	return app.AccountKeeper.GetAccount(ctx, addr)
+	ctx := app.NewContext(true)
+	return app.AuthKeeper.GetAccount(ctx, addr)
 }
 
 // RandBlobTxsWithManualSequence will create random blob transactions using the
@@ -215,7 +215,7 @@ func SendTxWithManualSequence(
 	signer, err := user.NewSigner(kr, cfg, chainid, appconsts.LatestVersion, user.NewAccount(fromAcc, accountNum, sequence))
 	require.NoError(t, err)
 
-	msg := banktypes.NewMsgSend(fromAddr, toAddr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(amount))))
+	msg := banktypes.NewMsgSend(fromAddr, toAddr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(amount))))
 	rawTx, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
 	require.NoError(t, err)
 

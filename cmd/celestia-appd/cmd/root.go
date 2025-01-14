@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
@@ -22,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/cmd/cometbft/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -159,6 +159,6 @@ func replaceLogger(cmd *cobra.Command) error {
 	}
 
 	sctx := server.GetServerContextFromCmd(cmd)
-	sctx.Logger = log.NewTMLogger(log.NewSyncWriter(file))
+	sctx.Logger = log.NewLogger(file)
 	return server.SetCmdServerContext(cmd, sctx)
 }

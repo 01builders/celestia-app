@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	v1 "cosmossdk.io/x/gov/types/v1"
 	oldgov "cosmossdk.io/x/gov/types/v1beta1"
 	"cosmossdk.io/x/params/types/proposal"
@@ -166,8 +167,8 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	msg, err := oldgov.NewMsgSubmitProposal(
 		content,
 		sdk.NewCoins(
-			sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(1000000000))),
-		addr,
+			sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000000000))),
+		addr.String(),
 	)
 	require.NoError(t, err)
 
@@ -190,7 +191,7 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	require.Len(t, gresp.Proposals, 1)
 
 	// create and submit a new vote
-	vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account), gresp.Proposals[0].Id, v1.VoteOption_VOTE_OPTION_YES, "")
+	vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account).String(), gresp.Proposals[0].Id, v1.VoteOption_VOTE_OPTION_YES, "")
 	res, err = txClient.SubmitTx(s.cctx.GoContext(), []sdk.Msg{vote}, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	require.Equal(t, abci.CodeTypeOK, res.Code)

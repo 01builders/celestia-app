@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -75,7 +76,7 @@ func FundKeyringAccounts(accounts ...string) (keyring.Keyring, []banktypes.Balan
 
 	for i, addr := range addresses {
 		balances := sdk.NewCoins(
-			sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(DefaultInitialBalance)),
+			sdk.NewCoin(appconsts.BondDenom, math.NewInt(DefaultInitialBalance)),
 		)
 
 		genBalances[i] = banktypes.Balance{Address: addr.String(), Coins: balances.Sort()}

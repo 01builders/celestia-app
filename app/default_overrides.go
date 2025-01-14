@@ -11,9 +11,7 @@ import (
 	distribution "cosmossdk.io/x/distribution"
 	distributiontypes "cosmossdk.io/x/distribution/types"
 	"cosmossdk.io/x/gov"
-	govclient "cosmossdk.io/x/gov/client"
 	govtypes "cosmossdk.io/x/gov/types/v1"
-	paramsclient "cosmossdk.io/x/params/client"
 	"cosmossdk.io/x/slashing"
 	slashingtypes "cosmossdk.io/x/slashing/types"
 	"cosmossdk.io/x/staking"
@@ -165,7 +163,7 @@ func (mintModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 func newGovModule() govModule {
-	return govModule{gov.NewAppModuleBasic(getLegacyProposalHandlers())}
+	return govModule{gov.AppModule{}}
 }
 
 // govModule is a custom wrapper around the x/gov module's AppModuleBasic
@@ -185,14 +183,6 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	genState.VotingParams.VotingPeriod = &oneWeek
 
 	return cdc.MustMarshalJSON(genState)
-}
-
-func getLegacyProposalHandlers() (result []govclient.ProposalHandler) {
-	result = append(result,
-		paramsclient.ProposalHandler,
-	)
-
-	return result
 }
 
 // DefaultConsensusParams returns a ConsensusParams with a MaxBytes
@@ -268,7 +258,6 @@ func DefaultAppConfig() *serverconfig.Config {
 	cfg := serverconfig.DefaultConfig()
 	cfg.API.Enable = false
 	cfg.GRPC.Enable = false
-	cfg.GRPCWeb.Enable = false
 
 	// the default snapshot interval was determined by picking a large enough
 	// value as to not dramatically increase resource requirements while also

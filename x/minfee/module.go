@@ -86,7 +86,7 @@ func (am AppModule) InitGenesis(ctx context.Context, gs json.RawMessage) error {
 	// Set the network min gas price initial value
 	networkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", genesisState.NetworkMinGasPrice))
 	if err != nil {
-		return fmt.Errorf("failed to convert NetworkMinGasPrice to sdk.Dec")
+		return fmt.Errorf("failed to convert NetworkMinGasPrice to ")
 	}
 	subspace.SetParamSet(sdk.UnwrapSDKContext(ctx), &Params{NetworkMinGasPrice: networkMinGasPriceDec})
 

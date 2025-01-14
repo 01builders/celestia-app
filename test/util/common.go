@@ -7,6 +7,8 @@ import (
 
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	cosmosmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
@@ -41,7 +43,6 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	tmed "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	dbm "github.com/tendermint/tm-db"
@@ -445,7 +446,7 @@ func NewTestMsgCreateValidator(
 	pubKey ccrypto.PubKey,
 	amt cosmosmath.Int,
 ) *stakingtypes.MsgCreateValidator {
-	commission := stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec())
+	commission := stakingtypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec())
 	out, err := stakingtypes.NewMsgCreateValidator(
 		address, pubKey, sdk.NewCoin("stake", amt),
 		stakingtypes.Description{
@@ -500,7 +501,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 		// and the staking handler
 		_, err := stakingMsgServer.CreateValidator(
 			input.Context,
-			NewTestMsgCreateValidator(valAddr, consPubKey, sdk.NewIntFromUint64(weight)),
+			NewTestMsgCreateValidator(valAddr, consPubKey, math.NewIntFromUint64(weight)),
 		)
 		require.NoError(t, err)
 

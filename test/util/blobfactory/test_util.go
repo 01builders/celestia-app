@@ -1,6 +1,7 @@
 package blobfactory
 
 import (
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
@@ -39,7 +40,7 @@ func GenerateRawSendTx(signer *user.Signer, amount int64) []byte {
 
 	amountCoin := sdk.Coin{
 		Denom:  appconsts.BondDenom,
-		Amount: sdk.NewInt(amount),
+		Amount: math.NewInt(amount),
 	}
 
 	addr := signer.Account(testfactory.TestAccName).Address()

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/params/types/proposal"
 	app "github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -22,13 +23,12 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+	"cosmossdk.io/log"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	dbm "github.com/tendermint/tm-db"
@@ -42,8 +42,9 @@ func TestAppUpgradeV3(t *testing.T) {
 	testApp, genesis := SetupTestAppWithUpgradeHeight(t, 3)
 	upgradeFromV1ToV2(t, testApp)
 
-	ctx := testApp.NewContext(true, tmproto.Header{})
-	validators := testApp.StakingKeeper.GetAllValidators(ctx)
+	ctx := testApp.NewContext(true)
+	validators, err := testApp.StakingKeeper.GetAllValidators(ctx)
+	require.NoError(t, err)
 	valAddr, err := sdk.ValAddressFromBech32(validators[0].OperatorAddress)
 	require.NoError(t, err)
 	record, err := genesis.Keyring().Key(testnode.DefaultValidatorAccountName)
@@ -51,14 +52,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	accAddr, err := record.GetAddress()
 	require.NoError(t, err)
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	resp, err := testApp.AccountKeeper.Account(ctx, &authtypes.QueryAccountRequest{
-		Address: accAddr.String(),
-	})
-	require.NoError(t, err)
-	var account authtypes.AccountI
-	err = encCfg.InterfaceRegistry.UnpackAny(resp.Account, &account)
-	require.NoError(t, err)
-
+	account := testApp.AuthKeeper.GetAccount(ctx, accAddr)
 	signer, err := user.NewSigner(
 		genesis.Keyring(), encCfg.TxConfig, testApp.GetChainID(), v3.Version,
 		user.NewAccount(testnode.DefaultValidatorAccountName, account.GetAccountNumber(), account.GetSequence()),
@@ -97,7 +91,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	testApp.Commit()
 	require.NoError(t, signer.IncrementSequence(testnode.DefaultValidatorAccountName))
 
-	ctx = testApp.NewContext(true, tmproto.Header{})
+	ctx = testApp.NewContext(true)
 	getUpgradeResp, err := testApp.SignalKeeper.GetUpgrade(ctx, &signaltypes.QueryGetUpgradeRequest{})
 	require.NoError(t, err)
 	require.Equal(t, v3.Version, getUpgradeResp.Upgrade.AppVersion)
@@ -157,7 +151,7 @@ func TestAppUpgradeV3(t *testing.T) {
 // TestAppUpgradeV2 verifies that the all module's params are overridden during an
 // upgrade from v1 -> v2 and the app version changes correctly.
 func TestAppUpgradeV2(t *testing.T) {
-	NetworkMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
+	NetworkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -229,9 +223,12 @@ func TestAppUpgradeV2(t *testing.T) {
 // do not exist in v2.
 func TestBlobstreamRemovedInV2(t *testing.T) {
 	testApp, _ := SetupTestAppWithUpgradeHeight(t, 3)
-	ctx := testApp.NewContext(true, tmproto.Header{})
+	ctx := testApp.NewContext(true)
 
-	require.EqualValues(t, 1, testApp.AppVersion())
+	v, err := testApp.AppVersion(ctx)
+	require.NoError(t, err)
+
+	require.EqualValues(t, 1, v)
 	got, err := testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
 		Subspace: blobstreamtypes.ModuleName,
 		Key:      string(blobstreamtypes.ParamsStoreKeyDataCommitmentWindow),
@@ -241,7 +238,10 @@ func TestBlobstreamRemovedInV2(t *testing.T) {
 
 	upgradeFromV1ToV2(t, testApp)
 
-	require.EqualValues(t, 2, testApp.AppVersion())
+	v, err = testApp.AppVersion(ctx)
+	require.NoError(t, err)
+
+	require.EqualValues(t, 2, v)
 	_, err = testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
 		Subspace: blobstreamtypes.ModuleName,
 		Key:      string(blobstreamtypes.ParamsStoreKeyDataCommitmentWindow),

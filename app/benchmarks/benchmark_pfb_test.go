@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"

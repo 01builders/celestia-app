@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/authz"
 	banktypes "cosmossdk.io/x/bank/types"
 	distribution "cosmossdk.io/x/distribution/types"
@@ -111,7 +112,8 @@ func TestConsistentAppHash(t *testing.T) {
 			// Get account names and addresses from the keyring and create signer
 			signer, accountAddresses := getAccountsAndCreateSigner(t, kr, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 			// Validators from genesis state
-			genValidators := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false, tmproto.Header{}))
+			genValidators, err := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false))
+			require.NoError(t, err)
 			valSigner, _ := getAccountsAndCreateSigner(t, valKeyRing, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 
 			// Convert validators to ABCI validators
@@ -158,28 +160,26 @@ func getAccountsAndCreateSigner(t *testing.T, kr keyring.Keyring, enc client.TxC
 func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer *user.Signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
 	// ----------- Create v1 SDK Messages ------------
 
-	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1_000)))
+	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1_000)))
 	// Minimum deposit required for a gov proposal to become active
-	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(10000000000)))
-	twoInt := sdk.NewInt(2)
+	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(10000000000)))
+	twoInt := math.NewInt(2)
 
 	// ---------------- First Block ------------
 	var firstBlockSdkMsgs []sdk.Msg
 
 	// NewMsgSend - sends funds from account-0 to account-1
-	sendFundsMsg := banktypes.NewMsgSend(accountAddresses[0], accountAddresses[1], amount)
+	sendFundsMsg := banktypes.NewMsgSend(accountAddresses[0].String(), accountAddresses[1].String(), amount)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, sendFundsMsg)
 
 	// MultiSend - creates a multi-send transaction from account-0 to account-1
-	multiSendFundsMsg := banktypes.NewMsgMultiSend([]banktypes.Input{
-		banktypes.NewInput(
-			accountAddresses[0],
-			amount,
-		),
-	},
+	multiSendFundsMsg := banktypes.NewMsgMultiSend(banktypes.NewInput(
+		accountAddresses[0].String(),
+		amount,
+	),
 		[]banktypes.Output{
 			banktypes.NewOutput(
-				accountAddresses[1],
+				accountAddresses[1].String(),
 				amount,
 			),
 		})
@@ -199,14 +199,14 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 
 	// MsgGrantAllowance - creates a grant allowance for account-1
 	basicAllowance := feegrant.BasicAllowance{
-		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1000))),
+		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1000))),
 	}
 	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0], accountAddresses[1])
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, feegrantMsg)
 
 	// NewMsgSubmitProposal - submits a proposal to send funds from the governance account to account-1
-	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false, tmproto.Header{})).GetAddress()
+	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false)).GetAddress()
 	msgSend := banktypes.MsgSend{
 		FromAddress: govAccount.String(),
 		ToAddress:   accountAddresses[1].String(),
@@ -217,7 +217,7 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, proposal)
 
 	// NewMsgDeposit - deposits funds to a governance proposal
-	msgDeposit := govtypes.NewMsgDeposit(accountAddresses[0], 1, depositAmount)
+	msgDeposit := govtypes.NewMsgDeposit(accountAddresses[0].String(), 1, depositAmount)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgDeposit)
 
 	// NewMsgCreateValidator - creates a new validator

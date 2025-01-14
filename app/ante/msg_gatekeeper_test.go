@@ -15,8 +15,8 @@ import (
 )
 
 func TestMsgGateKeeperAnteHandler(t *testing.T) {
-	nestedBankSend := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&banktypes.MsgSend{}})
-	nestedMultiSend := authz.NewMsgExec(sdk.AccAddress{}, []sdk.Msg{&banktypes.MsgMultiSend{}})
+	nestedBankSend := authz.NewMsgExec("", []sdk.Msg{&banktypes.MsgSend{}})
+	nestedMultiSend := authz.NewMsgExec("", []sdk.Msg{&banktypes.MsgMultiSend{}})
 
 	// Define test cases
 	tests := []struct {

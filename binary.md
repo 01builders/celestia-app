@@ -71,9 +71,6 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 - Comment out pfm in celestia-app for unblocking progress
 - Migrate all modules to 0.52
 - Remove x/paramfilter (should be replaced by the circuit breaker)
-
-### 2025-01-09
-
 Made the following changes to app/app.go:
 
 - Remove `x/capability` module
@@ -92,6 +89,14 @@ In app/modules.go:
 - Remove `x/crisis` module
 
 In the root command, began to reason about and fix genesis commands including DefaultGenesis.
+
+### 2025-01-13
+
+- [Fix build fixes in app.go and module manager](https://github.com/01builders/celestia-app/pull/1)
+
+### 2025-01-14
+
+- Continue fixing build issues
 
 ## Problems
 

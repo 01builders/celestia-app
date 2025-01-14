@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	slashingtypes "cosmossdk.io/x/slashing/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
@@ -34,7 +36,6 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -45,7 +46,7 @@ const ChainID = testfactory.ChainID
 
 var (
 	GenesisTime   = time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC).UTC()
-	TestAppLogger = log.NewTMLogger(os.Stdout)
+	TestAppLogger = log.NewLogger(os.Stdout)
 )
 
 // Get flags every time the simulator is run
@@ -113,7 +114,7 @@ func NewTestApp() *app.App {
 
 // SetupDeterministicGenesisState sets genesis on initialized testApp with the provided arguments.
 func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubKey, balance int64, cparams *tmproto.ConsensusParams) (keyring.Keyring, []genesis.Account, error) {
-	slashingParams := slashingtypes.NewParams(2, sdk.OneDec(), time.Minute, sdk.OneDec(), sdk.OneDec())
+	slashingParams := slashingtypes.NewParams(2, math.LegacyOneDec(), time.Minute, math.LegacyOneDec(), math.LegacyOneDec())
 
 	// Create genesis
 	gen := genesis.NewDefaultGenesis().
@@ -295,8 +296,8 @@ func AddAccount(addr sdk.AccAddress, appState app.GenesisState, cdc codec.Codec)
 	var genAccount authtypes.GenesisAccount
 
 	coins := sdk.Coins{
-		sdk.NewCoin("token", sdk.NewInt(1000000)),
-		sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000)),
+		sdk.NewCoin("token", math.NewInt(1000000)),
+		sdk.NewCoin(app.BondDenom, math.NewInt(1000000)),
 	}
 
 	balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
@@ -370,7 +371,7 @@ func GenesisStateWithSingleValidator(testApp *app.App, genAccounts ...string) (a
 	balances := make([]banktypes.Balance, 0, len(genAccounts)+1)
 	balances = append(balances, banktypes.Balance{
 		Address: acc.GetAddress().String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(100000000000000))),
+		Coins:   sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(100000000000000))),
 	})
 
 	kr, fundedBankAccs, fundedAuthAccs := testnode.FundKeyringAccounts(genAccounts...)
@@ -378,7 +379,7 @@ func GenesisStateWithSingleValidator(testApp *app.App, genAccounts ...string) (a
 	accs = append(accs, fundedAuthAccs...)
 	balances = append(balances, fundedBankAccs...)
 
-	genesisState := NewDefaultGenesisState(testApp.AppCodec())
+	genesisState := NewDefaultGenesisState()
 	genesisState = genesisStateWithValSet(testApp, genesisState, valSet, accs, balances...)
 
 	return genesisState, valSet, kr
@@ -415,15 +416,15 @@ func genesisStateWithValSet(
 			Jailed:            false,
 			Status:            stakingtypes.Bonded,
 			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			DelegatorShares:   math.LegacyOneDec(),
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 
 	}
 	// set validators and delegations
@@ -457,8 +458,8 @@ func genesisStateWithValSet(
 }
 
 // NewDefaultGenesisState generates the default state for the application.
-func NewDefaultGenesisState(cdc codec.JSONCodec) app.GenesisState {
-	return app.ModuleBasics.DefaultGenesis(cdc)
+func NewDefaultGenesisState() app.GenesisState {
+	return app.ModuleBasics.DefaultGenesis()
 }
 
 func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, keyring.Keyring) {

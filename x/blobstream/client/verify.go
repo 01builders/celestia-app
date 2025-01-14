@@ -12,13 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/tendermint/tendermint/crypto/merkle"
 
+	"cosmossdk.io/log"
 	wrapper "github.com/celestiaorg/blobstream-contracts/v3/wrappers/Blobstream.sol"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
-	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/rpc/client/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -53,7 +53,7 @@ func txCmd() *cobra.Command {
 				return err
 			}
 
-			logger := tmlog.NewTMLogger(os.Stdout)
+			logger := log.NewLogger(os.Stdout)
 
 			trpc, err := http.New(config.TendermintRPC, "/websocket")
 			if err != nil {
@@ -123,7 +123,7 @@ func blobCmd() *cobra.Command {
 				return err
 			}
 
-			logger := tmlog.NewTMLogger(os.Stdout)
+			logger := log.NewLogger(os.Stdout)
 
 			trpc, err := http.New(config.TendermintRPC, "/websocket")
 			if err != nil {
@@ -194,7 +194,7 @@ func sharesCmd() *cobra.Command {
 				return err
 			}
 
-			logger := tmlog.NewTMLogger(os.Stdout)
+			logger := log.NewLogger(os.Stdout)
 
 			_, err = VerifyShares(cmd.Context(), logger, config, height, startShare, endShare)
 			return err
@@ -203,7 +203,7 @@ func sharesCmd() *cobra.Command {
 	return addVerifyFlags(command)
 }
 
-func VerifyShares(ctx context.Context, logger tmlog.Logger, config VerifyConfig, height int64, startShare uint64, endShare uint64) (isCommittedTo bool, err error) {
+func VerifyShares(ctx context.Context, logger log.Logger, config VerifyConfig, height int64, startShare uint64, endShare uint64) (isCommittedTo bool, err error) {
 	trpc, err := http.New(config.TendermintRPC, "/websocket")
 	if err != nil {
 		return false, err

@@ -31,7 +31,7 @@ func (a *App) OutOfOrderPrepareProposal(req abci.RequestPrepareProposal) abci.Re
 	// and only check the state dependent checks like fees and nonces as all these transactions have already
 	// passed CheckTx.
 	handler := ante.NewAnteHandler(
-		a.AccountKeeper,
+		a.AuthKeeper,
 		a.BankKeeper,
 		a.BlobKeeper,
 		a.FeeGrantKeeper,
@@ -46,7 +46,12 @@ func (a *App) OutOfOrderPrepareProposal(req abci.RequestPrepareProposal) abci.Re
 
 	// build the square from the set of valid and prioritised transactions.
 	// The txs returned are the ones used in the square and block
-	dataSquare, txs, err := Build(txs, a.GetBaseApp().AppVersion(), a.MaxEffectiveSquareSize(sdkCtx), OutOfOrderExport)
+	v, err := a.GetBaseApp().AppVersion(sdkCtx)
+	if err != nil {
+		panic(err)
+	}
+
+	dataSquare, txs, err := Build(txs, v, a.MaxEffectiveSquareSize(sdkCtx), OutOfOrderExport)
 	if err != nil {
 		panic(err)
 	}

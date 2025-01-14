@@ -12,7 +12,7 @@ import (
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec/testutil"
+	codectestutil "github.com/cosmos/cosmos-sdk/codec/testutil"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
@@ -30,17 +30,17 @@ const TxSizeCostPerByte = 8
 
 func setup() (*app.App, sdk.Context, client.Context, error) {
 	app, _, _ := testutil.NewTestAppWithGenesisSet(app.DefaultConsensusParams())
-	ctx := app.NewContext(false, tmproto.Header{})
+	ctx := app.NewContext(false)
 	params := authtypes.DefaultParams()
 	// Override default with a different TxSizeCostPerByte value for testing
 	params.TxSizeCostPerByte = TxSizeCostPerByte
-	app.AccountKeeper.SetParams(ctx, params)
+	app.AuthKeeper.Params.Set(ctx, params)
 	ctx = ctx.WithBlockHeight(1)
 
 	// Set up TxConfig.
-	encodingConfig := moduletestutil.MakeTestEncodingConfig(testutil.CodecOptions{})
+	encodingConfig := moduletestutil.MakeTestEncodingConfig(codectestutil.CodecOptions{})
 	// We're using TestMsg encoding in the test, so register it here.
-	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg", nil)
+	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg")
 	testdata.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	clientCtx := client.Context{}.
@@ -111,7 +111,7 @@ func TestConsumeGasForTxSize(t *testing.T) {
 
 			// track how much gas is necessary to retrieve parameters
 			beforeGas := ctx.GasMeter().GasConsumed()
-			app.AccountKeeper.GetParams(ctx)
+			app.AuthKeeper.GetParams(ctx)
 			afterGas := ctx.GasMeter().GasConsumed()
 			expectedGas += afterGas - beforeGas
 

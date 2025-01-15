@@ -3,6 +3,9 @@ package cmd
 import (
 	"os"
 
+	kitlog "github.com/go-kit/log"
+
+	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -22,7 +25,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/cmd/cometbft/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -51,7 +53,7 @@ func NewRootCmd() *cobra.Command {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithBroadcastMode(flags.BroadcastBlock).
+		WithBroadcastMode(flags.BroadcastSync).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper(EnvPrefix)
 
@@ -124,7 +126,7 @@ func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config)
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	addCommands(rootCommand, app.DefaultNodeHome, appExporter, addStartFlags)
+	addCommands(rootCommand, app.DefaultNodeHome, appExporter)
 }
 
 // addStartFlags adds flags to the start command.
@@ -151,6 +153,6 @@ func replaceLogger(cmd *cobra.Command) error {
 	}
 
 	sctx := server.GetServerContextFromCmd(cmd)
-	sctx.Logger = log.NewTMLogger(log.NewSyncWriter(file))
-	return server.SetCmdServerContext(cmd, sctx)
+	sctx.Logger = log.NewLogger(kitlog.NewSyncWriter(file))
+	return nil
 }

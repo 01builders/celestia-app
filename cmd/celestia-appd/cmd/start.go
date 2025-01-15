@@ -313,7 +313,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 			genDocProvider,
 			node.DefaultDBProvider,
 			node.DefaultMetricsProvider(cfg.Instrumentation),
-			&tmLogWrapper{ctx.Logger},
+			&logWrapperCoreToTM{ctx.Logger},
 		)
 		if err != nil {
 			return err
@@ -501,7 +501,6 @@ func addCommands(
 	rootCmd *cobra.Command,
 	defaultNodeHome string,
 	appExport srvrtypes.AppExporter,
-	addStartFlags srvrtypes.ModuleInitFlags,
 ) {
 	tendermintCmd := &cobra.Command{
 		Use:     "tendermint",
@@ -525,7 +524,6 @@ func addCommands(
 	rootCmd.AddCommand(
 		startCmd,
 		tendermintCmd,
-		server.ExportCmd(appExport),
 		version.NewVersionCommand(),
 		server.NewRollbackCmd(newCmdApplication),
 	)

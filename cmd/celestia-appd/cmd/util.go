@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"reflect"
 
@@ -11,7 +12,6 @@ import (
 	"cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/server"
 	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/rpc/client"
@@ -22,41 +22,66 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/gogoproto/grpc"
-	tmcfg "github.com/tendermint/tendermint/config"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/rpc/client/local"
 )
 
-func deepConfigClone(src *cmtcfg.Config) *tmcfg.Config {
-	dst := &tmcfg.Config{}
-	cloneRecursive(reflect.ValueOf(src), reflect.ValueOf(dst))
-	return dst
-}
-
-func cloneRecursive(src, dst reflect.Value) {
-	if src.Kind() == reflect.Ptr {
-		src = src.Elem()
-		dst = dst.Elem()
-	}
-
-	for i := 0; i < src.NumField(); i++ {
-		srcField := src.Field(i)
-		dstField := dst.Field(i)
-
-		if srcField.Kind() == reflect.Struct {
-			cloneRecursive(srcField.Addr(), dstField.Addr())
-		} else {
-			dstField.Set(srcField)
+// deepClone deep clones the given object using reflection.
+// If the structs differ in any way an error is returned.
+func deepConfigClone(src any, dst any) error {
+	srcVal := reflect.ValueOf(src)
+	dstVal := reflect.ValueOf(dst)
+	if srcVal.Kind() == reflect.Ptr {
+		if dstVal.Kind() != reflect.Ptr {
+			return fmt.Errorf("kind mismatch: %s != %s", srcVal.Kind(), dstVal.Kind())
 		}
+		return deepConfigClone(srcVal.Elem(), dstVal.Elem())
 	}
+	if srcVal.Kind() == reflect.Struct && dstVal.Kind() == reflect.Struct {
+		for i := 0; i < srcVal.NumField(); i++ {
+			srcField := srcVal.Field(i)
+			dstField := dstVal.Field(i)
+
+			if srcField.Kind() == reflect.Struct || srcField.Kind() == reflect.Ptr {
+				if err := deepConfigClone(srcField.Addr(), dstField.Addr()); err != nil {
+					return err
+				}
+			} else {
+				dstField.Set(srcField)
+			}
+		}
+	} else {
+		return fmt.Errorf("kind mismatch: %s != %s", srcVal.Kind(), dstVal.Kind())
+	}
+
+	return nil
 }
 
-type tmLogWrapper struct {
+// logWrapperCoreToTM wraps cosmossdk.io/log.Logger to implement tendermint/libs/log.Logger.
+type logWrapperCoreToTM struct {
 	log.Logger
 }
 
-func (w *tmLogWrapper) With(keyvals ...interface{}) tmlog.Logger {
-	return &tmLogWrapper{Logger: w.Logger.With(keyvals...)}
+func (w *logWrapperCoreToTM) With(keyvals ...interface{}) tmlog.Logger {
+	return &logWrapperCoreToTM{Logger: w.Logger.With(keyvals...)}
+}
+
+var _ log.Logger = (*logWrapperTmToCore)(nil)
+
+type logWrapperTmToCore struct {
+	tmlog.Logger
+}
+
+func (l *logWrapperTmToCore) Impl() any {
+	panic("unimplemented")
+}
+
+func (l *logWrapperTmToCore) Warn(msg string, keyVals ...any) {
+	panic("unimplemented")
+}
+
+func (w *logWrapperTmToCore) With(keyvals ...interface{}) log.Logger {
+	return &logWrapperTmToCore{Logger: w.Logger.With(keyvals...)}
 }
 
 var _ sdkclient.CometRPC = (*tmLocalWrapper)(nil)

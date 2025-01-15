@@ -82,6 +82,7 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/controller/types"
 	ibcfeekeeper "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/keeper"
@@ -537,6 +538,15 @@ func New(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+
+	// blockedParams returns the params that require a hardfork to change, and
+	// cannot be changed via governance.
+	blockedParams := map[string][]string{
+		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      []string{"send_enabled"},
+		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   []string{"params.bond_denom", "params.unbonding_time"},
+		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
+	}
+
 	app.SetAnteHandler(ante.NewAnteHandler(
 		app.AuthKeeper,
 		app.AccountsKeeper,
@@ -549,6 +559,7 @@ func New(
 		app.IBCKeeper,
 		app.ParamsKeeper,
 		app.MsgGateKeeper,
+		blockedParams,
 	))
 	app.SetPostHandler(posthandler.New())
 

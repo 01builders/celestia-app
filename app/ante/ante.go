@@ -26,6 +26,7 @@ func NewAnteHandler(
 	channelKeeper *ibckeeper.Keeper,
 	paramKeeper paramkeeper.Keeper,
 	msgVersioningGateKeeper *MsgVersioningGateKeeper,
+	forbiddenGovUpdateParams map[string][]string,
 ) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		// Wraps the panic with the string format of the transaction
@@ -69,14 +70,14 @@ func NewAnteHandler(
 		blobante.NewMinGasPFBDecorator(blobKeeper, consensusKeeper),
 		// Ensure that the tx's total blob size is <= the max blob size.
 		// Only applies to app version == 1.
-		blobante.NewMaxTotalBlobSizeDecorator(blobKeeper),
+		blobante.NewMaxTotalBlobSizeDecorator(blobKeeper, consensusKeeper),
 		// Ensure that the blob shares occupied by the tx <= the max shares
 		// available to blob data in a data square. Only applies to app version
 		// >= 2.
-		blobante.NewBlobShareDecorator(blobKeeper),
+		blobante.NewBlobShareDecorator(blobKeeper, consensusKeeper),
 		// Ensure that tx's with a MsgSubmitProposal have at least one proposal
-		// message.
-		NewGovProposalDecorator(),
+		// message. Additionally ensure that the proposals do not contain any
+		NewGovProposalDecorator(forbiddenGovUpdateParams),
 		// Ensure that the tx is not an IBC packet or update message that has already been processed.
 		ibcante.NewRedundantRelayDecorator(channelKeeper),
 	)

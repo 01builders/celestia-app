@@ -20,6 +20,9 @@ const (
 type Keeper struct {
 	appmodule.Environment
 
+	consensusKeeper interface {
+		AppVersion(ctx context.Context) (uint64, error)
+	}
 	cdc        codec.Codec
 	paramStore paramtypes.Subspace
 }
@@ -44,20 +47,24 @@ func NewKeeper(
 func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*types.MsgPayForBlobsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	appVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return &types.MsgPayForBlobsResponse{}, err
+	}
+
 	// GasPerBlobByte is a versioned param from version 3 onwards.
 	var gasToConsume uint64
-	if ctx.BlockHeader().Version.App <= v2.Version {
+	if appVersion <= v2.Version {
 		gasToConsume = types.GasToConsume(msg.BlobSizes, k.GasPerBlobByte(ctx))
 	} else {
-		gasToConsume = types.GasToConsume(msg.BlobSizes, appconsts.GasPerBlobByte(ctx.BlockHeader().Version.App))
+		gasToConsume = types.GasToConsume(msg.BlobSizes, appconsts.GasPerBlobByte(appVersion))
 	}
 
 	ctx.GasMeter().ConsumeGas(gasToConsume, payForBlobGasDescriptor)
 
-	err := ctx.EventManager().EmitTypedEvent(
+	if err := ctx.EventManager().EmitTypedEvent(
 		types.NewPayForBlobsEvent(msg.Signer, msg.BlobSizes, msg.Namespaces),
-	)
-	if err != nil {
+	); err != nil {
 		return &types.MsgPayForBlobsResponse{}, err
 	}
 

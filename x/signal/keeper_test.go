@@ -68,7 +68,7 @@ func TestGetVotingPowerThreshold(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 			stakingKeeper := newMockStakingKeeper(tc.validators)
-			k := signal.NewKeeper(runtime.NewEnvironment(nil, log.NewNopLogger()), config.Codec, stakingKeeper)
+			k := signal.NewKeeper(runtime.NewEnvironment(nil, log.NewNopLogger()), config.Codec, stakingKeeper, &mockConsenusKeeper{})
 			got := k.GetVotingPowerThreshold(sdk.Context{})
 			assert.Equal(t, tc.want, got, fmt.Sprintf("want %v, got %v", tc.want.String(), got.String()))
 		})
@@ -76,7 +76,7 @@ func TestGetVotingPowerThreshold(t *testing.T) {
 }
 
 func TestSignalVersion(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, _ := setup(t)
 	t.Run("should return an error if the signal version is less than the current version", func(t *testing.T) {
 		_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{
 			ValidatorAddress: testutil.ValAddrs[0].String(),
@@ -118,7 +118,7 @@ func TestSignalVersion(t *testing.T) {
 }
 
 func TestTallyingLogic(t *testing.T) {
-	upgradeKeeper, ctx, mockStakingKeeper := setup(t)
+	upgradeKeeper, ctx, mockStakingKeeper, _ := setup(t)
 	_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{
 		ValidatorAddress: testutil.ValAddrs[0].String(),
 		Version:          0,
@@ -253,9 +253,11 @@ func TestTallyingLogic(t *testing.T) {
 // version greater than the next app version. Example: if the current version is
 // 1, the next version is 2, but the chain can upgrade directly from 1 to 3.
 func TestCanSkipVersion(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, mockConsenusKeeper := setup(t)
 
-	require.Equal(t, v1.Version, ctx.BlockHeader().Version.App)
+	appVersion, err := mockConsenusKeeper.AppVersion(ctx)
+	require.NoError(t, err)
+	require.Equal(t, v1.Version, appVersion)
 
 	validators := []sdk.ValAddress{
 		testutil.ValAddrs[0],
@@ -272,7 +274,7 @@ func TestCanSkipVersion(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	_, err := upgradeKeeper.TryUpgrade(ctx, &types.MsgTryUpgrade{})
+	_, err = upgradeKeeper.TryUpgrade(ctx, &types.MsgTryUpgrade{})
 	require.NoError(t, err)
 
 	isUpgradePending := upgradeKeeper.IsUpgradePending(ctx)
@@ -280,7 +282,7 @@ func TestCanSkipVersion(t *testing.T) {
 }
 
 func TestEmptyStore(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, _ := setup(t)
 
 	res, err := upgradeKeeper.VersionTally(ctx, &types.QueryVersionTallyRequest{
 		Version: 2,
@@ -292,7 +294,7 @@ func TestEmptyStore(t *testing.T) {
 }
 
 func TestThresholdVotingPower(t *testing.T) {
-	upgradeKeeper, ctx, mockStakingKeeper := setup(t)
+	upgradeKeeper, ctx, mockStakingKeeper, _ := setup(t)
 
 	for _, tc := range []struct {
 		total     int64
@@ -313,7 +315,7 @@ func TestThresholdVotingPower(t *testing.T) {
 // TestResetTally verifies that ResetTally resets the VotingPower for all
 // versions to 0 and any pending upgrade is cleared.
 func TestResetTally(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, _ := setup(t)
 
 	_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{ValidatorAddress: testutil.ValAddrs[0].String(), Version: 2})
 	require.NoError(t, err)
@@ -352,7 +354,7 @@ func TestResetTally(t *testing.T) {
 
 func TestTryUpgrade(t *testing.T) {
 	t.Run("should return an error if an upgrade is already pending", func(t *testing.T) {
-		upgradeKeeper, ctx, _ := setup(t)
+		upgradeKeeper, ctx, _, _ := setup(t)
 
 		_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{ValidatorAddress: testutil.ValAddrs[0].String(), Version: 2})
 		require.NoError(t, err)
@@ -374,7 +376,7 @@ func TestTryUpgrade(t *testing.T) {
 	})
 
 	t.Run("should return an error if quorum version is less than or equal to the current version", func(t *testing.T) {
-		upgradeKeeper, ctx, _ := setup(t)
+		upgradeKeeper, ctx, _, _ := setup(t)
 
 		_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{ValidatorAddress: testutil.ValAddrs[0].String(), Version: 1})
 		require.NoError(t, err)
@@ -392,7 +394,7 @@ func TestTryUpgrade(t *testing.T) {
 }
 
 func TestGetUpgrade(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, _ := setup(t)
 
 	t.Run("should return an empty upgrade if no upgrade is pending", func(t *testing.T) {
 		got, err := upgradeKeeper.GetUpgrade(ctx, &types.QueryGetUpgradeRequest{})
@@ -422,7 +424,7 @@ func TestGetUpgrade(t *testing.T) {
 }
 
 func TestTallyAfterTryUpgrade(t *testing.T) {
-	upgradeKeeper, ctx, _ := setup(t)
+	upgradeKeeper, ctx, _, _ := setup(t)
 
 	_, err := upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{
 		ValidatorAddress: testutil.ValAddrs[0].String(),
@@ -456,7 +458,7 @@ func TestTallyAfterTryUpgrade(t *testing.T) {
 	require.EqualValues(t, 120, res.TotalVotingPower)
 }
 
-func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper) {
+func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper, *mockConsenusKeeper) {
 	keys := storetypes.NewKVStoreKeys(types.StoreKey)
 	cms := moduletestutil.CreateMultiStore(keys, log.NewNopLogger())
 
@@ -470,12 +472,22 @@ func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper) {
 		},
 	)
 
+	mockConsenusKeeper := &mockConsenusKeeper{version: 1}
+
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	upgradeKeeper := signal.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[types.StoreKey]), log.NewNopLogger()), config.Codec, mockStakingKeeper)
-	return upgradeKeeper, mockCtx, mockStakingKeeper
+	upgradeKeeper := signal.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[types.StoreKey]), log.NewNopLogger()), config.Codec, mockStakingKeeper, mockConsenusKeeper)
+	return upgradeKeeper, mockCtx, mockStakingKeeper, mockConsenusKeeper
 }
 
 var _ signal.StakingKeeper = (*mockStakingKeeper)(nil)
+
+type mockConsenusKeeper struct {
+	version uint64
+}
+
+func (m *mockConsenusKeeper) AppVersion(_ context.Context) (uint64, error) {
+	return m.version, nil
+}
 
 type mockStakingKeeper struct {
 	totalVotingPower sdkmath.Int

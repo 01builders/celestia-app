@@ -11,9 +11,6 @@ import (
 )
 
 func TestMaxTxSizeDecorator(t *testing.T) {
-	decorator := ante.NewMaxTxSizeDecorator()
-	anteHandler := sdk.ChainAnteDecorators(decorator)
-
 	testCases := []struct {
 		name        string
 		txSize      int
@@ -54,6 +51,8 @@ func TestMaxTxSizeDecorator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, isCheckTx := range tc.isCheckTx {
+				decorator := ante.NewMaxTxSizeDecorator(mockConsensusKeeper{appVersion: tc.appVersion})
+				anteHandler := sdk.ChainAnteDecorators(decorator)
 
 				ctx := sdk.NewContext(nil, isCheckTx, nil)
 

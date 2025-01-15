@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/ante"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -19,11 +20,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const TxSizeCostPerByte = 8
@@ -62,7 +62,7 @@ func TestConsumeGasForTxSize(t *testing.T) {
 	feeAmount := testdata.NewTestFeeAmount()
 	gasLimit := testdata.NewTestGasLimit()
 
-	cgtsd := ante.NewConsumeGasForTxSizeDecorator(app.AccountKeeper)
+	cgtsd := ante.NewConsumeGasForTxSizeDecorator(app.AuthKeeper, app.ConsensusKeeper)
 	antehandler := sdk.ChainAnteDecorators(cgtsd)
 
 	testCases := []struct {
@@ -79,10 +79,7 @@ func TestConsumeGasForTxSize(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// set the version
-			ctx = app.NewContext(false, tmproto.Header{Version: version.Consensus{
-				App: tc.version,
-			}})
-
+			ctx = app.NewContext(false)
 			txBuilder = clientCtx.TxConfig.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(msg))
 			txBuilder.SetFeeAmount(feeAmount)
@@ -104,7 +101,7 @@ func TestConsumeGasForTxSize(t *testing.T) {
 				txSizeCostPerByte = appconsts.TxSizeCostPerByte(tc.version)
 			}
 
-			expectedGas := sdk.Gas(len(txBytes)) * txSizeCostPerByte
+			expectedGas := storetypes.Gas(len(txBytes)) * txSizeCostPerByte
 
 			// set suite.ctx with TxBytes manually
 			ctx = ctx.WithTxBytes(txBytes)
@@ -155,11 +152,17 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 	// First round: we gather all the signer infos. We use the "set empty
 	// signature" hack to do that.
 	sigsV2 := make([]signing.SignatureV2, 0, len(privs))
+
+	defaultSignMode, err := authsigning.APISignModeToInternal(clientCtx.TxConfig.SignModeHandler().DefaultMode())
+	if err != nil {
+		return nil, err
+	}
+
 	for i, priv := range privs {
 		sigV2 := signing.SignatureV2{
 			PubKey: priv.PubKey(),
 			Data: &signing.SingleSignatureData{
-				SignMode:  clientCtx.TxConfig.SignModeHandler().DefaultMode(),
+				SignMode:  defaultSignMode,
 				Signature: nil,
 			},
 			Sequence: accSeqs[i],
@@ -167,8 +170,8 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 
 		sigsV2 = append(sigsV2, sigV2)
 	}
-	err := txBuilder.SetSignatures(sigsV2...)
-	if err != nil {
+
+	if err := txBuilder.SetSignatures(sigsV2...); err != nil {
 		return nil, err
 	}
 
@@ -180,8 +183,7 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 			AccountNumber: accNums[i],
 			Sequence:      accSeqs[i],
 		}
-		sigV2, err := tx.SignWithPrivKey(
-			clientCtx.TxConfig.SignModeHandler().DefaultMode(), signerData,
+		sigV2, err := tx.SignWithPrivKey(clientCtx.CmdContext, defaultSignMode, signerData,
 			txBuilder, priv, clientCtx.TxConfig, accSeqs[i])
 		if err != nil {
 			return nil, err

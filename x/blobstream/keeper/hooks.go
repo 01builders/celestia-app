@@ -13,7 +13,8 @@ import (
 
 // Hooks is a wrapper struct around Keeper.
 type Hooks struct {
-	k Keeper
+	k  Keeper
+	ck ConsenusKeeper
 }
 
 var _ stakingtypes.StakingHooks = Hooks{}
@@ -25,16 +26,21 @@ func (k Keeper) Hooks() Hooks {
 	if k.Environment.KVStoreService == nil {
 		panic("hooks initialized before BlobstreamKeeper")
 	}
-	return Hooks{k}
+	return Hooks{k, k.ConsenusKeeper}
 }
 
 func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	appVersion, err := h.ck.AppVersion(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get app version")
+	}
 
-	if sdkCtx.BlockHeader().Version.App > 1 {
+	if appVersion > 1 {
 		// no-op if the app version is greater than 1 because blobstream was disabled in v2.
 		return nil
 	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// When Validator starts Unbonding, Persist the block height in the store.
 	// Later in EndBlocker, check if there is at least one validator who started
 	// unbonding and create a valset request. The reason for creating valset
@@ -44,7 +50,8 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 	// This hook is called for jailing or unbonding triggered by users but it is
 	// NOT called for jailing triggered in the endblocker therefore we call the
 	// keeper function ourselves there.
-	h.k.SetLatestUnBondingBlockHeight(sdkCtx, uint64(sdkCtx.BlockHeight()))
+
+	h.k.SetLatestUnBondingBlockHeight(sdkCtx, uint64(sdkCtx.HeaderInfo().Height))
 	return nil
 }
 
@@ -53,12 +60,17 @@ func (h Hooks) BeforeDelegationCreated(_ context.Context, _ sdk.AccAddress, _ sd
 }
 
 func (h Hooks) AfterValidatorCreated(ctx context.Context, addr sdk.ValAddress) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	appVersion, err := h.ck.AppVersion(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get app version")
+	}
 
-	if sdkCtx.BlockHeader().Version.App > 1 {
+	if appVersion > 1 {
 		// no-op if the app version is greater than 1 because blobstream was disabled in v2.
 		return nil
 	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	defaultEvmAddr := types.DefaultEVMAddress(addr)
 	// This should practically never happen that we have a collision. It may be
 	// bad UX to reject the attempt to create a validator and require the user to

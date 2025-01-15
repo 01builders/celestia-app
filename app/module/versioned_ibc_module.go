@@ -137,6 +137,6 @@ func (v *VersionedIBCModule) OnTimeoutPacket(
 }
 
 func (v *VersionedIBCModule) isVersionSupported(ctx sdk.Context) bool {
-	currentAppVersion := ctx.BlockHeader().Version.App
+	currentAppVersion := ctx.BlockHeader().Version.App //TODO: use consensusKeeper.AppVersion(ctx) instead
 	return currentAppVersion >= v.fromVersion && currentAppVersion <= v.toVersion
 }

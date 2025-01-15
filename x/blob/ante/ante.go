@@ -1,6 +1,8 @@
 package ante
 
 import (
+	"context"
+
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
@@ -14,11 +16,12 @@ import (
 // but running out of gas in DeliverTx (effectively getting DA for free)
 // This decorator should be run after any decorator that consumes gas.
 type MinGasPFBDecorator struct {
-	k BlobKeeper
+	k               BlobKeeper
+	consensusKeeper ConsensusKeeper
 }
 
-func NewMinGasPFBDecorator(k BlobKeeper) MinGasPFBDecorator {
-	return MinGasPFBDecorator{k}
+func NewMinGasPFBDecorator(k BlobKeeper, consensusKeeper ConsensusKeeper) MinGasPFBDecorator {
+	return MinGasPFBDecorator{k, consensusKeeper}
 }
 
 // AnteHandle implements the AnteHandler interface. It checks to see
@@ -31,15 +34,21 @@ func (d MinGasPFBDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 
 	var gasPerByte uint32
 	txGas := ctx.GasMeter().GasRemaining()
+
+	appVersion, err := d.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return ctx, errors.Wrap(sdkerrors.ErrLogic, "failed to get app version")
+	}
+
 	for _, m := range tx.GetMsgs() {
 		// NOTE: here we assume only one PFB per transaction
 		if pfb, ok := m.(*types.MsgPayForBlobs); ok {
 			if gasPerByte == 0 {
-				if ctx.BlockHeader().Version.App <= v2.Version {
+				if appVersion <= v2.Version {
 					// lazily fetch the gas per byte param
 					gasPerByte = d.k.GasPerBlobByte(ctx)
 				} else {
-					gasPerByte = appconsts.GasPerBlobByte(ctx.BlockHeader().Version.App)
+					gasPerByte = appconsts.GasPerBlobByte(appVersion)
 				}
 			}
 			gasToConsume := pfb.Gas(gasPerByte)
@@ -55,4 +64,8 @@ func (d MinGasPFBDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 type BlobKeeper interface {
 	GasPerBlobByte(ctx sdk.Context) uint32
 	GovMaxSquareSize(ctx sdk.Context) uint64
+}
+
+type ConsensusKeeper interface {
+	AppVersion(ctx context.Context) (uint64, error)
 }

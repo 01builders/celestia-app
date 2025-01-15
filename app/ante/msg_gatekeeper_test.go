@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"context"
 	"testing"
 
 	"cosmossdk.io/x/authz"
@@ -10,9 +11,16 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
+
+type mockConsensusKeeper struct {
+	ante.ConsensusKeeper
+	appVersion uint64
+}
+
+func (m mockConsensusKeeper) AppVersion(ctx context.Context) (uint64, error) {
+	return m.appVersion, nil
+}
 
 func TestMsgGateKeeperAnteHandler(t *testing.T) {
 	nestedBankSend := authz.NewMsgExec("", []sdk.Msg{&banktypes.MsgSend{}})
@@ -63,19 +71,19 @@ func TestMsgGateKeeperAnteHandler(t *testing.T) {
 		},
 	}
 
-	msgGateKeeper := ante.NewMsgVersioningGateKeeper(map[uint64]map[string]struct{}{
-		1: {
-			"/cosmos.bank.v1beta1.MsgSend":  {},
-			"/cosmos.authz.v1beta1.MsgExec": {},
-		},
-		2: {},
-	})
-	cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	anteHandler := sdk.ChainAnteDecorators(msgGateKeeper)
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := sdk.NewContext(nil, tmproto.Header{Version: version.Consensus{App: tc.version}}, false, nil)
+			msgGateKeeper := ante.NewMsgVersioningGateKeeper(map[uint64]map[string]struct{}{
+				1: {
+					"/cosmos.bank.v1beta1.MsgSend":  {},
+					"/cosmos.authz.v1beta1.MsgExec": {},
+				},
+				2: {},
+			}, mockConsensusKeeper{appVersion: tc.version})
+			cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+			anteHandler := sdk.ChainAnteDecorators(msgGateKeeper)
+
+			ctx := sdk.NewContext(nil, false, nil)
 			txBuilder := cdc.TxConfig.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(tc.msg))
 			_, err := anteHandler(ctx, txBuilder.GetTx(), false)

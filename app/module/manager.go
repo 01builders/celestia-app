@@ -369,9 +369,9 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg Configurator, fromVersion, t
 func (m *Manager) BeginBlock(ctx sdk.Context) (sdk.BeginBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 
-	modules := m.versionedModules[ctx.BlockHeader().Version.App]
+	modules := m.versionedModules[ctx.BlockHeader().Version.App] // TODO: get from consensus params
 	if modules == nil {
-		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App))
+		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App)) // TODO: get from consensus params
 	}
 	for _, moduleName := range m.OrderBeginBlockers {
 		module, ok := modules[moduleName].(appmodule.HasBeginBlocker)
@@ -392,9 +392,9 @@ func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 	var validatorUpdates []sdkmodule.ValidatorUpdate
 
-	modules := m.versionedModules[ctx.BlockHeader().Version.App]
+	modules := m.versionedModules[ctx.BlockHeader().Version.App] // TODO: get from consensus params
 	if modules == nil {
-		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App))
+		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App)) // TODO: get from consensus params
 	}
 	for _, moduleName := range m.OrderEndBlockers {
 		if module, ok := modules[moduleName].(appmodule.HasEndBlocker); ok {

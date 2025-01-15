@@ -211,3 +211,7 @@ type NoopAppOptions struct{}
 func (nao NoopAppOptions) Get(string) interface{} {
 	return nil
 }
+
+func (nao NoopAppOptions) GetString(string) string {
+	return ""
+}

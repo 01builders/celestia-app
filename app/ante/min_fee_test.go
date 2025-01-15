@@ -144,7 +144,7 @@ func TestValidateTxFee(t *testing.T) {
 			subspace = minfee.RegisterMinFeeParamTable(subspace)
 			subspace.Set(ctx, minfee.KeyNetworkMinGasPrice, networkMinGasPriceDec)
 
-			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper)
+			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper, &mockConsensusKeeper{appVersion: tc.appVersion})
 			if tc.expErr {
 				require.Error(t, err)
 			} else {

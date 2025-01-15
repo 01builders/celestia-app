@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	distributiontypes "cosmossdk.io/x/distribution/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -28,7 +29,7 @@ func Test_newGovModule(t *testing.T) {
 
 	want := []types.Coin{{
 		Denom:  BondDenom,
-		Amount: types.NewInt(10_000_000_000),
+		Amount: math.NewInt(10_000_000_000),
 	}}
 
 	assert.Equal(t, want, govGenesisState.DepositParams.MinDeposit)
@@ -46,8 +47,8 @@ func TestDefaultGenesis(t *testing.T) {
 	encCfg.Codec.MustUnmarshalJSON(raw, &distributionGenesisState)
 
 	// Verify that BaseProposerReward and BonusProposerReward were overridden to 0%.
-	assert.Equal(t, types.ZeroDec(), distributionGenesisState.Params.BaseProposerReward)
-	assert.Equal(t, types.ZeroDec(), distributionGenesisState.Params.BonusProposerReward)
+	assert.Equal(t, math.LegacyZeroDec(), distributionGenesisState.Params.BaseProposerReward)
+	assert.Equal(t, math.LegacyZeroDec(), distributionGenesisState.Params.BonusProposerReward)
 
 	// Verify that other params weren't overridden.
 	assert.Equal(t, distributiontypes.DefaultParams().WithdrawAddrEnabled, distributionGenesisState.Params.WithdrawAddrEnabled)
@@ -59,7 +60,6 @@ func TestDefaultAppConfig(t *testing.T) {
 
 	assert.False(t, cfg.API.Enable)
 	assert.False(t, cfg.GRPC.Enable)
-	assert.False(t, cfg.GRPCWeb.Enable)
 
 	assert.Equal(t, uint64(1500), cfg.StateSync.SnapshotInterval)
 	assert.Equal(t, uint32(2), cfg.StateSync.SnapshotKeepRecent)

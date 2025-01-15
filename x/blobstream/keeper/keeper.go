@@ -19,20 +19,22 @@ type Keeper struct {
 	cdc        codec.BinaryCodec
 	paramSpace paramtypes.Subspace
 
-	StakingKeeper StakingKeeper
+	StakingKeeper  StakingKeeper
+	ConsenusKeeper ConsenusKeeper
 }
 
-func NewKeeper(env appmodule.Environment, cdc codec.BinaryCodec, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper) *Keeper {
+func NewKeeper(env appmodule.Environment, cdc codec.BinaryCodec, paramSpace paramtypes.Subspace, stakingKeeper StakingKeeper, consensusKeeper ConsenusKeeper) *Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
 	return &Keeper{
-		Environment:   env,
-		cdc:           cdc,
-		StakingKeeper: stakingKeeper,
-		paramSpace:    paramSpace,
+		Environment:    env,
+		cdc:            cdc,
+		StakingKeeper:  stakingKeeper,
+		ConsenusKeeper: consensusKeeper,
+		paramSpace:     paramSpace,
 	}
 }
 
@@ -64,6 +66,10 @@ type StakingKeeper interface {
 	GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error)
 	GetLastValidatorPower(ctx context.Context, valAddr sdk.ValAddress) (int64, error)
 	ValidatorAddressCodec() addresscodec.Codec
+}
+
+type ConsenusKeeper interface {
+	AppVersion(ctx context.Context) (uint64, error)
 }
 
 // UInt64FromBytes create uint from binary big endian representation.

@@ -14,11 +14,12 @@ import (
 // not fitting in a data square because the number of shares occupied by the PFB
 // exceeds the max number of shares available to blob data in a data square.
 type BlobShareDecorator struct {
-	k BlobKeeper
+	k               BlobKeeper
+	consensusKeeper ConsensusKeeper
 }
 
-func NewBlobShareDecorator(k BlobKeeper) BlobShareDecorator {
-	return BlobShareDecorator{k}
+func NewBlobShareDecorator(k BlobKeeper, consensusKeeper ConsensusKeeper) BlobShareDecorator {
+	return BlobShareDecorator{k, consensusKeeper}
 }
 
 // AnteHandle implements the Cosmos SDK AnteHandler function signature. It
@@ -29,11 +30,16 @@ func (d BlobShareDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 		return next(ctx, tx, simulate)
 	}
 
-	if ctx.BlockHeader().Version.App == v1.Version {
+	appVersion, err := d.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return ctx, errors.Wrap(err, "failed to get app version")
+	}
+
+	if appVersion == v1.Version {
 		return next(ctx, tx, simulate)
 	}
 
-	maxBlobShares := d.getMaxBlobShares(ctx)
+	maxBlobShares := d.getMaxBlobShares(ctx, appVersion)
 	for _, m := range tx.GetMsgs() {
 		if pfb, ok := m.(*blobtypes.MsgPayForBlobs); ok {
 			if sharesNeeded := getSharesNeeded(uint32(len(ctx.TxBytes())), pfb.BlobSizes); sharesNeeded > maxBlobShares {
@@ -46,8 +52,8 @@ func (d BlobShareDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 }
 
 // getMaxBlobShares returns the max the number of shares available for blob data.
-func (d BlobShareDecorator) getMaxBlobShares(ctx sdk.Context) int {
-	squareSize := d.getMaxSquareSize(ctx)
+func (d BlobShareDecorator) getMaxBlobShares(ctx sdk.Context, appVersion uint64) int {
+	squareSize := d.getMaxSquareSize(ctx, appVersion)
 	totalShares := squareSize * squareSize
 	// the shares used up by the tx are calculated in `getSharesNeeded`
 	return totalShares
@@ -55,18 +61,18 @@ func (d BlobShareDecorator) getMaxBlobShares(ctx sdk.Context) int {
 
 // getMaxSquareSize returns the maximum square size based on the current values
 // for the governance parameter and the versioned constant.
-func (d BlobShareDecorator) getMaxSquareSize(ctx sdk.Context) int {
+func (d BlobShareDecorator) getMaxSquareSize(ctx sdk.Context, appVersion uint64) int {
 	// TODO: fix hack that forces the max square size for the first height to
 	// 64. This is due to our fork of the sdk not initializing state before
 	// BeginBlock of the first block. This is remedied in versions of the sdk
 	// and comet that have full support of PrepareProposal, although
 	// celestia-app does not currently use those. see this PR for more details
 	// https://github.com/cosmos/cosmos-sdk/pull/14505
-	if ctx.BlockHeader().Height <= 1 {
+	if ctx.HeaderInfo().Height <= 1 {
 		return int(appconsts.DefaultGovMaxSquareSize)
 	}
 
-	upperBound := appconsts.SquareSizeUpperBound(ctx.BlockHeader().Version.App)
+	upperBound := appconsts.SquareSizeUpperBound(appVersion)
 	govParam := d.k.GovMaxSquareSize(ctx)
 	return min(upperBound, int(govParam))
 }

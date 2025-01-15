@@ -72,7 +72,13 @@ func (app *App) ProcessProposal(req *abci.ProcessProposalRequest) (resp *abci.Pr
 
 		sdkTx, err := app.txConfig.TxDecoder()(tx)
 		// Set the tx bytes in the context for app version v3 and greater
-		if sdkCtx.BlockHeader().Version.App >= 3 {
+		appVersion, err := app.ConsensusKeeper.AppVersion(sdkCtx)
+		if err != nil {
+			logInvalidPropBlockError(app.Logger(), req.Header, "failure to get app version", err)
+			return reject()
+		}
+
+		if appVersion >= 3 {
 			sdkCtx = sdkCtx.WithTxBytes(tx)
 		}
 

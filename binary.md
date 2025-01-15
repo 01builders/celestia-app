@@ -39,7 +39,8 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 - [ ] Goal #10: Remove core logic of custom mint module to use x/mint.
   - [ ] Wrap x/mint within celestia mint and set minting function.
   - [ ] Wrap x/mint within celestia mint for extending queries and keeping query path identical
-- [ ] Goal #11: Wire circuit breaker to block some (staking & bank) MsgUpdateParams now that x/paramfilter is removed
+- [x] Goal #11: Replace x/paramfilter by ante handler
+- [ ] Cache consensus keeper AppVersion calls as each addition is a state read
 
 ### app.go checklist
 
@@ -70,7 +71,7 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
 
 - Comment out pfm in celestia-app for unblocking progress
 - Migrate all modules to 0.52
-- Remove x/paramfilter (should be replaced by the circuit breaker)
+- Remove x/paramfilter (should be replaced by ~~the circuit breaker~~ ante handler)
 Made the following changes to app/app.go:
 
 - Remove `x/capability` module
@@ -97,6 +98,13 @@ In the root command, began to reason about and fix genesis commands including De
 ### 2025-01-14
 
 - Continue fixing build issues
+
+### 2025-01-15
+
+- Fix build issue ante handlers
+- TxSizeGas ante handler doesn't check for accounts anymore, in accordance with v0.52 ante handler behavior
+- Migrate `BlockHeader().Version.App` to consensus keeper appversion
+- Replace x/paramfilter by custom ante handler
 
 ## Problems
 

@@ -43,6 +43,9 @@ type Keeper struct {
 	// stakingKeeper is used to fetch validators to calculate the total power
 	// signalled to a version.
 	stakingKeeper StakingKeeper
+
+	// consensusKeeper is used to get the app version
+	consensusKeeper ConsensusKeeper
 }
 
 // NewKeeper returns a signal keeper.
@@ -50,11 +53,13 @@ func NewKeeper(
 	env appmodule.Environment,
 	binaryCodec codec.BinaryCodec,
 	stakingKeeper StakingKeeper,
+	consensusKeeper ConsensusKeeper,
 ) Keeper {
 	return Keeper{
-		Environment:   env,
-		binaryCodec:   binaryCodec,
-		stakingKeeper: stakingKeeper,
+		Environment:     env,
+		binaryCodec:     binaryCodec,
+		stakingKeeper:   stakingKeeper,
+		consensusKeeper: consensusKeeper,
 	}
 }
 
@@ -72,7 +77,11 @@ func (k Keeper) SignalVersion(ctx context.Context, req *types.MsgSignalVersion) 
 	}
 
 	// The signalled version can not be less than the current version.
-	currentVersion := sdkCtx.BlockHeader().Version.App
+	currentVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if req.Version < currentVersion {
 		return nil, types.ErrInvalidSignalVersion.Wrapf("signalled version %d, current version %d", req.Version, currentVersion)
 	}
@@ -100,13 +109,18 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 	threshold := k.GetVotingPowerThreshold(sdkCtx)
 	hasQuorum, version := k.TallyVotingPower(sdkCtx, threshold.Int64())
 	if hasQuorum {
-		if version <= sdkCtx.BlockHeader().Version.App {
-			return &types.MsgTryUpgradeResponse{}, types.ErrInvalidUpgradeVersion.Wrapf("can not upgrade to version %v because it is less than or equal to current version %v", version, sdkCtx.BlockHeader().Version.App)
+		appVersion, err := k.consensusKeeper.AppVersion(sdkCtx)
+		if err != nil {
+			return nil, err
 		}
-		header := sdkCtx.BlockHeader()
+
+		if version <= appVersion {
+			return &types.MsgTryUpgradeResponse{}, types.ErrInvalidUpgradeVersion.Wrapf("can not upgrade to version %v because it is less than or equal to current version %v", version, appVersion)
+		}
+		header := sdkCtx.HeaderInfo()
 		upgrade := types.Upgrade{
 			AppVersion:    version,
-			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID, header.Version.App),
+			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID, appVersion),
 		}
 		k.setUpgrade(sdkCtx, upgrade)
 	}
@@ -211,7 +225,13 @@ func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) math.Int {
 	if err != nil {
 		panic(err)
 	}
-	thresholdFraction := Threshold(ctx.BlockHeader().Version.App)
+
+	appVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	thresholdFraction := Threshold(appVersion)
 	return thresholdFraction.MulInt(totalVotingPower).Ceil().TruncateInt()
 }
 

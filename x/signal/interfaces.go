@@ -13,3 +13,7 @@ type StakingKeeper interface {
 	GetLastTotalPower(ctx context.Context) (math.Int, error)
 	GetValidator(ctx context.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, err error)
 }
+
+type ConsensusKeeper interface {
+	AppVersion(ctx context.Context) (uint64, error)
+}

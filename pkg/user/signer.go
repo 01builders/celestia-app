@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -157,7 +158,11 @@ func (s *Signer) Accounts() []*Account {
 }
 
 func (s *Signer) findAccount(txbuilder client.TxBuilder) (*Account, error) {
-	signers := txbuilder.GetTx().GetSigners()
+	signers, err := txbuilder.GetTx().GetSigners()
+	if err != nil {
+		return nil, fmt.Errorf("error getting signers: %w", err)
+	}
+
 	if len(signers) == 0 {
 		return nil, fmt.Errorf("message has no signer")
 	}
@@ -256,6 +261,7 @@ func (s *Signer) createSignature(builder client.TxBuilder, account *Account, seq
 	}
 
 	bytesToSign, err := s.enc.SignModeHandler().GetSignBytes(
+		context.Background(),
 		signing.SignMode_SIGN_MODE_DIRECT,
 		signerData,
 		builder.GetTx(),
@@ -264,7 +270,7 @@ func (s *Signer) createSignature(builder client.TxBuilder, account *Account, seq
 		return nil, fmt.Errorf("error getting sign bytes: %w", err)
 	}
 
-	signature, _, err := s.keys.Sign(account.name, bytesToSign)
+	signature, _, err := s.keys.Sign(account.name, bytesToSign, signing.SignMode_SIGN_MODE_DIRECT)
 	if err != nil {
 		return nil, fmt.Errorf("error signing bytes: %w", err)
 	}

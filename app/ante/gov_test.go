@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	"github.com/celestiaorg/celestia-app/v3/app"
@@ -19,11 +20,11 @@ func TestGovDecorator(t *testing.T) {
 	decorator := ante.NewGovProposalDecorator()
 	anteHandler := types.ChainAnteDecorators(decorator)
 	accounts := testfactory.GenerateAccounts(1)
-	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, types.NewInt(10)))
+	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))
 
 	msgSend := banktypes.NewMsgSend(
-		testnode.RandomAddress().(types.AccAddress),
-		testnode.RandomAddress().(types.AccAddress),
+		testnode.RandomAddress().String(),
+		testnode.RandomAddress().String(),
 		coins,
 	)
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)

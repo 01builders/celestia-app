@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"fmt"
 	"io"
 	"slices"
 	"time"
+
+	"cosmossdk.io/math"
 
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	corestore "cosmossdk.io/core/store"
@@ -362,6 +363,7 @@ func New(
 		appCodec,
 		app.GetSubspace(blobstreamtypes.ModuleName),
 		app.StakingKeeper,
+		app.ConsensusKeeper,
 	)
 
 	// Register the staking hooks. NOTE: stakingKeeper is passed by reference
@@ -375,7 +377,11 @@ func New(
 	)
 
 	app.SignalKeeper = signal.NewKeeper(
-		envFactory.make(signaltypes.ModuleName, signaltypes.StoreKey), appCodec, &signalStakingWrapper{app.StakingKeeper})
+		envFactory.make(signaltypes.ModuleName, signaltypes.StoreKey),
+		appCodec,
+		&signalStakingWrapper{app.StakingKeeper},
+		app.ConsensusKeeper,
+	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
@@ -521,7 +527,7 @@ func New(
 	// extract the accepted message list from the configurator and create a gatekeeper
 	// which will be used both as the antehandler and as part of the circuit breaker in
 	// the msg service router
-	app.MsgGateKeeper = ante.NewMsgVersioningGateKeeper(app.configurator.GetAcceptedMessages())
+	app.MsgGateKeeper = ante.NewMsgVersioningGateKeeper(app.configurator.GetAcceptedMessages(), app.ConsensusKeeper)
 	app.MsgServiceRouter().SetCircuit(app.MsgGateKeeper)
 
 	// Initialize the KV stores for the base modules (e.g. params). The base modules will be included in every app version.
@@ -533,8 +539,10 @@ func New(
 	app.SetEndBlocker(app.EndBlocker)
 	app.SetAnteHandler(ante.NewAnteHandler(
 		app.AuthKeeper,
+		app.AccountsKeeper,
 		app.BankKeeper,
 		app.BlobKeeper,
+		app.ConsensusKeeper,
 		app.FeeGrantKeeper,
 		encodingConfig.TxConfig.SignModeHandler(),
 		ante.DefaultSigVerificationGasConsumer,
@@ -565,7 +573,7 @@ func (app *App) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	if ctx.BlockHeader().Height == app.upgradeHeightV2 {
+	if ctx.HeaderInfo().Height == app.upgradeHeightV2 {
 		app.BaseApp.Logger().Info("upgraded from app version 1 to 2")
 	}
 	return app.manager.BeginBlock(ctx)
@@ -584,7 +592,7 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// For v1 only we upgrade using an agreed upon height known ahead of time
 	if currentVersion == v1 {
 		// check that we are at the height before the upgrade
-		if ctx.BlockHeader().Height == app.upgradeHeightV2-1 {
+		if ctx.HeaderInfo().Height == app.upgradeHeightV2-1 {
 			app.BaseApp.Logger().Info(fmt.Sprintf("upgrading from app version %v to 2", currentVersion))
 			if err = app.SetAppVersion(ctx, v2); err != nil {
 				panic(err)
@@ -882,22 +890,6 @@ func (app *App) RegisterTendermintService(clientCtx client.Context) {
 func (app *App) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
-
-// TODO: To be moved to antehandler
-// BlockedParams returns the params that require a hardfork to change, and
-// cannot be changed via governance.
-// func (app *App) BlockedParams() [][2]string {
-// 	return [][2]string{
-// 		// bank.SendEnabled
-// 		{banktypes.ModuleName, string(banktypes.KeySendEnabled)},
-// 		// staking.UnbondingTime
-// 		{stakingtypes.ModuleName, string(stakingtypes.KeyUnbondingTime)},
-// 		// staking.BondDenom
-// 		{stakingtypes.ModuleName, string(stakingtypes.KeyBondDenom)},
-// 		// consensus.validator.PubKeyTypes
-// 		{baseapp.Paramspace, string(baseapp.ParamStoreKeyValidatorParams)},
-// 	}
-// }
 
 // initParamsKeeper initializes the params keeper and its subspaces.
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {

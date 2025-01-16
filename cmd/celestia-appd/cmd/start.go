@@ -36,6 +36,7 @@ import (
 	"github.com/spf13/cobra"
 	tmserver "github.com/tendermint/tendermint/abci/server"
 	cmtcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
+	tmcfg "github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -194,9 +195,6 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().Bool(flagGRPCEnable, true, "Define if the gRPC server should be enabled")
 	cmd.Flags().String(flagGRPCAddress, serverconfig.DefaultGRPCAddress, "the gRPC server address to listen on")
 
-	cmd.Flags().Bool(flagGRPCWebEnable, true, "Define if the gRPC-Web server should be enabled. (Note: gRPC must also be enabled)")
-	cmd.Flags().String(flagGRPCWebAddress, serverconfig.DefaultGRPCWebAddress, "The gRPC-Web server address to listen on")
-
 	cmd.Flags().Uint64(server.FlagStateSyncSnapshotInterval, 0, "State sync snapshot interval")
 	cmd.Flags().Uint32(server.FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
 
@@ -240,7 +238,7 @@ func startStandAlone(ctx *server.Context, appCreator celestiaserver.AppCreator) 
 		return fmt.Errorf("error creating listener: %v", err)
 	}
 
-	svr.SetLogger(ctx.Logger.With("module", "abci-server"))
+	svr.SetLogger(&logWrapperCoreToTM{ctx.Logger.With("module", "abci-server")})
 
 	err = svr.Start()
 	if err != nil {
@@ -262,7 +260,7 @@ func startStandAlone(ctx *server.Context, appCreator celestiaserver.AppCreator) 
 }
 
 func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator celestiaserver.AppCreator) error {
-	cfg := deepConfigClone(ctx.Config)
+	cfg := ctx.Config
 	home := cfg.RootDir
 
 	db, err := openDB(home, server.GetAppDBBackend(ctx.Viper))
@@ -292,7 +290,11 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 		return err
 	}
 
-	genDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
+	tmCfg := &tmcfg.Config{}
+	if err := DeepClone(cfg, tmCfg); err != nil {
+		return err
+	}
+	genDocProvider := node.DefaultGenesisDocProviderFunc(tmCfg)
 
 	var (
 		tmNode   *node.Node
@@ -306,13 +308,13 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 		ctx.Logger.Info("starting node with ABCI Tendermint in-process")
 
 		tmNode, err = node.NewNode(
-			cfg,
+			tmCfg,
 			privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 			nodeKey,
 			proxy.NewLocalClientCreator(app),
 			genDocProvider,
 			node.DefaultDBProvider,
-			node.DefaultMetricsProvider(cfg.Instrumentation),
+			node.DefaultMetricsProvider(tmCfg.Instrumentation),
 			&logWrapperCoreToTM{ctx.Logger},
 		)
 		if err != nil {
@@ -343,6 +345,60 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 	// TODO: sync with context, in WaitForSignals?
 	todoCtx := context.TODO()
 
+	var (
+		grpcSrv    *grpc.Server
+		grpcWebSrv *http.Server
+	)
+
+	if config.GRPC.Enable {
+		_, _, err := net.SplitHostPort(config.GRPC.Address)
+		if err != nil {
+			return err
+		}
+
+		maxSendMsgSize := config.GRPC.MaxSendMsgSize
+		if maxSendMsgSize == 0 {
+			maxSendMsgSize = serverconfig.DefaultGRPCMaxSendMsgSize
+		}
+
+		maxRecvMsgSize := config.GRPC.MaxRecvMsgSize
+		if maxRecvMsgSize == 0 {
+			maxRecvMsgSize = serverconfig.DefaultGRPCMaxRecvMsgSize
+		}
+
+		// If grpc is enabled, configure grpc client for grpc gateway.
+		grpcClient, err := grpc.NewClient(
+			config.GRPC.Address,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithDefaultCallOptions(
+				grpc.ForceCodec(codec.NewProtoCodec(clientCtx.InterfaceRegistry).GRPCCodec()),
+				grpc.MaxCallRecvMsgSize(maxRecvMsgSize),
+				grpc.MaxCallSendMsgSize(maxSendMsgSize),
+			),
+		)
+		if err != nil {
+			return err
+		}
+		clientCtx = clientCtx.WithGRPCClient(grpcClient)
+
+		ctx.Logger.Debug("grpc client assigned to client context", "target", config.GRPC.Address)
+		grpcSrv, err = servergrpc.NewGRPCServer(clientCtx, app, config.GRPC)
+		if err != nil {
+			return err
+		}
+		defer grpcSrv.Stop()
+		err = servergrpc.StartGRPCServer(todoCtx, ctx.Logger, config.GRPC, grpcSrv)
+		if err != nil {
+			ctx.Logger.Error("failed to start grpc-web http server: ", err)
+			return err
+		}
+		defer func() {
+			if err := grpcWebSrv.Close(); err != nil {
+				ctx.Logger.Error("failed to close grpc-web http server: ", err)
+			}
+		}()
+	}
+
 	var apiSrv *api.Server
 	if config.API.Enable {
 		genDoc, err := genDocProvider()
@@ -352,41 +408,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 
 		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
 
-		if config.GRPC.Enable {
-			_, _, err := net.SplitHostPort(config.GRPC.Address)
-			if err != nil {
-				return err
-			}
-
-			maxSendMsgSize := config.GRPC.MaxSendMsgSize
-			if maxSendMsgSize == 0 {
-				maxSendMsgSize = serverconfig.DefaultGRPCMaxSendMsgSize
-			}
-
-			maxRecvMsgSize := config.GRPC.MaxRecvMsgSize
-			if maxRecvMsgSize == 0 {
-				maxRecvMsgSize = serverconfig.DefaultGRPCMaxRecvMsgSize
-			}
-
-			// If grpc is enabled, configure grpc client for grpc gateway.
-			grpcClient, err := grpc.NewClient(
-				config.GRPC.Address,
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-				grpc.WithDefaultCallOptions(
-					grpc.ForceCodec(codec.NewProtoCodec(clientCtx.InterfaceRegistry).GRPCCodec()),
-					grpc.MaxCallRecvMsgSize(maxRecvMsgSize),
-					grpc.MaxCallSendMsgSize(maxSendMsgSize),
-				),
-			)
-			if err != nil {
-				return err
-			}
-
-			clientCtx = clientCtx.WithGRPCClient(grpcClient)
-			ctx.Logger.Debug("grpc client assigned to client context", "target", config.GRPC.Address)
-		}
-
-		apiSrv = api.New(clientCtx, ctx.Logger.With("module", "api-server"))
+		apiSrv = api.New(clientCtx, ctx.Logger.With("module", "api-server"), grpcSrv)
 		app.RegisterAPIRoutes(apiSrv, config.API)
 		if config.Telemetry.Enabled {
 			apiSrv.SetTelemetry(metrics)
@@ -404,29 +426,6 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 
 		case <-time.After(serverStartTime): // assume server started successfully
 		}
-	}
-
-	var (
-		grpcSrv    *grpc.Server
-		grpcWebSrv *http.Server
-	)
-
-	if config.GRPC.Enable {
-		grpcSrv, err = servergrpc.NewGRPCServer(clientCtx, app, config.GRPC)
-		if err != nil {
-			return err
-		}
-		defer grpcSrv.Stop()
-		err = servergrpc.StartGRPCServer(todoCtx, ctx.Logger, config.GRPC, grpcSrv)
-		if err != nil {
-			ctx.Logger.Error("failed to start grpc-web http server: ", err)
-			return err
-		}
-		defer func() {
-			if err := grpcWebSrv.Close(); err != nil {
-				ctx.Logger.Error("failed to close grpc-web http server: ", err)
-			}
-		}()
 	}
 
 	// At this point it is safe to block the process if we're in gRPC only mode as

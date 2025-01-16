@@ -28,30 +28,41 @@ import (
 
 // deepClone deep clones the given object using reflection.
 // If the structs differ in any way an error is returned.
-func deepConfigClone(src any, dst any) error {
-	srcVal := reflect.ValueOf(src)
-	dstVal := reflect.ValueOf(dst)
-	if srcVal.Kind() == reflect.Ptr {
-		if dstVal.Kind() != reflect.Ptr {
-			return fmt.Errorf("kind mismatch: %s != %s", srcVal.Kind(), dstVal.Kind())
-		}
-		return deepConfigClone(srcVal.Elem(), dstVal.Elem())
-	}
-	if srcVal.Kind() == reflect.Struct && dstVal.Kind() == reflect.Struct {
-		for i := 0; i < srcVal.NumField(); i++ {
-			srcField := srcVal.Field(i)
-			dstField := dstVal.Field(i)
+func DeepClone(src, dst interface{}) error {
+	return deepClone(reflect.ValueOf(src), reflect.ValueOf(dst))
+}
 
-			if srcField.Kind() == reflect.Struct || srcField.Kind() == reflect.Ptr {
-				if err := deepConfigClone(srcField.Addr(), dstField.Addr()); err != nil {
-					return err
-				}
-			} else {
-				dstField.Set(srcField)
-			}
+func deepClone(src, dst reflect.Value) error {
+	switch {
+	case src.Kind() == reflect.Ptr && dst.Kind() == reflect.Ptr:
+		return deepClone(src.Elem(), dst.Elem())
+	case src.Kind() == reflect.Struct && dst.Kind() == reflect.Struct:
+		if !dst.IsValid() {
+			dst = reflect.New(src.Type())
 		}
-	} else {
-		return fmt.Errorf("kind mismatch: %s != %s", srcVal.Kind(), dstVal.Kind())
+	default:
+		return fmt.Errorf("kind mismatch: %s != %s", src.Kind(), dst.Kind())
+	}
+
+	for i := 0; i < src.NumField(); i++ {
+		srcField := src.Field(i)
+		srcFieldType := src.Type().Field(i)
+		dstField := dst.Field(i)
+		dstFieldType := dst.Type().Field(i)
+		if srcFieldType.Name != dstFieldType.Name {
+			return fmt.Errorf("field name mismatch: %s != %s", srcFieldType.Name, dstFieldType.Name)
+		}
+		if srcFieldType.Type != dstFieldType.Type {
+			return fmt.Errorf("field type mismatch: %s != %s", srcFieldType.Type, dstFieldType.Type)
+		}
+
+		if srcField.Kind() == reflect.Struct || srcField.Kind() == reflect.Ptr {
+			if err := deepClone(srcField, dstField); err != nil {
+				return err
+			}
+		} else {
+			dstField.Set(srcField)
+		}
 	}
 
 	return nil

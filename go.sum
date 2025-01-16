@@ -192,8 +192,8 @@ cloud.google.com/go/webrisk v1.4.0/go.mod h1:Hn8X6Zr+ziE2aNd8SliSDWpEnSS1u4R9+xX
 cloud.google.com/go/webrisk v1.5.0/go.mod h1:iPG6fr52Tv7sGk0H6qUFzmL3HHZev1htXuWDEEsqMTg=
 cloud.google.com/go/workflows v1.6.0/go.mod h1:6t9F5h/unJz41YqfBmqSASJSXccBLtD1Vwf+KmJENM0=
 cloud.google.com/go/workflows v1.7.0/go.mod h1:JhSrZuVZWuiDfKEFxU0/F1PQjmpnpcoISEXH2bcHC3M=
-cosmossdk.io/api v0.8.0 h1:E5Xifxu/3mPTLF79si9fyq4rR0wagubeVNmOz5duTUo=
-cosmossdk.io/api v0.8.0/go.mod h1:hgJ83P0ZUu0rS1SZoVM6abk6ADOkiM259BVVlYtAPP0=
+cosmossdk.io/api v0.8.1 h1:jQxx7CgUZDfgbPhPak41hW8TZzqfj06YxNI1WOulOo4=
+cosmossdk.io/api v0.8.1/go.mod h1:8Q+Je1bFwsNTCMe6qigVDDyrNmFYa7ttvG96tN/oKGw=
 cosmossdk.io/client/v2 v2.10.0-beta.1 h1:uMF5PUt6cy6QeXRnBf1tuig5Haw3dUaTqtSIYZWf/Cc=
 cosmossdk.io/client/v2 v2.10.0-beta.1/go.mod h1:EqHIw/tLdCK1vSAg+8ovNEBq3PeBenP+nQ1WhPMGq94=
 cosmossdk.io/collections v1.0.0 h1:YCYIe/pIMtc1iLDD0OrVdfWCnIkpwdy7k9NSQpaR5mg=
@@ -423,6 +423,8 @@ github.com/cosmos/cosmos-db v1.1.1 h1:FezFSU37AlBC8S98NlSagL76oqBRWq/prTPvFcEJNC
 github.com/cosmos/cosmos-db v1.1.1/go.mod h1:AghjcIPqdhSLP/2Z0yha5xPH3nLnskz81pBx3tcVSAw=
 github.com/cosmos/cosmos-proto v1.0.0-beta.5 h1:eNcayDLpip+zVLRLYafhzLvQlSmyab+RC5W7ZfmxJLA=
 github.com/cosmos/cosmos-proto v1.0.0-beta.5/go.mod h1:hQGLpiIUloJBMdQMMWb/4wRApmI9hjHH05nefC0Ojec=
+github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250116160314-3fa37fe8c6e4 h1:ZFqYofuhVvHEtkXiO4LqKLdbU5F3qm281Yllia0At90=
+github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250116160314-3fa37fe8c6e4/go.mod h1:v82qVB9SOdP2gzKaEqiYefzWvXY0d1epP0JHHEeevqY=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
 github.com/cosmos/gogogateway v1.2.0 h1:Ae/OivNhp8DqBi/sh2A8a1D0y638GpL3tkmLQAiKxTE=

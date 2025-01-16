@@ -3,7 +3,7 @@ module github.com/celestiaorg/celestia-app/v3
 go 1.23.4
 
 require (
-	cosmossdk.io/api v0.8.0
+	cosmossdk.io/api v0.8.1
 	cosmossdk.io/core v1.0.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.5.0
@@ -44,6 +44,7 @@ require (
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-go/v9 v9.0.2
 	github.com/ethereum/go-ethereum v1.14.12
+	github.com/go-kit/log v0.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
@@ -150,7 +151,6 @@ require (
 	github.com/getsentry/sentry-go v0.29.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-kit/kit v0.13.0 // indirect
-	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -332,9 +332,7 @@ replace (
 	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
-	// checkout cosmos/cosmos-sdk at release/0.52.x
-	// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250110123731-13dddd3705fa
-	github.com/cosmos/cosmos-sdk => ../sdk-0.52.x
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250116160314-3fa37fe8c6e4
 
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990, this a v10 pre-release with a v9 module path
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e

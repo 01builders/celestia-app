@@ -7,8 +7,6 @@ import (
 	"slices"
 	"time"
 
-	"cosmossdk.io/math"
-
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"

@@ -17,7 +17,7 @@ import (
 )
 
 func TestGovDecorator(t *testing.T) {
-	decorator := ante.NewGovProposalDecorator()
+	decorator := ante.NewGovProposalDecorator(make(map[string][]string))
 	anteHandler := types.ChainAnteDecorators(decorator)
 	accounts := testfactory.GenerateAccounts(1)
 	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))
@@ -29,9 +29,11 @@ func TestGovDecorator(t *testing.T) {
 	)
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 
-	msgProposal, err := govtypes.NewMsgSubmitProposal([]types.Msg{msgSend}, coins, accounts[0], "")
+	msgProposal, err := govtypes.NewMsgSubmitProposal(
+		[]types.Msg{msgSend}, coins, accounts[0], "", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
 	require.NoError(t, err)
-	msgEmptyProposal, err := govtypes.NewMsgSubmitProposal([]types.Msg{}, coins, accounts[0], "do nothing")
+	msgEmptyProposal, err := govtypes.NewMsgSubmitProposal(
+		[]types.Msg{}, coins, accounts[0], "do nothing", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
 	require.NoError(t, err)
 
 	testCases := []struct {

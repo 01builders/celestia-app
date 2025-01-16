@@ -97,6 +97,7 @@ func (w *logWrapperTmToCore) With(keyvals ...interface{}) log.Logger {
 
 var _ sdkclient.CometRPC = (*tmLocalWrapper)(nil)
 
+// tmLocalWrapper wraps a tendermint/rpc/client/local.Local to implement github.com/cosmos/cosmos-sdk/client.CometRPC.
 type tmLocalWrapper struct {
 	*local.Local
 }
@@ -201,6 +202,11 @@ var _ servertypes.Application = (*cmdApplication)(nil)
 
 type cmdApplication struct {
 	server.Application
+}
+
+// RegisterGRPCServerWithSkipCheckHeader implements types.Application.
+func (c *cmdApplication) RegisterGRPCServerWithSkipCheckHeader(grpc.Server, bool) {
+	panic("unimplemented")
 }
 
 func newCmdApplication(log log.Logger, db corestore.KVStoreWithBatch, w io.Writer, opts servertypes.AppOptions) servertypes.Application {

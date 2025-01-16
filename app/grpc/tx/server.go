@@ -8,6 +8,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 )
@@ -47,6 +48,10 @@ func NewTxServer(clientCtx client.Context, interfaceRegistry codectypes.Interfac
 	}
 }
 
+type txStatus interface {
+	TxStatus(ctx context.Context, txID []byte) (*ctypes.ResultTxStatus, error)
+}
+
 // TxStatus implements the TxServer.TxStatus method proxying to the underlying celestia-core RPC server
 func (s *txServer) TxStatus(ctx context.Context, req *TxStatusRequest) (*TxStatusResponse, error) {
 	if req == nil {
@@ -61,13 +66,18 @@ func (s *txServer) TxStatus(ctx context.Context, req *TxStatusRequest) (*TxStatu
 	if err != nil {
 		return nil, err
 	}
+	// TxStatus is absent in the cometbft rpc client so we use an extension interface to interop with SDK 0.52
+	nodeTxStatus, ok := node.(txStatus)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "node does not support tx status")
+	}
 
 	txID, err := hex.DecodeString(req.TxId)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid tx id: %s", err)
 	}
 
-	resTx, err := node.TxStatus(ctx, txID)
+	resTx, err := nodeTxStatus.TxStatus(ctx, txID)
 	if err != nil {
 		return nil, err
 	}

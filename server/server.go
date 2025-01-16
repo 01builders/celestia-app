@@ -24,6 +24,8 @@ type Application interface {
 	// server.
 	RegisterGRPCServer(gogogrpc.Server)
 
+	RegisterGRPCServerWithSkipCheckHeader(gogogrpc.Server, bool)
+
 	// RegisterTxService registers the gRPC Query service for tx (such as tx
 	// simulation, fetching txs by hash...).
 	RegisterTxService(client.Context)

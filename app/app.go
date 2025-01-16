@@ -12,6 +12,7 @@ import (
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/accounts"
 	"cosmossdk.io/x/accounts/accountstd"
@@ -55,6 +56,7 @@ import (
 	appv1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
 	appv2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	appv3 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v3"
+	celestiaserver "github.com/celestiaorg/celestia-app/v3/server"
 	blobkeeper "github.com/celestiaorg/celestia-app/v3/x/blob/keeper"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	blobstreamkeeper "github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
@@ -73,7 +75,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -101,7 +102,6 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmos "github.com/tendermint/tendermint/libs/os"
 )
@@ -127,8 +127,9 @@ const (
 )
 
 var (
-	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ celestiaserver.Application = (*App)(nil)
+	// TODO: removed pending full IBC integration
+	// _ ibctesting.TestingApp      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -656,11 +657,11 @@ func (app *App) migrateModules(ctx sdk.Context, fromVersion, toVersion uint64) e
 // store.
 //
 // Side-effect: calls baseapp.Init()
-func (app *App) Info(req *abci.InfoRequest) (*abci.InfoResponse, error) {
+func (app *App) InfoV1(req *abci.InfoRequest) (*abci.InfoResponse, error) {
 	if height := app.LastBlockHeight(); height > 0 {
 		ctx, err := app.CreateQueryContext(height, false)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		appVersion, err := app.AppVersion(ctx)
 		if err != nil {
@@ -692,7 +693,7 @@ func (app *App) Info(req *abci.InfoRequest) (*abci.InfoResponse, error) {
 // store.
 //
 // Side-effect: calls baseapp.Init()
-func (app *App) InitChain(req *abci.InitChainRequest) (res *abci.InitChainResponse, err error) {
+func (app *App) InitChainV1(req *abci.InitChainRequest) (res *abci.InitChainResponse, err error) {
 	req = setDefaultAppVersion(req)
 	appVersion := req.ConsensusParams.Version.App
 	ctx := context.Background()
@@ -889,12 +890,13 @@ func (app *App) RegisterTxService(clientCtx client.Context) {
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
-	cmtApp := server.NewCometABCIWrapper(app)
 	cmtservice.RegisterTendermintService(
 		clientCtx,
 		app.BaseApp.GRPCQueryRouter(),
 		app.interfaceRegistry,
-		cmtApp.Query,
+		func(ctx context.Context, req *abci.QueryRequest) (*abci.QueryResponse, error) {
+			return app.BaseApp.Query(ctx, req)
+		},
 	)
 }
 

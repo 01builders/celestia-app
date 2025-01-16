@@ -3,7 +3,10 @@ package cmd
 import (
 	"os"
 
+	kitlog "github.com/go-kit/log"
+
 	"cosmossdk.io/log"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
@@ -12,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -51,7 +53,7 @@ func NewRootCmd() *cobra.Command {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithBroadcastMode(flags.BroadcastBlock).
+		WithBroadcastMode(flags.BroadcastSync).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper(EnvPrefix)
 
@@ -91,7 +93,7 @@ func NewRootCmd() *cobra.Command {
 				}
 			}
 
-			return setDefaultConsensusParams(command)
+			return nil
 		},
 		SilenceUsage: true,
 	}
@@ -110,29 +112,21 @@ func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config)
 		genesisCmd,
 		tmcli.NewCompletionCmd(rootCommand, true),
 		debug.Cmd(),
-		clientconfig.Cmd(),
+		confixcmd.ConfigCommand(),
 		commands.CompactGoLevelDBCmd,
 		addrbookCommand(),
 		downloadGenesisCommand(),
 		addrConversionCmd(),
-		rpc.StatusCommand(),
+		server.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome),
+		keys.Commands(),
 		blobstreamclient.VerifyCmd(),
-		snapshot.Cmd(NewAppServer),
+		snapshot.Cmd(newCmdApplication),
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	addCommands(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, addStartFlags)
-}
-
-// setDefaultConsensusParams sets the default consensus parameters for the
-// embedded server context.
-func setDefaultConsensusParams(command *cobra.Command) error {
-	ctx := server.GetServerContextFromCmd(command)
-	ctx.DefaultConsensusParams = app.DefaultConsensusParams()
-	return server.SetCmdServerContext(command, ctx)
+	addCommands(rootCommand, app.DefaultNodeHome, appExporter)
 }
 
 // addStartFlags adds flags to the start command.
@@ -159,6 +153,6 @@ func replaceLogger(cmd *cobra.Command) error {
 	}
 
 	sctx := server.GetServerContextFromCmd(cmd)
-	sctx.Logger = log.NewLogger(file)
+	sctx.Logger = log.NewLogger(kitlog.NewSyncWriter(file))
 	return server.SetCmdServerContext(cmd, sctx)
 }

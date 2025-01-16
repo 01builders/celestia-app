@@ -2,25 +2,28 @@ package cmd
 
 import (
 	"io"
-	"path/filepath"
 
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
-	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	celestiaserver "github.com/celestiaorg/celestia-app/v3/server"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cast"
-	dbm "github.com/tendermint/tm-db"
 )
 
-func NewAppServer(logger log.Logger, db dbm.DB, traceStore io.Writer, appOptions servertypes.AppOptions) servertypes.Application {
-	var cache sdk.MultiStorePersistentCache
+func NewAppServer(
+	logger log.Logger,
+	db corestore.KVStoreWithBatch,
+	traceStore io.Writer,
+	appOptions servertypes.AppOptions,
+) celestiaserver.Application {
+	var cache storetypes.MultiStorePersistentCache
 
 	if cast.ToBool(appOptions.Get(server.FlagInterBlockCache)) {
 		cache = store.NewCommitKVStoreCacheManager()
@@ -31,14 +34,7 @@ func NewAppServer(logger log.Logger, db dbm.DB, traceStore io.Writer, appOptions
 		panic(err)
 	}
 
-	// Add snapshots
-	snapshotDir := filepath.Join(cast.ToString(appOptions.Get(flags.FlagHome)), "data", "snapshots")
-	//nolint: staticcheck
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
+	snapshotStore, err := server.GetSnapshotStore(appOptions)
 	if err != nil {
 		panic(err)
 	}

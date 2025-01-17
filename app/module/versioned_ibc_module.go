@@ -1,6 +1,8 @@
 package module
 
 import (
+	"context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
@@ -27,7 +29,7 @@ type VersionedIBCModule struct {
 }
 
 func (v *VersionedIBCModule) OnChanOpenInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
@@ -42,7 +44,7 @@ func (v *VersionedIBCModule) OnChanOpenInit(
 }
 
 func (v *VersionedIBCModule) OnChanOpenTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
@@ -57,7 +59,7 @@ func (v *VersionedIBCModule) OnChanOpenTry(
 }
 
 func (v *VersionedIBCModule) OnChanOpenAck(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	counterpartyChannelID string,
@@ -70,7 +72,7 @@ func (v *VersionedIBCModule) OnChanOpenAck(
 }
 
 func (v *VersionedIBCModule) OnChanOpenConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -81,7 +83,7 @@ func (v *VersionedIBCModule) OnChanOpenConfirm(
 }
 
 func (v *VersionedIBCModule) OnChanCloseInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -92,7 +94,7 @@ func (v *VersionedIBCModule) OnChanCloseInit(
 }
 
 func (v *VersionedIBCModule) OnChanCloseConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -103,40 +105,44 @@ func (v *VersionedIBCModule) OnChanCloseConfirm(
 }
 
 func (v *VersionedIBCModule) OnRecvPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
 	if v.isVersionSupported(ctx) {
-		return v.wrappedModule.OnRecvPacket(ctx, packet, relayer)
+		return v.wrappedModule.OnRecvPacket(ctx, channelVersion, packet, relayer)
 	}
-	return v.nextModule.OnRecvPacket(ctx, packet, relayer)
+	return v.nextModule.OnRecvPacket(ctx, channelVersion, packet, relayer)
 }
 
 func (v *VersionedIBCModule) OnAcknowledgementPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
 	if v.isVersionSupported(ctx) {
-		return v.wrappedModule.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+		return v.wrappedModule.OnAcknowledgementPacket(ctx, channelVersion, packet, acknowledgement, relayer)
 	}
-	return v.nextModule.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	return v.nextModule.OnAcknowledgementPacket(ctx, channelVersion, packet, acknowledgement, relayer)
 }
 
 func (v *VersionedIBCModule) OnTimeoutPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
 	if v.isVersionSupported(ctx) {
-		return v.wrappedModule.OnTimeoutPacket(ctx, packet, relayer)
+		return v.wrappedModule.OnTimeoutPacket(ctx, channelVersion, packet, relayer)
 	}
-	return v.nextModule.OnTimeoutPacket(ctx, packet, relayer)
+	return v.nextModule.OnTimeoutPacket(ctx, channelVersion, packet, relayer)
 }
 
-func (v *VersionedIBCModule) isVersionSupported(ctx sdk.Context) bool {
-	currentAppVersion := ctx.BlockHeader().Version.App //TODO: use consensusKeeper.AppVersion(ctx) instead
+func (v *VersionedIBCModule) isVersionSupported(ctx context.Context) bool {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentAppVersion := sdkCtx.BlockHeader().Version.App //TODO: use consensusKeeper.AppVersion(ctx) instead
 	return currentAppVersion >= v.fromVersion && currentAppVersion <= v.toVersion
 }

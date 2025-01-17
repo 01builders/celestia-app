@@ -34,10 +34,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnChanOpenInit with supported version",
 			version: 2,
 			setupMocks: func(ctx sdk.Context) {
-				mockWrappedModule.EXPECT().OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1").Return("wrapped_version", nil)
+				mockWrappedModule.EXPECT().OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1").Return("wrapped_version", nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1")
+				return versionedModule.OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1")
 			},
 			expectedValue: "wrapped_version",
 		},
@@ -45,10 +45,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnChanOpenInit with unsupported version",
 			version: 1,
 			setupMocks: func(ctx sdk.Context) {
-				mockNextModule.EXPECT().OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1").Return("next_version", nil)
+				mockNextModule.EXPECT().OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1").Return("next_version", nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1")
+				return versionedModule.OnChanOpenInit(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1")
 			},
 			expectedValue: "next_version",
 		},
@@ -56,10 +56,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnChanOpenTry with supported version",
 			version: 2,
 			setupMocks: func(ctx sdk.Context) {
-				mockWrappedModule.EXPECT().OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1").Return("wrapped_version", nil)
+				mockWrappedModule.EXPECT().OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1").Return("wrapped_version", nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1")
+				return versionedModule.OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1")
 			},
 			expectedValue: "wrapped_version",
 		},
@@ -67,10 +67,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnChanOpenTry with unsupported version",
 			version: 1,
 			setupMocks: func(ctx sdk.Context) {
-				mockNextModule.EXPECT().OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1").Return("next_version", nil)
+				mockNextModule.EXPECT().OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1").Return("next_version", nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", nil, types.Counterparty{}, "1")
+				return versionedModule.OnChanOpenTry(ctx, types.ORDERED, []string{"connection"}, "port", "channel", types.Counterparty{}, "1")
 			},
 			expectedValue: "next_version",
 		},
@@ -167,10 +167,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			version: 2,
 			setupMocks: func(ctx sdk.Context) {
 				expectedAck := types.NewResultAcknowledgement([]byte("wrapped_ack"))
-				mockWrappedModule.EXPECT().OnRecvPacket(ctx, types.Packet{}, sdk.AccAddress{}).Return(expectedAck)
+				mockWrappedModule.EXPECT().OnRecvPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}).Return(expectedAck)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnRecvPacket(ctx, types.Packet{}, sdk.AccAddress{}), nil
+				return versionedModule.OnRecvPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}), nil
 			},
 			expectedValue: types.NewResultAcknowledgement([]byte("wrapped_ack")),
 		},
@@ -179,10 +179,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			version: 1,
 			setupMocks: func(ctx sdk.Context) {
 				expectedAck := types.NewResultAcknowledgement([]byte("next_ack"))
-				mockNextModule.EXPECT().OnRecvPacket(ctx, types.Packet{}, sdk.AccAddress{}).Return(expectedAck)
+				mockNextModule.EXPECT().OnRecvPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}).Return(expectedAck)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return versionedModule.OnRecvPacket(ctx, types.Packet{}, sdk.AccAddress{}), nil
+				return versionedModule.OnRecvPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}), nil
 			},
 			expectedValue: types.NewResultAcknowledgement([]byte("next_ack")),
 		},
@@ -190,10 +190,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnAcknowledgementPacket with supported version",
 			version: 2,
 			setupMocks: func(ctx sdk.Context) {
-				mockWrappedModule.EXPECT().OnAcknowledgementPacket(ctx, types.Packet{}, []byte{}, sdk.AccAddress{}).Return(nil)
+				mockWrappedModule.EXPECT().OnAcknowledgementPacket(ctx, "v1", types.Packet{}, []byte{}, sdk.AccAddress{}).Return(nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return nil, versionedModule.OnAcknowledgementPacket(ctx, types.Packet{}, []byte{}, sdk.AccAddress{})
+				return nil, versionedModule.OnAcknowledgementPacket(ctx, "v1", types.Packet{}, []byte{}, sdk.AccAddress{})
 			},
 			expectedValue: nil,
 		},
@@ -201,10 +201,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnAcknowledgementPacket with unsupported version",
 			version: 1,
 			setupMocks: func(ctx sdk.Context) {
-				mockNextModule.EXPECT().OnAcknowledgementPacket(ctx, types.Packet{}, []byte{}, sdk.AccAddress{}).Return(nil)
+				mockNextModule.EXPECT().OnAcknowledgementPacket(ctx, "v1", types.Packet{}, []byte{}, sdk.AccAddress{}).Return(nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return nil, versionedModule.OnAcknowledgementPacket(ctx, types.Packet{}, []byte{}, sdk.AccAddress{})
+				return nil, versionedModule.OnAcknowledgementPacket(ctx, "v1", types.Packet{}, []byte{}, sdk.AccAddress{})
 			},
 			expectedValue: nil,
 		},
@@ -212,10 +212,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnTimeoutPacket with supported version",
 			version: 2,
 			setupMocks: func(ctx sdk.Context) {
-				mockWrappedModule.EXPECT().OnTimeoutPacket(ctx, types.Packet{}, sdk.AccAddress{}).Return(nil)
+				mockWrappedModule.EXPECT().OnTimeoutPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}).Return(nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return nil, versionedModule.OnTimeoutPacket(ctx, types.Packet{}, sdk.AccAddress{})
+				return nil, versionedModule.OnTimeoutPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{})
 			},
 			expectedValue: nil,
 		},
@@ -223,10 +223,10 @@ func TestVersionedIBCModule(t *testing.T) {
 			name:    "OnTimeoutPacket with unsupported version",
 			version: 1,
 			setupMocks: func(ctx sdk.Context) {
-				mockNextModule.EXPECT().OnTimeoutPacket(ctx, types.Packet{}, sdk.AccAddress{}).Return(nil)
+				mockNextModule.EXPECT().OnTimeoutPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{}).Return(nil)
 			},
 			method: func(ctx sdk.Context) (interface{}, error) {
-				return nil, versionedModule.OnTimeoutPacket(ctx, types.Packet{}, sdk.AccAddress{})
+				return nil, versionedModule.OnTimeoutPacket(ctx, "v1", types.Packet{}, sdk.AccAddress{})
 			},
 			expectedValue: nil,
 		},

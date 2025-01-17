@@ -106,15 +106,18 @@ In the root command, began to reason about and fix genesis commands including De
 - Migrate `BlockHeader().Version.App` to consensus keeper appversion
 - Replace x/paramfilter by custom ante handler
 
+### 2025-01-17
+
+- Remove test/pfm
+- More build issue fix
+
 ## Problems
 
 - SDK 0.52 has modules with `cosmossdk.io/*` import paths
 - celestia-app needs ibc-go v9 (checked out at decc8ec9ae8eeda9cf3791d45d3005a6e929a990 locally) for `cosmossdk.io/*` import paths
 - celestia-app also depends on `github.com/cosmos/ibc-apps/middleware/packet-forward-middleware`
 - `packet-forward-middleware` depends on ibc-go.  the latest version available of PFM is v8, which uses `github.com/cosmos/cosmos-sdk/*` import paths.  therefore a PFM v9 which depends on cosmos-sdk @ 0.52 is needed.
-- PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree. PFM needs to be refactored to work without capability. It is unclear from IBC documentation what is the future of this module.
-- crisis module doesn't exist in v0.52, which is fine, but need to be thought about for the multiplexer (if in process)
-- capability module doesn't exist in ibc v9, which is fine, but need to be thought about for the multiplexer (if in process)
+- PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree. PFM needs to be refactored to work without capability. It is unclear from IBC documentation what is the future of this module. PFM tests have been removed.
 
 ## Upstream
 

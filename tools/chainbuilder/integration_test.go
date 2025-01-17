@@ -13,14 +13,15 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/rpc/client/local"
-	tmdbm "github.com/tendermint/tm-db"
 
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func TestRun(t *testing.T) {
 	tmCfg := testnode.DefaultTendermintConfig()
 	tmCfg.SetRoot(cfg.ExistingDir)
 
-	appDB, err := tmdbm.NewDB("application", tmdbm.GoLevelDBBackend, tmCfg.DBDir())
+	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	require.NoError(t, err)
 
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
@@ -82,7 +83,7 @@ func TestRun(t *testing.T) {
 		node.DefaultGenesisDocProviderFunc(tmCfg),
 		node.DefaultDBProvider,
 		node.DefaultMetricsProvider(tmCfg.Instrumentation),
-		log.NewNopLogger(),
+		tmlog.NewNopLogger(),
 	)
 	require.NoError(t, err)
 

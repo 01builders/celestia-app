@@ -15,6 +15,11 @@ func (ao *KVAppOptions) Get(option string) interface{} {
 	return ao.options[option]
 }
 
+// GetString return the option for the given option key as a string.
+func (ao *KVAppOptions) GetString(option string) string {
+	return ao.Get(option).(string)
+}
+
 // Set sets a key-value app option.
 func (ao *KVAppOptions) Set(option string, value interface{}) {
 	ao.options[option] = value

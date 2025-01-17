@@ -91,7 +91,7 @@ func (s *IntegrationTestSuite) Test_verifyTimeIotaMs() {
 
 func (s *IntegrationTestSuite) TestPostData() {
 	require := s.Require()
-	_, err := s.cctx.PostData(s.accounts[0], flags.BroadcastBlock, share.RandomBlobNamespace(), tmrand.Bytes(kibibyte))
+	_, err := s.cctx.PostData(s.accounts[0], flags.BroadcastSync, share.RandomBlobNamespace(), tmrand.Bytes(kibibyte))
 	require.NoError(err)
 }
 

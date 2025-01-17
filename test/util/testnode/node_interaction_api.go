@@ -265,8 +265,6 @@ func (c *Context) PostData(account, broadcastMode string, ns share.Namespace, bl
 		res, err = c.BroadcastTxSync(blobTx)
 	case flags.BroadcastAsync:
 		res, err = c.BroadcastTxAsync(blobTx)
-	case flags.BroadcastBlock:
-		res, err = c.BroadcastTxCommit(blobTx)
 	default:
 		return nil, fmt.Errorf("unsupported broadcast mode %s; supported modes: sync, async, block", c.BroadcastMode)
 	}
@@ -290,7 +288,7 @@ func (c *Context) FillBlock(squareSize int, account string, broadcastMode string
 	}
 
 	if broadcastMode == "" {
-		broadcastMode = flags.BroadcastBlock
+		broadcastMode = flags.BroadcastSync
 	}
 
 	// create the tx the size of the square minus one row

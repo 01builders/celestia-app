@@ -104,7 +104,7 @@ func BenchmarkPrepareProposal_MsgSend_1(b *testing.B) {
 		BlockData: &tmproto.Data{
 			Txs: rawTxs,
 		},
-		ChainId: testApp.GetChainID(),
+		ChainId: testApp.ChainID(),
 		Height:  10,
 	}
 
@@ -125,7 +125,7 @@ func BenchmarkPrepareProposal_MsgSend_8MB(b *testing.B) {
 	}
 	prepareProposalRequest := types.RequestPrepareProposal{
 		BlockData: blockData,
-		ChainId:   testApp.GetChainID(),
+		ChainId:   testApp.ChainID(),
 		Height:    10,
 	}
 
@@ -146,7 +146,7 @@ func BenchmarkProcessProposal_MsgSend_1(b *testing.B) {
 	}
 	prepareProposalRequest := types.RequestPrepareProposal{
 		BlockData: blockData,
-		ChainId:   testApp.GetChainID(),
+		ChainId:   testApp.ChainID(),
 		Height:    10,
 	}
 	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
@@ -182,7 +182,7 @@ func BenchmarkProcessProposal_MsgSend_8MB(b *testing.B) {
 	}
 	prepareProposalRequest := types.RequestPrepareProposal{
 		BlockData: blockData,
-		ChainId:   testApp.GetChainID(),
+		ChainId:   testApp.ChainID(),
 		Height:    10,
 	}
 	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
@@ -229,7 +229,7 @@ func BenchmarkProcessProposal_MsgSend_8MB_Find_Half_Sec(b *testing.B) {
 			BlockData: &tmproto.Data{
 				Txs: rawTxs[start:end],
 			},
-			ChainId: testApp.GetChainID(),
+			ChainId: testApp.ChainID(),
 			Height:  10,
 		}
 		prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)

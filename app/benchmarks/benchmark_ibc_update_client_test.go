@@ -160,7 +160,7 @@ package benchmarks_test
 // 	}
 // 	prepareProposalRequest := types.RequestPrepareProposal{
 // 		BlockData: blockData,
-// 		ChainId:   testApp.GetChainID(),
+// 		ChainId:   testApp.ChainID(),
 // 		Height:    10,
 // 	}
 
@@ -212,7 +212,7 @@ package benchmarks_test
 // 	}
 // 	prepareProposalRequest := types.RequestPrepareProposal{
 // 		BlockData: blockData,
-// 		ChainId:   testApp.GetChainID(),
+// 		ChainId:   testApp.ChainID(),
 // 		Height:    10,
 // 	}
 

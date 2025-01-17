@@ -7,9 +7,9 @@ import (
 
 var _ sdk.Msg = &MsgRegisterEVMAddress{}
 
-func NewMsgRegisterEVMAddress(valAddress sdk.ValAddress, evmAddress common.Address) *MsgRegisterEVMAddress {
+func NewMsgRegisterEVMAddress(valAddress string, evmAddress common.Address) *MsgRegisterEVMAddress {
 	msg := &MsgRegisterEVMAddress{
-		ValidatorAddress: valAddress.String(),
+		ValidatorAddress: valAddress,
 		EvmAddress:       evmAddress.Hex(),
 	}
 	return msg

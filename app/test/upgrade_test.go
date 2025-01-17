@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/params/types/proposal"
 	app "github.com/celestiaorg/celestia-app/v3/app"
@@ -31,7 +32,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	dbm "github.com/tendermint/tm-db"
 )
 
 func TestAppUpgradeV3(t *testing.T) {
@@ -54,7 +54,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	account := testApp.AuthKeeper.GetAccount(ctx, accAddr)
 	signer, err := user.NewSigner(
-		genesis.Keyring(), encCfg.TxConfig, testApp.GetChainID(), v3.Version,
+		genesis.Keyring(), encCfg.TxConfig, testApp.ChainID(), v3.Version,
 		user.NewAccount(testnode.DefaultValidatorAccountName, account.GetAccountNumber(), account.GetSequence()),
 	)
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	require.Equal(t, v3.Version, getUpgradeResp.Upgrade.AppVersion)
 
 	initialHeight := int64(4)
-	for height := initialHeight; height < initialHeight+appconsts.UpgradeHeightDelay(testApp.GetChainID(), v2.Version); height++ {
+	for height := initialHeight; height < initialHeight+appconsts.UpgradeHeightDelay(testApp.ChainID(), v2.Version); height++ {
 		appVersion := v2.Version
 		_ = testApp.BeginBlock(abci.RequestBeginBlock{
 			Header: tmproto.Header{
@@ -107,7 +107,7 @@ func TestAppUpgradeV3(t *testing.T) {
 		})
 
 		endBlockResp = testApp.EndBlock(abci.RequestEndBlock{
-			Height: 3 + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v2.Version),
+			Height: 3 + appconsts.UpgradeHeightDelay(testApp.ChainID(), v2.Version),
 		})
 
 		require.Equal(t, appconsts.GetTimeoutCommit(appVersion), endBlockResp.Timeouts.TimeoutCommit)
@@ -132,7 +132,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	_ = testApp.BeginBlock(abci.RequestBeginBlock{
 		Header: tmproto.Header{
 			ChainID: genesis.ChainID,
-			Height:  initialHeight + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v3.Version),
+			Height:  initialHeight + appconsts.UpgradeHeightDelay(testApp.ChainID(), v3.Version),
 			Version: tmversion.Consensus{App: 3},
 		},
 	})
@@ -143,7 +143,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	require.Equal(t, abci.CodeTypeOK, deliverTxResp.Code, deliverTxResp.Log)
 
 	respEndBlock := testApp.EndBlock(abci.
-		RequestEndBlock{Height: initialHeight + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v3.Version)})
+		RequestEndBlock{Height: initialHeight + appconsts.UpgradeHeightDelay(testApp.ChainID(), v3.Version)})
 	require.Equal(t, appconsts.GetTimeoutCommit(v3.Version), respEndBlock.Timeouts.TimeoutCommit)
 	require.Equal(t, appconsts.GetTimeoutPropose(v3.Version), respEndBlock.Timeouts.TimeoutPropose)
 }
@@ -193,7 +193,10 @@ func TestAppUpgradeV2(t *testing.T) {
 				Version: tmversion.Consensus{App: 1},
 			}})
 			// app version should not have changed yet
-			require.EqualValues(t, 1, testApp.AppVersion())
+			appVersion, err := testApp.AppVersion()
+			require.NoError(t, err)
+
+			require.EqualValues(t, 1, appVersion)
 
 			// Query the module params
 			gotBefore, err := testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
@@ -206,7 +209,10 @@ func TestAppUpgradeV2(t *testing.T) {
 			// Upgrade from v1 -> v2
 			testApp.EndBlock(abci.RequestEndBlock{Height: 2})
 			testApp.Commit()
-			require.EqualValues(t, 2, testApp.AppVersion())
+
+			appVersion, err = testApp.AppVersion()
+			require.NoError(t, err)
+			require.EqualValues(t, 2, appVersion)
 
 			newCtx := testApp.NewContext(true, tmproto.Header{Version: tmversion.Consensus{App: 2}})
 			got, err := testApp.ParamsKeeper.Params(newCtx, &proposal.QueryParamsRequest{
@@ -252,7 +258,7 @@ func TestBlobstreamRemovedInV2(t *testing.T) {
 func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, *genesis.Genesis) {
 	t.Helper()
 
-	db := dbm.NewMemDB()
+	db := coretesting.NewMemDB()
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0, util.EmptyAppOptions{})
 	genesis := genesis.NewDefaultGenesis().

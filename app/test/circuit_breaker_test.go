@@ -17,8 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 	coretypes "github.com/tendermint/tendermint/types"
 )
 
@@ -34,10 +32,9 @@ var expiration = time.Now().Add(time.Hour)
 // TestCircuitBreaker verifies that the circuit breaker prevents a nested Authz
 // message that contains a MsgTryUpgrade if the MsgTryUpgrade is not supported
 // in the current version.
-func TestCircuitBreaker(t *testing.T) {
+func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to update the app version easily
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	testApp, keyRing := util.SetupTestAppWithGenesisValSet(app.DefaultInitialConsensusParams(), granter, grantee)
-	header := tmproto.Header{Height: 2, Version: version.Consensus{App: appVersion}}
 
 	signer, err := user.NewSigner(keyRing, config.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 1, 0))
 	require.NoError(t, err)
@@ -46,14 +43,15 @@ func TestCircuitBreaker(t *testing.T) {
 	granteeAddress := testfactory.GetAddress(keyRing, grantee)
 
 	authorization := authz.NewGenericAuthorization(signaltypes.URLMsgTryUpgrade)
-	msg, err := authz.NewMsgGrant(granterAddress, granteeAddress, authorization, &expiration)
+	msg, err := authz.NewMsgGrant(granterAddress.String(), granteeAddress.String(), authorization, &expiration)
 	require.NoError(t, err)
-	ctx := testApp.NewContext(true, header)
+	ctx := testApp.NewContext(true)
 	_, err = testApp.AuthzKeeper.Grant(ctx, msg)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "/celestia.signal.v1.Msg/TryUpgrade doesn't exist.: invalid type")
 
-	testApp.BeginBlocker(ctx, abci.RequestBeginBlock{Header: header})
+	_, err = testApp.BeginBlocker(ctx)
+	require.NoError(t, err)
 
 	tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
 	res := testApp.DeliverTx(abci.RequestDeliverTx{Tx: tryUpgradeTx})
@@ -78,7 +76,7 @@ func newTryUpgradeTx(t *testing.T, signer *user.Signer, senderAddress sdk.AccAdd
 
 func newNestedTx(t *testing.T, signer *user.Signer, granterAddress sdk.AccAddress) coretypes.Tx {
 	innerMsg := signaltypes.NewMsgTryUpgrade(granterAddress)
-	msg := authz.NewMsgExec(granterAddress, []sdk.Msg{innerMsg})
+	msg := authz.NewMsgExec(granterAddress.String(), []sdk.Msg{innerMsg})
 
 	options := blobfactory.FeeTxOpts(1e9)
 

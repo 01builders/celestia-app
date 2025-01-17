@@ -386,7 +386,7 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 				BlockData: &tmproto.Data{
 					Txs: testCase.inputTransactions,
 				},
-				ChainId: testApp.GetChainID(),
+				ChainId: testApp.ChainID(),
 				Height:  10,
 			})
 			assert.Equal(t, testCase.expectedTransactions, resp.BlockData.Txs)

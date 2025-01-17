@@ -10,6 +10,7 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -107,7 +108,7 @@ func (v *Validator) GenTx(ecfg encoding.Config, kr keyring.Keyring, chainID stri
 		return nil, err
 	}
 
-	pk, err := cryptocodec.FromTmPubKeyInterface(v.ConsensusKey.PubKey())
+	pk, err := cryptocodec.FromCmtPubKeyInterface(v.ConsensusKey.PubKey())
 	if err != nil {
 		return nil, fmt.Errorf("converting public key for node %s: %w", v.Name, err)
 	}
@@ -139,7 +140,7 @@ func (v *Validator) GenTx(ecfg encoding.Config, kr keyring.Keyring, chainID stri
 		WithKeybase(kr).
 		WithTxConfig(ecfg.TxConfig)
 
-	err = tx.Sign(txFactory, v.Name, txBuilder, true)
+	err = tx.Sign(client.Context{}.WithAddressCodec(), txFactory, v.Name, txBuilder, true)
 	if err != nil {
 		return nil, err
 	}

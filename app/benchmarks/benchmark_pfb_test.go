@@ -161,7 +161,7 @@ func benchmarkPrepareProposalPFB(b *testing.B, count, size int) {
 	}
 	prepareProposalRequest := types.RequestPrepareProposal{
 		BlockData: blockData,
-		ChainId:   testApp.GetChainID(),
+		ChainId:   testApp.ChainID(),
 		Height:    10,
 	}
 
@@ -213,7 +213,7 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	}
 	prepareProposalRequest := types.RequestPrepareProposal{
 		BlockData: blockData,
-		ChainId:   testApp.GetChainID(),
+		ChainId:   testApp.ChainID(),
 		Height:    10,
 	}
 
@@ -293,7 +293,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 			BlockData: &tmproto.Data{
 				Txs: rawTxs[start:end],
 			},
-			ChainId: testApp.GetChainID(),
+			ChainId: testApp.ChainID(),
 			Height:  10,
 		}
 		prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)

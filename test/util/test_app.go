@@ -61,6 +61,11 @@ func (ao EmptyAppOptions) Get(_ string) interface{} {
 	return nil
 }
 
+// GetString implements AppOptions
+func (ao EmptyAppOptions) GetString(_ string) string {
+	return ""
+}
+
 // SetupTestAppWithGenesisValSet initializes a new app with a validator set and
 // genesis accounts that also act as delegators. For simplicity, each validator
 // is bonded with a delegation of one consensus engine unit in the default token
@@ -402,7 +407,7 @@ func genesisStateWithValSet(
 	bondAmt := sdk.DefaultPowerReduction
 
 	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		if err != nil {
 			panic(err)
 		}

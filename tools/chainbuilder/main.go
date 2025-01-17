@@ -24,7 +24,6 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-	tmdbm "github.com/tendermint/tm-db"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -191,7 +190,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		DiscardABCIResponses: true,
 	})
 
-	appDB, err := tmdbm.NewDB("application", tmdbm.GoLevelDBBackend, tmCfg.DBDir())
+	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create application database: %w", err)
 	}

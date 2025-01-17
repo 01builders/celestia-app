@@ -12,7 +12,11 @@ import (
 // different value for testnode.
 func wrapEndBlocker(app *app.App, timeoutCommit time.Duration) func(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	endBlocker := func(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-		resp := app.EndBlocker(ctx, req)
+		resp, err := app.EndBlocker(ctx, req)
+		if err != nil {
+			panic(err)
+		}
+
 		resp.Timeouts.TimeoutCommit = timeoutCommit
 		return resp
 	}

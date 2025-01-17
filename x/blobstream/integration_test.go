@@ -63,7 +63,7 @@ func (s *BlobstreamIntegrationSuite) TestBlobstream() {
 			msgFunc: func() ([]sdk.Msg, sdk.AccAddress) {
 				addr := testfactory.GetAddress(s.cctx.Keyring, "validator")
 				valAddr := sdk.ValAddress(addr)
-				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
+				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
 				return []sdk.Msg{msg}, addr
 			},
 			expectedTxCode: abci.CodeTypeOK,
@@ -73,7 +73,7 @@ func (s *BlobstreamIntegrationSuite) TestBlobstream() {
 			msgFunc: func() ([]sdk.Msg, sdk.AccAddress) {
 				addr := testfactory.GetAddress(s.cctx.Keyring, s.accounts[0])
 				valAddr := sdk.ValAddress(addr)
-				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
+				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
 				return []sdk.Msg{msg}, addr
 			},
 			expectedTxCode: staking.ErrNoValidatorFound.ABCICode(),

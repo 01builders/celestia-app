@@ -49,7 +49,7 @@ func StartNode(cometNode *node.Node, cctx Context) (Context, func() error, error
 // StartGRPCServer starts the GRPC server using the provided application and
 // config. A GRPC client connection to that server is also added to the client
 // context. The returned function should be used to shutdown the server.
-func StartGRPCServer(app srvtypes.Application, appCfg *srvconfig.Config, cctx Context) (Context, func() error, error) {
+func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvconfig.Config, cctx Context) (Context, func() error, error) {
 	emptycleanup := func() error { return nil }
 	// Add the tx service in the gRPC router.
 	app.RegisterTxService(cctx.Context)
@@ -61,7 +61,12 @@ func StartGRPCServer(app srvtypes.Application, appCfg *srvconfig.Config, cctx Co
 		a.RegisterNodeService(cctx.Context)
 	}
 
-	grpcSrv, err := srvgrpc.StartGRPCServer(cctx.Context, app, appCfg.GRPC)
+	grpcSrv, err := srvgrpc.NewGRPCServer(cctx.Context, app, appCfg.GRPC)
+	if err != nil {
+		return Context{}, emptycleanup, err
+	}
+
+	err = srvgrpc.StartGRPCServer(cctx.goContext, logger, appCfg.GRPC, grpcSrv)
 	if err != nil {
 		return Context{}, emptycleanup, err
 	}
@@ -86,12 +91,12 @@ func StartGRPCServer(app srvtypes.Application, appCfg *srvconfig.Config, cctx Co
 	}, nil
 }
 
-func StartAPIServer(app srvtypes.Application, appCfg srvconfig.Config, cctx Context) (*api.Server, error) {
-	apiSrv := api.New(cctx.Context, log.NewNopLogger())
+func StartAPIServer(app srvtypes.Application, appCfg srvconfig.Config, cctx Context, grpcSrv *grpc.Server) (*api.Server, error) {
+	apiSrv := api.New(cctx.Context, log.NewNopLogger(), grpcSrv)
 	app.RegisterAPIRoutes(apiSrv, appCfg.API)
 	errCh := make(chan error)
 	go func() {
-		if err := apiSrv.Start(appCfg); err != nil {
+		if err := apiSrv.Start(cctx.goContext, appCfg); err != nil {
 			errCh <- err
 		}
 	}()

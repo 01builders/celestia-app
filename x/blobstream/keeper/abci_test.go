@@ -82,7 +82,7 @@ func TestValsetCreationWhenEditingEVMAddr(t *testing.T) {
 
 	newEVMAddr := testfactory.RandomEVMAddress()
 	registerMsg := types.NewMsgRegisterEVMAddress(
-		testutil.ValAddrs[1],
+		testutil.ValAddrs[1].String(),
 		newEVMAddr,
 	)
 	_, err := msgServer.RegisterEVMAddress(ctx, registerMsg)

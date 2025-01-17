@@ -221,21 +221,21 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgDeposit)
 
 	// NewMsgCreateValidator - creates a new validator
-	msgCreateValidator, err := stakingtypes.NewMsgCreateValidator(sdk.ValAddress(accountAddresses[6]),
+	msgCreateValidator, err := stakingtypes.NewMsgCreateValidator(sdk.ValAddress(accountAddresses[6]).String(),
 		ed25519.GenPrivKeyFromSecret([]byte("validator")).PubKey(),
 		amount[0],
 		stakingtypes.NewDescription("taco tuesday", "my keybase", "www.celestia.org", "ping @celestiaorg on twitter", "fake validator"),
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(6, 0o2), sdk.NewDecWithPrec(12, 0o2), sdk.NewDecWithPrec(1, 0o2)),
-		sdk.OneInt())
+		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(6, 0o2), math.LegacyNewDecWithPrec(12, 0o2), math.LegacyNewDecWithPrec(1, 0o2)),
+		math.OneInt())
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgCreateValidator)
 
 	// NewMsgDelegate - delegates funds to validator-0
-	msgDelegate := stakingtypes.NewMsgDelegate(accountAddresses[0], genValidators[0].GetOperator(), amount[0])
+	msgDelegate := stakingtypes.NewMsgDelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), amount[0])
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgDelegate)
 
 	// NewMsgBeginRedelegate - re-delegates funds from validator-0 to validator-1
-	msgBeginRedelegate := stakingtypes.NewMsgBeginRedelegate(accountAddresses[0], genValidators[0].GetOperator(), genValidators[1].GetOperator(), amount[0])
+	msgBeginRedelegate := stakingtypes.NewMsgBeginRedelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), genValidators[1].GetOperator(), amount[0])
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgBeginRedelegate)
 
 	// ------------ Second Block ------------
@@ -243,23 +243,23 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	var secondBlockSdkMsgs []sdk.Msg
 
 	// NewMsgVote - votes yes on a governance proposal
-	msgVote := govtypes.NewMsgVote(accountAddresses[0], 1, govtypes.VoteOption_VOTE_OPTION_YES, "")
+	msgVote := govtypes.NewMsgVote(accountAddresses[0].String(), 1, govtypes.VoteOption_VOTE_OPTION_YES, "")
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgVote)
 
 	// NewMsgRevoke - revokes authorization from account-1
 	msgRevoke := authz.NewMsgRevoke(
-		accountAddresses[0],
-		accountAddresses[1],
+		accountAddresses[0].String(),
+		accountAddresses[1].String(),
 		blobtypes.URLMsgPayForBlobs,
 	)
 
 	// NewMsgExec - executes the revoke authorization message
-	msgExec := authz.NewMsgExec(accountAddresses[0], []sdk.Msg{&msgRevoke})
+	msgExec := authz.NewMsgExec(accountAddresses[0].String(), []sdk.Msg{&msgRevoke})
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, &msgExec)
 
 	// NewMsgVoteWeighted - votes with a weighted vote
 	msgVoteWeighted := govtypes.NewMsgVoteWeighted(
-		accountAddresses[0],
+		accountAddresses[0].String(),
 		1,
 		govtypes.WeightedVoteOptions([]*govtypes.WeightedVoteOption{{Option: govtypes.OptionYes, Weight: "1.0"}}), // Cast the slice to the expected type
 		"",
@@ -267,37 +267,37 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgVoteWeighted)
 
 	// NewMsgEditValidator - edits the newly created validator's description
-	msgEditValidator := stakingtypes.NewMsgEditValidator(sdk.ValAddress(accountAddresses[6]), stakingtypes.NewDescription("add", "new", "val", "desc", "."), nil, &twoInt)
+	msgEditValidator := stakingtypes.NewMsgEditValidator(sdk.ValAddress(accountAddresses[6]).String(), stakingtypes.NewDescription("add", "new", "val", "desc", "."), nil, &twoInt)
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgEditValidator)
 
 	// NewMsgUndelegate - undelegates funds from validator-1
-	msgUndelegate := stakingtypes.NewMsgUndelegate(accountAddresses[0], genValidators[1].GetOperator(), amount[0])
+	msgUndelegate := stakingtypes.NewMsgUndelegate(accountAddresses[0].String(), genValidators[1].GetOperator(), amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgUndelegate)
 
 	// NewMsgDelegate - delegates funds to validator-0
-	msgDelegate = stakingtypes.NewMsgDelegate(accountAddresses[0], genValidators[0].GetOperator(), amount[0])
+	msgDelegate = stakingtypes.NewMsgDelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgDelegate)
 
 	// Block 2 height
 	blockHeight := testApp.LastBlockHeight() + 2
 	// NewMsgCancelUnbondingDelegation - cancels unbonding delegation from validator-1
-	msgCancelUnbondingDelegation := stakingtypes.NewMsgCancelUnbondingDelegation(accountAddresses[0], genValidators[1].GetOperator(), blockHeight, amount[0])
+	msgCancelUnbondingDelegation := stakingtypes.NewMsgCancelUnbondingDelegation(accountAddresses[0].String(), genValidators[1].GetOperator(), blockHeight, amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgCancelUnbondingDelegation)
 
 	// NewMsgSetWithdrawAddress - sets the withdraw address for account-0
-	msgSetWithdrawAddress := distribution.NewMsgSetWithdrawAddress(accountAddresses[0], accountAddresses[1])
+	msgSetWithdrawAddress := distribution.NewMsgSetWithdrawAddress(accountAddresses[0].String(), accountAddresses[1].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgSetWithdrawAddress)
 
 	// NewMsgRevokeAllowance - revokes the allowance granted to account-1
-	msgRevokeAllowance := feegrant.NewMsgRevokeAllowance(accountAddresses[0], accountAddresses[1])
+	msgRevokeAllowance := feegrant.NewMsgRevokeAllowance(accountAddresses[0].String(), accountAddresses[1].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, &msgRevokeAllowance)
 
 	// NewMsgFundCommunityPool - funds the community pool
-	msgFundCommunityPool := distribution.NewMsgFundCommunityPool(amount, accountAddresses[0])
+	msgFundCommunityPool := distribution.NewMsgFundCommunityPool(amount, accountAddresses[0].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgFundCommunityPool)
 
 	// NewMsgWithdrawDelegatorReward - withdraws delegator rewards
-	msgWithdrawDelegatorReward := distribution.NewMsgWithdrawDelegatorReward(accountAddresses[0], genValidators[0].GetOperator())
+	msgWithdrawDelegatorReward := distribution.NewMsgWithdrawDelegatorReward(accountAddresses[0].String(), genValidators[0].GetOperator())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgWithdrawDelegatorReward)
 
 	// NewMsgCreatePeriodicVestingAccount - creates a periodic vesting account
@@ -448,7 +448,7 @@ func processSdkMessages(signer *user.Signer, sdkMessages []sdk.Msg) ([][]byte, e
 // executeTxs executes a set of transactions and returns the data hash and app hash
 func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, validators []abci.Validator, lastCommitHash []byte) ([]byte, []byte, error) {
 	height := testApp.LastBlockHeight() + 1
-	chainID := testApp.GetChainID()
+	chainID := testApp.ChainID()
 
 	genesisTime := testutil.GenesisTime
 

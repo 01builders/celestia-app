@@ -5,11 +5,13 @@ import (
 	"testing"
 	"time"
 
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -18,7 +20,6 @@ import (
 
 	banktypes "cosmossdk.io/x/bank/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
@@ -27,7 +28,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/ibc-go/v9/testing/mock"
 )
@@ -143,10 +143,10 @@ func NewTestChain(t *testing.T, coord *ibctesting.Coordinator, chainID string) *
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
 func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) ibctesting.TestingApp {
-	db := dbm.NewMemDB()
+	db := coretesting.NewMemDB()
 	encCdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	genesisState := app.NewDefaultGenesisState()
-	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, simtestutil.EmptyAppOptions{})
+	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, util.EmptyAppOptions{})
 
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
@@ -158,7 +158,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	bondAmt := sdk.TokensFromConsensusPower(1, powerReduction)
 
 	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
 		require.NoError(t, err)

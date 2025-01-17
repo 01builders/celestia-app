@@ -81,6 +81,7 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/gogoproto/grpc"
 	gogoproto "github.com/cosmos/gogoproto/proto"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/controller/types"
@@ -187,6 +188,11 @@ type App struct {
 	// MsgGateKeeper is used to define which messages are accepted for a given
 	// app version.
 	MsgGateKeeper *ante.MsgVersioningGateKeeper
+}
+
+// RegisterGRPCServerWithSkipCheckHeader implements server.Application.
+func (app *App) RegisterGRPCServerWithSkipCheckHeader(srv grpc.Server, skip bool) {
+	app.RegisterGRPCServerWithSkipCheckHeader(srv, skip)
 }
 
 // New returns a reference to an uninitialized app. Callers must subsequently

@@ -62,9 +62,9 @@ func TestConfigurator(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mock.NewMockAppModule(mockCtrl)
-		mockAppModule3 := mock.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule3 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 
 		mockAppModule1.EXPECT().Name().Return("testModule").AnyTimes()
 		mockAppModule2.EXPECT().Name().Return("testModule").AnyTimes()
@@ -72,8 +72,8 @@ func TestConfigurator(t *testing.T) {
 		mockAppModule1.EXPECT().ConsensusVersion().Return(uint64(1)).AnyTimes()
 		mockAppModule2.EXPECT().ConsensusVersion().Return(uint64(2)).AnyTimes()
 		mockAppModule3.EXPECT().ConsensusVersion().Return(uint64(5)).AnyTimes()
-		mockAppModule3.EXPECT().InitGenesis(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-		mockAppModule3.EXPECT().DefaultGenesis(gomock.Any()).Return(nil)
+		mockAppModule3.EXPECT().InitGenesis(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+		mockAppModule3.EXPECT().DefaultGenesis().Return(nil)
 
 		manager, err := module.NewManager([]module.VersionedModule{
 			// this is an existing module that gets updated in v2

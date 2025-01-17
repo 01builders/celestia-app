@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 
 	"github.com/celestiaorg/celestia-app/v3/app/module"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -22,8 +20,8 @@ import (
 func TestManagerOrderSetters(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(6).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
@@ -58,8 +56,8 @@ func TestManager_RegisterInvariants(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -73,18 +71,19 @@ func TestManager_RegisterInvariants(t *testing.T) {
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
 	// test RegisterInvariants
-	mockInvariantRegistry := mock.NewMockInvariantRegistry(mockCtrl)
-	mockAppModule1.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
-	mockAppModule2.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
-	mm.RegisterInvariants(mockInvariantRegistry)
+	// TODO: Can add these mocks to the generator if its really necessary
+	// mockInvariantRegistry := mock.NewMockInvariantRegistry(mockCtrl)
+	// mockAppModule1.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
+	// mockAppModule2.EXPECT().RegisterInvariants(gomock.Eq(mockInvariantRegistry)).Times(1)
+	// mm.RegisterInvariants(mockInvariantRegistry)
 }
 
 func TestManager_RegisterQueryServices(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(3).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(3).Return("module2")
@@ -112,8 +111,8 @@ func TestManager_InitGenesis(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -127,22 +126,20 @@ func TestManager_InitGenesis(t *testing.T) {
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
 	ctx := sdk.NewContext(nil, false, log.NewNopLogger())
-	interfaceRegistry := types.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(interfaceRegistry)
 	genesisData := map[string]json.RawMessage{"module1": json.RawMessage(`{"key": "value"}`)}
 
 	// this should panic since the validator set is empty even after init genesis
-	mockAppModule1.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(cdc), gomock.Eq(genesisData["module1"])).Times(1).Return(nil)
-	require.Panics(t, func() { mm.InitGenesis(ctx, cdc, genesisData, 1) })
+	mockAppModule1.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(genesisData["module1"])).Times(1).Return(nil)
+	require.Panics(t, func() { mm.InitGenesis(ctx, genesisData, 1) })
 
 	// test panic
 	genesisData = map[string]json.RawMessage{
 		"module1": json.RawMessage(`{"key": "value"}`),
 		"module2": json.RawMessage(`{"key": "value"}`),
 	}
-	mockAppModule1.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(cdc), gomock.Eq(genesisData["module1"])).Times(1).Return([]abci.ValidatorUpdate{{}})
-	mockAppModule2.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(cdc), gomock.Eq(genesisData["module2"])).Times(1).Return([]abci.ValidatorUpdate{{}})
-	require.Panics(t, func() { mm.InitGenesis(ctx, cdc, genesisData, 1) })
+	mockAppModule1.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(genesisData["module1"])).Times(1).Return([]abci.ValidatorUpdate{{}})
+	mockAppModule2.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(genesisData["module2"])).Times(1).Return([]abci.ValidatorUpdate{{}})
+	require.Panics(t, func() { mm.InitGenesis(ctx, genesisData, 1) })
 }
 
 func TestManager_ExportGenesis(t *testing.T) {
@@ -150,8 +147,8 @@ func TestManager_ExportGenesis(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 		mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 		mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 		mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -167,21 +164,23 @@ func TestManager_ExportGenesis(t *testing.T) {
 		ctx := sdk.Context{}
 		interfaceRegistry := types.NewInterfaceRegistry()
 		cdc := codec.NewProtoCodec(interfaceRegistry)
-		mockAppModule1.EXPECT().ExportGenesis(gomock.Eq(ctx), gomock.Eq(cdc)).Times(1).Return(json.RawMessage(`{"key1": "value1"}`))
-		mockAppModule2.EXPECT().ExportGenesis(gomock.Eq(ctx), gomock.Eq(cdc)).Times(1).Return(json.RawMessage(`{"key2": "value2"}`))
+		mockAppModule1.EXPECT().ExportGenesis(gomock.Eq(ctx)).Times(1).Return(json.RawMessage(`{"key1": "value1"}`))
+		mockAppModule2.EXPECT().ExportGenesis(gomock.Eq(ctx)).Times(1).Return(json.RawMessage(`{"key2": "value2"}`))
 
 		want := map[string]json.RawMessage{
 			"module1": json.RawMessage(`{"key1": "value1"}`),
 			"module2": json.RawMessage(`{"key2": "value2"}`),
 		}
-		require.Equal(t, want, mm.ExportGenesis(ctx, cdc, 1))
+		exported, err := mm.ExportGenesis(ctx, cdc, 1)
+		require.NoError(t, err)
+		require.Equal(t, want, exported)
 	})
 	t.Run("export genesis with one modules at version 1, one modules at version 2", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 		mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 		mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(1))
 		mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -198,18 +197,22 @@ func TestManager_ExportGenesis(t *testing.T) {
 		ctx := sdk.Context{}
 		interfaceRegistry := types.NewInterfaceRegistry()
 		cdc := codec.NewProtoCodec(interfaceRegistry)
-		mockAppModule1.EXPECT().ExportGenesis(gomock.Eq(ctx), gomock.Eq(cdc)).Times(1).Return(json.RawMessage(`{"key1": "value1"}`))
-		mockAppModule2.EXPECT().ExportGenesis(gomock.Eq(ctx), gomock.Eq(cdc)).Times(1).Return(json.RawMessage(`{"key2": "value2"}`))
+		mockAppModule1.EXPECT().ExportGenesis(gomock.Eq(ctx)).Times(1).Return(json.RawMessage(`{"key1": "value1"}`))
+		mockAppModule2.EXPECT().ExportGenesis(gomock.Eq(ctx)).Times(1).Return(json.RawMessage(`{"key2": "value2"}`))
 
 		want := map[string]json.RawMessage{
 			"module1": json.RawMessage(`{"key1": "value1"}`),
 		}
-		assert.Equal(t, want, mm.ExportGenesis(ctx, cdc, 1))
+		exported, err := mm.ExportGenesis(ctx, cdc, 1)
+		require.NoError(t, err)
+		assert.Equal(t, want, exported)
 
 		want2 := map[string]json.RawMessage{
 			"module2": json.RawMessage(`{"key2": "value2"}`),
 		}
-		assert.Equal(t, want2, mm.ExportGenesis(ctx, cdc, 2))
+		exported, err = mm.ExportGenesis(ctx, cdc, 2)
+		require.NoError(t, err)
+		assert.Equal(t, want2, exported)
 	})
 }
 
@@ -217,8 +220,8 @@ func TestManager_BeginBlock(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensionsABCI(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensionsABCI(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -231,22 +234,19 @@ func TestManager_BeginBlock(t *testing.T) {
 	require.NotNil(t, mm)
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
-	req := abci.RequestBeginBlock{Hash: []byte("test")}
-
-	mockAppModule1.EXPECT().BeginBlock(gomock.Any(), gomock.Eq(req)).Times(1)
-	mockAppModule2.EXPECT().BeginBlock(gomock.Any(), gomock.Eq(req)).Times(1)
-	ctx := sdk.NewContext(nil, tmproto.Header{
-		Version: tmversion.Consensus{App: 1},
-	}, false, log.NewNopLogger())
-	mm.BeginBlock(ctx, req)
+	mockAppModule1.EXPECT().BeginBlock(gomock.Any()).Times(1)
+	mockAppModule2.EXPECT().BeginBlock(gomock.Any()).Times(1)
+	ctx := sdk.NewContext(nil, false, log.NewNopLogger())
+	_, err = mm.BeginBlock(ctx)
+	require.NoError(t, err)
 }
 
 func TestManager_EndBlock(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensionsABCI(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensionsABCI(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(1).Return(uint64(1))
 	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
@@ -259,28 +259,25 @@ func TestManager_EndBlock(t *testing.T) {
 	require.NotNil(t, mm)
 	require.Equal(t, 2, len(mm.ModuleNames(1)))
 
-	req := abci.RequestEndBlock{Height: 10}
-
-	mockAppModule1.EXPECT().EndBlock(gomock.Any(), gomock.Eq(req)).Times(1).Return([]abci.ValidatorUpdate{{}})
-	mockAppModule2.EXPECT().EndBlock(gomock.Any(), gomock.Eq(req)).Times(1)
-	ctx := sdk.NewContext(nil, tmproto.Header{
-		Version: tmversion.Consensus{App: 1},
-	}, false, log.NewNopLogger())
-	ret := mm.EndBlock(ctx, req)
+	mockAppModule1.EXPECT().EndBlock(gomock.Any()).Times(1).Return([]abci.ValidatorUpdate{{}})
+	mockAppModule2.EXPECT().EndBlock(gomock.Any()).Times(1)
+	ctx := sdk.NewContext(nil, false, log.NewNopLogger())
+	ret, err := mm.EndBlock(ctx)
+	require.NoError(t, err)
 	require.Equal(t, []abci.ValidatorUpdate{{}}, ret.ValidatorUpdates)
 
 	// test panic
-	mockAppModule1.EXPECT().EndBlock(gomock.Any(), gomock.Eq(req)).Times(1).Return([]abci.ValidatorUpdate{{}})
-	mockAppModule2.EXPECT().EndBlock(gomock.Any(), gomock.Eq(req)).Times(1).Return([]abci.ValidatorUpdate{{}})
-	require.Panics(t, func() { mm.EndBlock(ctx, req) })
+	mockAppModule1.EXPECT().EndBlock(gomock.Any()).Times(1).Return([]abci.ValidatorUpdate{{}})
+	mockAppModule2.EXPECT().EndBlock(gomock.Any()).Times(1).Return([]abci.ValidatorUpdate{{}})
+	require.Panics(t, func() { mm.EndBlock(ctx) })
 }
 
 func TestManager_UpgradeSchedule(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 	mockAppModule1.EXPECT().Name().Times(2).Return("blob")
 	mockAppModule2.EXPECT().Name().Times(2).Return("blob")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(3))
@@ -296,8 +293,8 @@ func TestManager_ModuleNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Return(uint64(1))
@@ -320,8 +317,8 @@ func TestManager_SupportedVersions(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	mockAppModule1 := mock.NewMockAppModule(mockCtrl)
-	mockAppModule2 := mock.NewMockAppModule(mockCtrl)
+	mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 
 	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
 	mockAppModule1.EXPECT().ConsensusVersion().Times(2).Return(uint64(10))

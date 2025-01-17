@@ -34,7 +34,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 		},
 	})
 	handler := ante.NewAnteHandler(
-		app.AccountKeeper,
+		app.AuthKeeper,
 		app.BankKeeper,
 		app.BlobKeeper,
 		app.FeeGrantKeeper,

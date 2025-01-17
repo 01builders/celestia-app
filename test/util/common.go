@@ -7,10 +7,12 @@ import (
 
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
 
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	cosmosmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/bank"
 	bankkeeper "cosmossdk.io/x/bank/keeper"
@@ -28,6 +30,7 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
+	blobsteamkeeper "github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -45,7 +48,6 @@ import (
 	tmed "github.com/tendermint/tendermint/crypto/ed25519"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	dbm "github.com/tendermint/tm-db"
 )
 
 var (
@@ -58,7 +60,7 @@ var (
 		MaxEntries:        10,
 		HistoricalEntries: 10000,
 		BondDenom:         "stake",
-		MinCommissionRate: sdk.NewDecWithPrec(0, 0),
+		MinCommissionRate: math.LegacyNewDecWithPrec(0, 0),
 	}
 
 	// HardcodedConsensusPrivKeys
@@ -192,8 +194,8 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	keySlashing := sdk.NewKVStoreKey(slashingtypes.StoreKey)
 
 	// Initialize memory database and mount stores on it
-	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	db := coretesting.NewMemDB()
+	ms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(keyBlobstream, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyAuth, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, storetypes.StoreTypeIAVL, db)
@@ -280,11 +282,11 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	)
 
 	stakingKeeper := stakingkeeper.NewKeeper(marshaler, keyStaking, accountKeeper, bankKeeper, getSubspace(paramsKeeper, stakingtypes.ModuleName))
-	stakingKeeper.SetParams(ctx, TestingStakeParams)
+	stakingKeeper.Params.Set(ctx, TestingStakeParams)
 
 	distKeeper := distrkeeper.NewKeeper(marshaler, keyDistribution, getSubspace(paramsKeeper, distrtypes.ModuleName), accountKeeper, bankKeeper, stakingKeeper, authtypes.FeeCollectorName)
-	distKeeper.SetParams(ctx, distrtypes.DefaultParams())
-	distKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
+	distKeeper.Params.Set(ctx, distrtypes.DefaultParams())
+	distKeeper.FeePool.Set(ctx, distrtypes.InitialFeePool())
 
 	// set up initial accounts
 	for name, permissions := range moduleAccountPermissions {
@@ -343,21 +345,21 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 // CreateTestEnv creates the keeper testing environment for Blobstream
 func CreateTestEnv(t *testing.T) TestInput {
 	input := CreateTestEnvWithoutBlobstreamKeysInit(t)
-	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, blobstream.InitialLatestAttestationNonce)
-	input.BlobstreamKeeper.SetEarliestAvailableAttestationNonce(input.Context, blobstream.InitialEarliestAvailableAttestationNonce)
+	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, blobsteamkeeper.InitialLatestAttestationNonce)
+	input.BlobstreamKeeper.SetEarliestAvailableAttestationNonce(input.Context, blobsteamkeeper.InitialEarliestAvailableAttestationNonce)
 	return input
 }
 
 // MakeTestCodec creates a legacy amino codec for testing
 func MakeTestCodec() *codec.LegacyAmino {
 	cdc := codec.NewLegacyAmino()
-	auth.AppModuleBasic{}.RegisterLegacyAminoCodec(cdc)
-	bank.AppModuleBasic{}.RegisterLegacyAminoCodec(cdc)
-	staking.AppModuleBasic{}.RegisterLegacyAminoCodec(cdc)
-	distribution.AppModuleBasic{}.RegisterLegacyAminoCodec(cdc)
+	auth.AppModule{}.RegisterLegacyAminoCodec(cdc)
+	bank.AppModule{}.RegisterLegacyAminoCodec(cdc)
+	staking.AppModule{}.RegisterLegacyAminoCodec(cdc)
+	distribution.AppModule{}.RegisterLegacyAminoCodec(cdc)
 	sdk.RegisterLegacyAminoCodec(cdc)
 	ccodec.RegisterCrypto(cdc)
-	params.AppModuleBasic{}.RegisterLegacyAminoCodec(cdc)
+	params.AppModule{}.RegisterLegacyAminoCodec(cdc)
 	blobstreamtypes.RegisterLegacyAminoCodec(cdc)
 	return cdc
 }
@@ -383,7 +385,7 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 	input := CreateTestEnv(t)
 
 	// Set the params for our modules
-	input.StakingKeeper.SetParams(input.Context, TestingStakeParams)
+	input.StakingKeeper.Params.Set(input.Context, TestingStakeParams)
 
 	// Initialize each of the validators
 	for i := range []int{0, 1, 2, 3, 4} {
@@ -392,7 +394,8 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 	}
 
 	// Run the staking endblocker to ensure valset is correct in state
-	staking.EndBlocker(input.Context, input.StakingKeeper)
+	_, err := input.StakingKeeper.EndBlocker(input.Context)
+	require.NoError(t, err)
 
 	// Return the test input
 	return input, input.Context
@@ -470,7 +473,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 
 	// Set the params for our modules
 	TestingStakeParams.MaxValidators = 100
-	input.StakingKeeper.SetParams(input.Context, TestingStakeParams)
+	input.StakingKeeper.Params.Set(input.Context, TestingStakeParams)
 
 	// Initialize each of the validators
 	stakingMsgServer := stakingkeeper.NewMsgServerImpl(input.StakingKeeper)
@@ -510,12 +513,14 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 		require.NoError(t, err)
 
 		// Run the staking endblocker to ensure valset is correct in state
-		staking.EndBlocker(input.Context, input.StakingKeeper)
+		_, err = input.StakingKeeper.EndBlocker(input.Context)
+		require.NoError(t, err)
 	}
 
 	// some inputs can cause the validator creation not to work, this checks that
 	// everything was successful
-	validators := input.StakingKeeper.GetBondedValidatorsByPower(input.Context)
+	validators, err := input.StakingKeeper.GetBondedValidatorsByPower(input.Context)
+	require.NoError(t, err)
 	require.Equal(t, len(weights), len(validators))
 
 	// Return the test input

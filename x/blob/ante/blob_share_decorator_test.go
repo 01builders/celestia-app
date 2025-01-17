@@ -15,8 +15,6 @@ import (
 	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -155,10 +153,9 @@ func TestBlobShareDecorator(t *testing.T) {
 			sdkTx, err := ecfg.TxConfig.TxDecoder()(btx.Tx)
 			require.NoError(t, err)
 
-			decorator := ante.NewBlobShareDecorator(mockBlobKeeper{})
+			decorator := ante.NewBlobShareDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: tc.appVersion})
 			ctx := sdk.Context{}.
 				WithIsCheckTx(true).
-				WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: tc.appVersion}}).
 				WithTxBytes(btx.Tx)
 			_, err = decorator.AnteHandle(ctx, sdkTx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)

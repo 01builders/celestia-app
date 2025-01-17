@@ -199,8 +199,10 @@ func (am *AccountManager) Submit(ctx context.Context, op Operation) error {
 
 	var address types.AccAddress
 	for _, msg := range op.Msgs {
-		if err := msg.ValidateBasic(); err != nil {
-			return fmt.Errorf("error validating message: %w", err)
+		if m, ok := msg.(types.HasValidateBasic); ok {
+			if err := m.ValidateBasic(); err != nil {
+				return fmt.Errorf("error validating message: %w", err)
+			}
 		}
 
 		signers := msg.GetSigners()
@@ -317,7 +319,7 @@ func (am *AccountManager) GenerateAccounts(ctx context.Context) error {
 
 		if am.useFeegrant {
 			// create a feegrant message so that the master account pays for all the fees of the sub accounts
-			feegrantMsg, err := feegrant.NewMsgGrantAllowance(&feegrant.BasicAllowance{}, am.txClient.DefaultAddress(), acc.address)
+			feegrantMsg, err := feegrant.NewMsgGrantAllowance(&feegrant.BasicAllowance{}, am.txClient.DefaultAddress().String(), acc.address.String())
 			if err != nil {
 				return fmt.Errorf("error creating feegrant message: %w", err)
 			}
@@ -325,7 +327,7 @@ func (am *AccountManager) GenerateAccounts(ctx context.Context) error {
 			gasLimit += FeegrantGasLimit
 		}
 
-		bankMsg := bank.NewMsgSend(am.txClient.DefaultAddress(), acc.address, types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(acc.balance))))
+		bankMsg := bank.NewMsgSend(am.txClient.DefaultAddress().String(), acc.address.String(), types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(acc.balance))))
 		msgs = append(msgs, bankMsg)
 		gasLimit += SendGasLimit
 	}

@@ -60,7 +60,7 @@ func (s *SendSequence) Next(_ context.Context, _ grpc.ClientConn, rand *rand.Ran
 	}
 	op := Operation{
 		Msgs: []types.Msg{
-			bank.NewMsgSend(s.accounts[s.index%s.numAccounts], s.accounts[(s.index+1)%s.numAccounts], types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(s.sendAmount)))),
+			bank.NewMsgSend(s.accounts[s.index%s.numAccounts].String(), s.accounts[(s.index+1)%s.numAccounts].String(), types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(s.sendAmount)))),
 		},
 		Delay:    uint64(rand.Int63n(int64(s.maxHeightDelay))),
 		GasLimit: SendGasLimit,

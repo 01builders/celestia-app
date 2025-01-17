@@ -10,8 +10,6 @@ import (
 	ante "github.com/celestiaorg/celestia-app/v3/x/blob/ante"
 	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,8 +128,8 @@ func TestMaxTotalBlobSizeDecorator(t *testing.T) {
 			require.NoError(t, txBuilder.SetMsgs(tc.pfb))
 			tx := txBuilder.GetTx()
 
-			decorator := ante.NewMaxTotalBlobSizeDecorator(mockBlobKeeper{})
-			ctx := sdk.Context{}.WithIsCheckTx(true).WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: tc.appVersion}})
+			decorator := ante.NewMaxTotalBlobSizeDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: tc.appVersion})
+			ctx := sdk.Context{}.WithIsCheckTx(true)
 			_, err := decorator.AnteHandle(ctx, tx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)
 		})

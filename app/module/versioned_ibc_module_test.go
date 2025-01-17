@@ -9,8 +9,6 @@ import (
 	"github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 // TestVersionedIBCModule sets up a new VersionedIBCModule with versions
@@ -236,7 +234,7 @@ func TestVersionedIBCModule(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := sdk.Context{}.WithBlockHeader(tmproto.Header{Version: version.Consensus{App: tc.version}})
+			ctx := sdk.Context{} // add version via consensus keeper
 			tc.setupMocks(ctx)
 			actualValue, err := tc.method(ctx)
 			assert.NoError(t, err)

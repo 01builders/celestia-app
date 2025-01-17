@@ -5,7 +5,9 @@ import (
 
 	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
+	consensustypes "cosmossdk.io/x/consensus/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/ante"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -13,11 +15,18 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/cosmos/cosmos-sdk/types"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGovDecorator(t *testing.T) {
-	decorator := ante.NewGovProposalDecorator(make(map[string][]string))
+	blockedParams := map[string][]string{
+		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      []string{"send_enabled"},
+		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   []string{"params.bond_denom", "params.unbonding_time"},
+		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
+	}
+
+	decorator := ante.NewGovProposalDecorator(blockedParams)
 	anteHandler := types.ChainAnteDecorators(decorator)
 	accounts := testfactory.GenerateAccounts(1)
 	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))

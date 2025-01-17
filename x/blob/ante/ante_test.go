@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -112,7 +113,7 @@ func TestPFBAnteHandler(t *testing.T) {
 	for _, tc := range testCases {
 		for _, currentVersion := range tc.versions {
 			t.Run(fmt.Sprintf("%s v%d", tc.name, currentVersion), func(t *testing.T) {
-				anteHandler := ante.NewMinGasPFBDecorator(mockBlobKeeper{})
+				anteHandler := ante.NewMinGasPFBDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: currentVersion})
 				var gasPerBlobByte uint32
 				if currentVersion == v2.Version {
 					gasPerBlobByte = testGasPerBlobByte
@@ -145,4 +146,13 @@ func (mockBlobKeeper) GasPerBlobByte(_ sdk.Context) uint32 {
 
 func (mockBlobKeeper) GovMaxSquareSize(_ sdk.Context) uint64 {
 	return testGovMaxSquareSize
+}
+
+type mockConsensusKeeper struct {
+	ante.ConsensusKeeper
+	appVersion uint64
+}
+
+func (m mockConsensusKeeper) AppVersion(ctx context.Context) (uint64, error) {
+	return m.appVersion, nil
 }

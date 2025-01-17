@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
@@ -25,7 +26,7 @@ import (
 
 func TestNew(t *testing.T) {
 	logger := log.NewNopLogger()
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
 	invCheckPeriod := uint(1)
 	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
@@ -59,7 +60,7 @@ func TestNew(t *testing.T) {
 
 func TestInitChain(t *testing.T) {
 	logger := log.NewNopLogger()
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
 	invCheckPeriod := uint(1)
 	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
@@ -157,7 +158,7 @@ func TestOfferSnapshot(t *testing.T) {
 }
 
 func createTestApp(t *testing.T) *app.App {
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(3)
 	timeoutCommit := time.Second

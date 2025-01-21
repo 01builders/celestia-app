@@ -55,7 +55,7 @@ func txCmd() *cobra.Command {
 
 			logger := log.NewLogger(os.Stdout)
 
-			trpc, err := http.New(config.TendermintRPC, "/websocket")
+			trpc, err := http.New(config.TendermintRPC)
 			if err != nil {
 				return err
 			}
@@ -125,7 +125,7 @@ func blobCmd() *cobra.Command {
 
 			logger := log.NewLogger(os.Stdout)
 
-			trpc, err := http.New(config.TendermintRPC, "/websocket")
+			trpc, err := http.New(config.TendermintRPC)
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func sharesCmd() *cobra.Command {
 }
 
 func VerifyShares(ctx context.Context, logger log.Logger, config VerifyConfig, height int64, startShare uint64, endShare uint64) (isCommittedTo bool, err error) {
-	trpc, err := http.New(config.TendermintRPC, "/websocket")
+	trpc, err := http.New(config.TendermintRPC)
 	if err != nil {
 		return false, err
 	}

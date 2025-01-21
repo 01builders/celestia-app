@@ -101,7 +101,7 @@ func TestInitChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			application := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit, appOptions)
+			application := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
 			if tc.wantPanic {
 				assert.Panics(t, func() { application.InitChain(&tc.request) })
 			} else {

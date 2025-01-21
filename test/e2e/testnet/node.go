@@ -327,7 +327,7 @@ func (n Node) IsValidator() bool {
 
 func (n Node) Client() (*http.HTTP, error) {
 	n.logger.Println("Creating HTTP client for node", "rpc_address", n.AddressRPC())
-	return http.New(n.AddressRPC(), "/websocket")
+	return http.New(n.AddressRPC())
 }
 
 func (n *Node) Start(ctx context.Context) error {

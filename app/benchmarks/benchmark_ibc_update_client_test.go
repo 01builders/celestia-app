@@ -14,7 +14,7 @@ package benchmarks_test
 // 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 // 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 // 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-// 	dbm "github.com/cometbft/cometbft-db"
+// 	dbm "github.com/cosmos/cosmos-db"
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
 // 	types3 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 // 	types2 "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"

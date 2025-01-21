@@ -55,7 +55,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	c, err := http.New(nodeRPC, "/websocket")
+	c, err := http.New(nodeRPC)
 	if err != nil {
 		return err
 	}

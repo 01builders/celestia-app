@@ -54,7 +54,7 @@ Usage: blockscan <rpc-address> [from-height] [to-height]
 }
 
 func Scan(ctx context.Context, rpcAddress string, fromHeight, toHeight int64) error {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return err
 	}

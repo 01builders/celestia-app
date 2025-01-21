@@ -8,10 +8,10 @@ import (
 	distributiontypes "cosmossdk.io/x/distribution/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	tmcfg "github.com/cometbft/cometbft/config"
 	"github.com/cosmos/cosmos-sdk/types"
 	icagenesistypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/genesis/types"
 	"github.com/stretchr/testify/assert"
-	tmcfg "github.com/tendermint/tendermint/config"
 )
 
 // Test_newGovModule verifies that the gov module's genesis state has defaults

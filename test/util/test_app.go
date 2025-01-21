@@ -21,6 +21,12 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -28,18 +34,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	simulationcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 const ChainID = testfactory.ChainID
@@ -52,18 +50,6 @@ var (
 // Get flags every time the simulator is run
 func init() {
 	simulationcli.GetSimulatorFlags()
-}
-
-type EmptyAppOptions struct{}
-
-// Get implements AppOptions
-func (ao EmptyAppOptions) Get(_ string) interface{} {
-	return nil
-}
-
-// GetString implements AppOptions
-func (ao EmptyAppOptions) GetString(_ string) string {
-	return ""
 }
 
 // SetupTestAppWithGenesisValSet initializes a new app with a validator set and
@@ -100,8 +86,6 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *
 
 // NewTestApp creates a new app instance with an empty memDB and a no-op logger.
 func NewTestApp() *app.App {
-	// EmptyAppOptions is a stub implementing AppOptions
-	emptyOpts := EmptyAppOptions{}
 	// var anteOpt = func(bapp *baseapp.BaseApp) { bapp.SetAnteHandler(nil) }
 	db := dbm.NewMemDB()
 
@@ -109,11 +93,10 @@ func NewTestApp() *app.App {
 
 	return app.New(
 		TestAppLogger, db, nil,
-		cast.ToUint(emptyOpts.Get(server.FlagInvCheckPeriod)),
+		0,
 		encCfg,
 		0,
 		0,
-		emptyOpts,
 	)
 }
 
@@ -152,23 +135,26 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 	}
 
 	// Initialise test app against genesis
-	testApp.Info(abci.RequestInfo{})
+	_, err = testApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get app info: %w", err)
+	}
 
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			// Choose some value large enough to not bottleneck the max square
 			// size
 			MaxBytes: int64(appconsts.DefaultUpperBoundMaxBytes),
 			MaxGas:   cparams.Block.MaxGas,
 		},
-		Evidence:  &cparams.Evidence,
-		Validator: &cparams.Validator,
-		Version:   &cparams.Version,
+		Evidence:  cparams.Evidence,
+		Validator: cparams.Validator,
+		Version:   cparams.Version,
 	}
 
 	// Init chain will set the validator set and initialize the genesis accounts
-	testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            gen.GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -176,6 +162,9 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 			ChainId:         genDoc.ChainID,
 		},
 	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to init chain: %w", err)
+	}
 
 	// Commit genesis changes
 	testApp.Commit()
@@ -235,11 +224,14 @@ func InitialiseTestAppWithGenesis(testApp *app.App, cparams *tmproto.ConsensusPa
 		Version:   &cparams.Version,
 	}
 
-	testApp.Info(abci.RequestInfo{})
+	_, err = testApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		panic(err)
+	}
 
 	// init chain will set the validator set and initialize the genesis accounts
-	testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -247,6 +239,10 @@ func InitialiseTestAppWithGenesis(testApp *app.App, cparams *tmproto.ConsensusPa
 			ChainId:         ChainID,
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
+
 	return testApp
 }
 
@@ -345,7 +341,10 @@ func AddAccount(addr sdk.AccAddress, appState app.GenesisState, cdc codec.Codec)
 
 	bankGenState := banktypes.GetGenesisStateFromAppState(cdc, appState)
 	bankGenState.Balances = append(bankGenState.Balances, balances)
-	bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	if err != nil {
+		return appState, fmt.Errorf("failed to sanitize genesis balances: %w", err)
+	}
 
 	bankGenStateBz, err := cdc.MarshalJSON(bankGenState)
 	if err != nil {
@@ -473,25 +472,27 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	db := dbm.NewMemDB()
 	chainID := "test_chain"
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0, EmptyAppOptions{})
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0)
 	genesisState, _, kr := GenesisStateWithSingleValidator(testApp, "account")
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
-	infoResp := testApp.Info(abci.RequestInfo{})
+	infoResp, err := testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
+
 	require.EqualValues(t, 0, infoResp.AppVersion)
 	cp := app.DefaultInitialConsensusParams()
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			MaxBytes: cp.Block.MaxBytes,
 			MaxGas:   cp.Block.MaxGas,
 		},
-		Evidence:  &cp.Evidence,
-		Validator: &cp.Validator,
-		Version:   &cp.Version,
+		Evidence:  cp.Evidence,
+		Validator: cp.Validator,
+		Version:   cp.Version,
 	}
 
-	_ = testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            time.Now(),
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -499,12 +500,15 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 			ChainId:         chainID,
 		},
 	)
+	require.NoError(t, err)
 
 	// assert that the chain starts with version provided in genesis
-	infoResp = testApp.Info(abci.RequestInfo{})
+	infoResp, err = testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
 	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.AppVersion, infoResp.AppVersion)
 
-	_ = testApp.Commit()
+	_, err = testApp.Commit()
+	require.NoError(t, err)
 	supportedVersions := []uint64{v1.Version, v2.Version}
 	require.Equal(t, supportedVersions, testApp.SupportedVersions())
 	return testApp, kr

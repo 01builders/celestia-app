@@ -16,14 +16,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/assert"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	tmrand "cosmossdk.io/math/unsafe"
 
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	coretypes "github.com/tendermint/tendermint/types"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -69,7 +69,7 @@ func TestPrepareProposalPutsPFBsAtEnd(t *testing.T) {
 	height := testApp.LastBlockHeight() + 1
 	blockTime := time.Now()
 
-	resp := testApp.PrepareProposal(abci.RequestPrepareProposal{
+	resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 		BlockData: &tmproto.Data{
 			Txs: txs,
 		},
@@ -77,6 +77,7 @@ func TestPrepareProposalPutsPFBsAtEnd(t *testing.T) {
 		Height:  height,
 		Time:    blockTime,
 	})
+	require.NoError(t, err)
 	require.Len(t, resp.BlockData.Txs, numBlobTxs+numNormalTxs)
 	for idx, txBytes := range resp.BlockData.Txs {
 		_, isBlobTx := coretypes.UnmarshalBlobTx(coretypes.Tx(txBytes))
@@ -236,12 +237,13 @@ func TestPrepareProposalFiltering(t *testing.T) {
 			height := testApp.LastBlockHeight() + 1
 			blockTime := time.Now()
 
-			resp := testApp.PrepareProposal(abci.RequestPrepareProposal{
+			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 				BlockData: &tmproto.Data{Txs: tt.txs()},
 				ChainId:   testutil.ChainID,
 				Height:    height,
 				Time:      blockTime,
 			})
+			require.NoError(t, err)
 			// check that we have the expected number of transactions
 			require.Equal(t, len(tt.txs())-len(tt.prunedTxs), len(resp.BlockData.Txs))
 			// check that the expected txs were removed
@@ -319,8 +321,8 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 	msgSendTxs := make([][]byte, 0, numberOfMsgSends)
 	for i := 0; i < numberOfMsgSends; i++ {
 		msg := banktypes.NewMsgSend(
-			addrs[accountIndex],
-			testnode.RandomAddress().(sdk.AccAddress),
+			addrs[accountIndex].String(),
+			testnode.RandomAddress().String(),
 			sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10)),
 		)
 		rawTx, err := signers[accountIndex].CreateTx([]sdk.Msg{msg}, user.SetGasLimit(1000000), user.SetFee(10))
@@ -382,13 +384,14 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			resp := testApp.PrepareProposal(abci.RequestPrepareProposal{
+			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 				BlockData: &tmproto.Data{
 					Txs: testCase.inputTransactions,
 				},
 				ChainId: testApp.ChainID(),
 				Height:  10,
 			})
+			require.NoError(t, err)
 			assert.Equal(t, testCase.expectedTransactions, resp.BlockData.Txs)
 		})
 	}

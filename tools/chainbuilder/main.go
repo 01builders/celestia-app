@@ -8,29 +8,28 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
-	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/privval"
+	smproto "github.com/cometbft/cometbft/proto/tendermint/state"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/privval"
-	smproto "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
@@ -203,11 +202,13 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		encCfg,
 		0, // upgrade height v2
 		0, // timeout commit
-		util.EmptyAppOptions{},
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 
-	infoResp := simApp.Info(abci.RequestInfo{})
+	infoResp, err := simApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		return fmt.Errorf("failed to get app info: %w", err)
+	}
 
 	lastHeight := blockStore.Height()
 	if infoResp.LastBlockHeight != lastHeight {
@@ -236,7 +237,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		csParams := types.TM2PB.ConsensusParams(genDoc.ConsensusParams)
-		res := simApp.InitChain(abci.RequestInitChain{
+		res, err := simApp.InitChain(&abci.InitChainRequest{
 			ChainId:         genDoc.ChainID,
 			Time:            genDoc.GenesisTime,
 			ConsensusParams: csParams,
@@ -244,6 +245,9 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			AppStateBytes:   genDoc.AppState,
 			InitialHeight:   genDoc.InitialHeight,
 		})
+		if err != nil {
+			return fmt.Errorf("failed to initialize chain: %w", err)
+		}
 
 		vals, err := types.PB2TM.ValidatorUpdates(res.Validators)
 		if err != nil {
@@ -312,7 +316,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		errCh <- persistDataRoutine(ctx, stateStore, blockStore, persistCh)
 	}()
 
-	lastBlock := blockStore.LoadBlock(blockStore.Height())
+	lastBlock, _ := blockStore.LoadBlock(blockStore.Height())
 
 	for height := lastHeight + 1; height <= int64(cfg.NumBlocks)+lastHeight; height++ {
 		if cfg.UpToTime && lastBlock != nil && lastBlock.Time.Add(cfg.BlockInterval).After(time.Now().UTC()) {

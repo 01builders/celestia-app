@@ -9,17 +9,17 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/tendermint/tendermint/crypto/merkle"
 
 	"cosmossdk.io/log"
 	wrapper "github.com/celestiaorg/blobstream-contracts/v3/wrappers/Blobstream.sol"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	square "github.com/celestiaorg/go-square/v2"
+	"github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/rpc/client/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

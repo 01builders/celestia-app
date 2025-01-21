@@ -1,25 +1,29 @@
 package testnode
 
 import (
+	"context"
 	"path/filepath"
 
+	tmconfig "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/node"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	server "github.com/cosmos/cosmos-sdk/server/log"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	tmdb "github.com/tendermint/tm-db"
+	sdkserver "github.com/cosmos/cosmos-sdk/server"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
+
+	"github.com/celestiaorg/celestia-app/v3/server"
 )
 
 // NewCometNode creates a ready to use comet node that operates a single
 // validator celestia-app network. It expects that all configuration files are
 // already initialized and saved to the baseDir.
-func NewCometNode(baseDir string, config *UniversalTestingConfig) (*node.Node, servertypes.Application, error) {
+func NewCometNode(baseDir string, config *UniversalTestingConfig) (*node.Node, server.Application, error) {
 	logger := NewLogger(config)
 	dbPath := filepath.Join(config.TmConfig.RootDir, "data")
-	db, err := tmdb.NewGoLevelDB("application", dbPath)
+	db, err := dbm.NewGoLevelDB("application", dbPath, dbm.OptionsMap{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -33,15 +37,22 @@ func NewCometNode(baseDir string, config *UniversalTestingConfig) (*node.Node, s
 		return nil, nil, err
 	}
 
+	prival, err := privval.LoadOrGenFilePV(config.TmConfig.PrivValidatorKeyFile(), config.TmConfig.PrivValidatorStateFile(), app.ValidatorKeyProvider())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cmtApp := sdkserver.NewCometABCIWrapper(app)
 	cometNode, err := node.NewNode(
+		context.TODO(),
 		config.TmConfig,
-		privval.LoadOrGenFilePV(config.TmConfig.PrivValidatorKeyFile(), config.TmConfig.PrivValidatorStateFile()),
+		prival,
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
+		proxy.NewLocalClientCreator(cmtApp),
 		node.DefaultGenesisDocProviderFunc(config.TmConfig),
-		node.DefaultDBProvider,
+		tmconfig.DefaultDBProvider,
 		node.DefaultMetricsProvider(config.TmConfig.Instrumentation),
-		server.CometLoggerWrapper{logger},
+		servercmtlog.CometLoggerWrapper{Logger: logger},
 	)
 
 	return cometNode, app, err

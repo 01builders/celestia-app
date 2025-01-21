@@ -15,11 +15,11 @@ import (
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	"github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func BenchmarkCheckTx_MsgSend_1(b *testing.B) {
@@ -28,7 +28,7 @@ func BenchmarkCheckTx_MsgSend_1(b *testing.B) {
 
 	checkTxRequest := types.RequestCheckTx{
 		Tx:   rawTxs[0],
-		Type: types.CheckTxType_New,
+		Type: types.CHECK_TX_TYPE_CHECK,
 	}
 
 	b.ResetTimer()
@@ -48,7 +48,7 @@ func BenchmarkCheckTx_MsgSend_8MB(b *testing.B) {
 	for _, tx := range rawTxs {
 		checkTxRequest := types.RequestCheckTx{
 			Tx:   tx,
-			Type: types.CheckTxType_New,
+			Type: types.CHECK_TX_TYPE_CHECK,
 		}
 		b.StartTimer()
 		resp := testApp.CheckTx(checkTxRequest)
@@ -100,7 +100,7 @@ func BenchmarkDeliverTx_MsgSend_8MB(b *testing.B) {
 func BenchmarkPrepareProposal_MsgSend_1(b *testing.B) {
 	testApp, rawTxs := generateMsgSendTransactions(b, 1)
 
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: &tmproto.Data{
 			Txs: rawTxs,
 		},
@@ -123,7 +123,7 @@ func BenchmarkPrepareProposal_MsgSend_8MB(b *testing.B) {
 	blockData := &tmproto.Data{
 		Txs: rawTxs,
 	}
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: blockData,
 		ChainId:   testApp.ChainID(),
 		Height:    10,
@@ -144,7 +144,7 @@ func BenchmarkProcessProposal_MsgSend_1(b *testing.B) {
 	blockData := &tmproto.Data{
 		Txs: rawTxs,
 	}
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: blockData,
 		ChainId:   testApp.ChainID(),
 		Height:    10,
@@ -152,7 +152,7 @@ func BenchmarkProcessProposal_MsgSend_1(b *testing.B) {
 	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
 	require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
-	processProposalRequest := types.RequestProcessProposal{
+	processProposalRequest := types.ProcessProposalRequest{
 		BlockData: prepareProposalResponse.BlockData,
 		Header: tmproto.Header{
 			Height:   1,
@@ -167,7 +167,7 @@ func BenchmarkProcessProposal_MsgSend_1(b *testing.B) {
 	b.ResetTimer()
 	resp := testApp.ProcessProposal(processProposalRequest)
 	b.StopTimer()
-	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+	require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 	b.ReportMetric(float64(calculateTotalGasUsed(testApp, prepareProposalResponse.BlockData.Txs)), "total_gas_used")
 }
@@ -180,7 +180,7 @@ func BenchmarkProcessProposal_MsgSend_8MB(b *testing.B) {
 	blockData := &tmproto.Data{
 		Txs: rawTxs,
 	}
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: blockData,
 		ChainId:   testApp.ChainID(),
 		Height:    10,
@@ -192,7 +192,7 @@ func BenchmarkProcessProposal_MsgSend_8MB(b *testing.B) {
 	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResponse.BlockData.Txs), "block_size_(mb)")
 	b.ReportMetric(float64(calculateTotalGasUsed(testApp, prepareProposalResponse.BlockData.Txs)), "total_gas_used")
 
-	processProposalRequest := types.RequestProcessProposal{
+	processProposalRequest := types.ProcessProposalRequest{
 		BlockData: prepareProposalResponse.BlockData,
 		Header: tmproto.Header{
 			Height:   10,
@@ -207,7 +207,7 @@ func BenchmarkProcessProposal_MsgSend_8MB(b *testing.B) {
 	b.ResetTimer()
 	resp := testApp.ProcessProposal(processProposalRequest)
 	b.StopTimer()
-	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+	require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 	b.ReportMetric(float64(calculateTotalGasUsed(testApp, prepareProposalResponse.BlockData.Txs)), "total_gas_used")
 }
@@ -225,7 +225,7 @@ func BenchmarkProcessProposal_MsgSend_8MB_Find_Half_Sec(b *testing.B) {
 			break
 		}
 
-		prepareProposalRequest := types.RequestPrepareProposal{
+		prepareProposalRequest := types.PrepareProposalRequest{
 			BlockData: &tmproto.Data{
 				Txs: rawTxs[start:end],
 			},
@@ -235,7 +235,7 @@ func BenchmarkProcessProposal_MsgSend_8MB_Find_Half_Sec(b *testing.B) {
 		prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
 		require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
-		processProposalRequest := types.RequestProcessProposal{
+		processProposalRequest := types.ProcessProposalRequest{
 			BlockData: prepareProposalResponse.BlockData,
 			Header: tmproto.Header{
 				Height:   10,
@@ -250,7 +250,7 @@ func BenchmarkProcessProposal_MsgSend_8MB_Find_Half_Sec(b *testing.B) {
 		startTime := time.Now()
 		resp := testApp.ProcessProposal(processProposalRequest)
 		endTime := time.Now()
-		require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+		require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 		timeElapsed := float64(endTime.Sub(startTime).Nanoseconds()) / 1e9
 

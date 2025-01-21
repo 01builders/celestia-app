@@ -48,7 +48,7 @@ Here we are adding only the two new methods that are necessary for the features 
 type Application interface {
    ...
    PrepareProposal(RequestPrepareProposal) ResponsePrepareProposal
-   ProcessProposal(RequestProcessProposal) ResponseProcessProposal
+   ProcessProposal(ProcessProposalRequest) ProcessProposalResponse
    ...
 }
 ```
@@ -65,7 +65,7 @@ message RequestPrepareProposal {
  int64 block_data_size = 2;
 }
 
-message RequestProcessProposal {
+message ProcessProposalRequest {
  tendermint.types.Header header     = 1 [(gogoproto.nullable) = false];
  tendermint.types.Data   block_data = 2;
 }
@@ -106,7 +106,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
    }
 
    preparedProposal, err := blockExec.proxyApp.PrepareProposalSync(
-       abci.RequestPrepareProposal{
+       abci.PrepareProposalRequest{
            BlockData:     &tmproto.Data{Txs: txs.ToSliceOfBytes(), Evidence: *pevdData},
            BlockDataSize: maxDataBytes},
    )
@@ -156,7 +156,7 @@ The way that we create proposal blocks will be refactored (previously [`PrePrepr
 // PrepareProposal separates messages from transactions, malleates those transactions,
 // estimates the square size, fills the data square, and calculates the data hash from
 // the erasure data
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    squareSize := app.estimateSquareSize(req.BlockData)
 
    dataSquare, data, err := SplitShares(app.txConfig, squareSize, req.BlockData)
@@ -174,7 +174,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
    data.Hash = dah.Hash() // <-- here we are setting the data hash before we pass the block data back to tendermint
    data.OriginalSquareSize = squareSize
 
-   return abci.ResponsePrepareProposal{
+   return abci.PrepareProposalResponse{
        BlockData: data,
    }
 }
@@ -338,7 +338,7 @@ During `ProcessProposal`, we
 - compare the data hash in the header with that generated in the block data
 
 ```go
-func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+func (app *App) ProcessProposal(req abci.ProcessProposalRequest) abci.ProcessProposalResponse {
    // Check for message inclusion:
    //  - each MsgPayForBlob included in a block should have a corresponding blob also in the block data
    //  - the commitment in each PFB should match that of its corresponding blob
@@ -364,8 +364,8 @@ func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponsePr
        ... // logging and rejecting
    }
 
-   return abci.ResponseProcessProposal{
-       Result: abci.ResponseProcessProposal_ACCEPT,
+   return abci.ProcessProposalResponse{
+       Result: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
    }
 }
 ```

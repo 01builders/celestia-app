@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
 	v1 "cosmossdk.io/x/gov/types/v1"
 	"cosmossdk.io/x/upgrade/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
@@ -22,7 +23,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestLegacyUpgrade(t *testing.T) {

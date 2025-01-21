@@ -3,10 +3,10 @@ package client_test
 import (
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/stretchr/testify/suite"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 type CLITestSuite struct {

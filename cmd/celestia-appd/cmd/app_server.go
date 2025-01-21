@@ -47,7 +47,6 @@ func NewAppServer(
 		encoding.MakeConfig(app.ModuleEncodingRegisters...),
 		cast.ToInt64(appOptions.Get(UpgradeHeightFlag)),
 		cast.ToDuration(appOptions.Get(TimeoutCommitFlag)),
-		appOptions,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOptions.Get(server.FlagMinGasPrices))),
 		baseapp.SetMinRetainBlocks(cast.ToUint64(appOptions.Get(server.FlagMinRetainBlocks))),

@@ -5,9 +5,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app/ante"
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/go-square/v2/share"
-	abci "github.com/tendermint/tendermint/abci/types"
-	core "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	version "github.com/cometbft/cometbft/proto/tendermint/version"
 )
 
 // OutOfOrderPrepareProposal fulfills the celestia-core version of the ABCI
@@ -15,7 +15,7 @@ import (
 // used to create malicious block proposals that fraud proofs can be created
 // for. It will swap the order of two blobs in the square and then use the
 // modified nmt to create a commitment over the modified square.
-func (a *App) OutOfOrderPrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (a *App) OutOfOrderPrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
 	// create a context using a branch of the state and loaded using the
 	// proposal height and chain-id
 	sdkCtx := a.NewProposalContext(core.Header{
@@ -78,7 +78,7 @@ func (a *App) OutOfOrderPrepareProposal(req abci.RequestPrepareProposal) abci.Re
 
 	// tendermint doesn't need to use any of the erasure data, as only the
 	// protobuf encoded version of the block data is gossiped.
-	return abci.ResponsePrepareProposal{
+	return abci.PrepareProposalResponse{
 		BlockData: &core.Data{
 			Txs:        txs,
 			SquareSize: uint64(dataSquare.Size()),

@@ -75,7 +75,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -93,6 +92,7 @@ import (
 	// packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/keeper"
 	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmjson "github.com/cometbft/cometbft/libs/json"
 	icahost "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
@@ -101,8 +101,6 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmos "github.com/tendermint/tendermint/libs/os"
 )
 
 // maccPerms is short for module account permissions. It is a map from module
@@ -209,7 +207,6 @@ func New(
 	encodingConfig encoding.Config,
 	upgradeHeightV2 int64,
 	timeoutCommit time.Duration,
-	_ servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
 	appCodec := encodingConfig.Codec
@@ -544,14 +541,6 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	// blockedParams returns the params that require a hardfork to change, and
-	// cannot be changed via governance.
-	blockedParams := map[string][]string{
-		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      []string{"send_enabled"},
-		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   []string{"params.bond_denom", "params.unbonding_time"},
-		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
-	}
-
 	app.SetAnteHandler(ante.NewAnteHandler(
 		app.AuthKeeper,
 		app.AccountsKeeper,
@@ -564,7 +553,7 @@ func New(
 		app.IBCKeeper,
 		app.ParamsKeeper,
 		app.MsgGateKeeper,
-		blockedParams,
+		app.BlockedParamsGovernance(),
 	))
 	app.SetPostHandler(posthandler.New())
 
@@ -578,7 +567,7 @@ func New(
 	// we don't seal the store until the app version has been initialised
 	// this will just initialise the base keys (i.e. the param store)
 	if err := app.CommitMultiStore().LoadLatestVersion(); err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	return app
@@ -997,4 +986,15 @@ func (app *App) ValidatorKeyProvider() runtime.KeyGenF {
 	return func() (cmtcrypto.PrivKey, error) {
 		return cmted25519.GenPrivKey(), nil
 	}
+}
+
+// BlockedParamsGovernance returns the params that require a hardfork to change, and
+// cannot be changed via governance.
+func (app *App) BlockedParamsGovernance() map[string][]string {
+	return map[string][]string{
+		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      []string{"send_enabled"},
+		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   []string{"params.bond_denom", "params.unbonding_time"},
+		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
+	}
+
 }

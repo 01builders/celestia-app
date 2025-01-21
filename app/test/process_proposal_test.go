@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
+	tmrand "cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
+	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
-	coretypes "github.com/tendermint/tendermint/types"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -100,7 +100,7 @@ func TestProcessProposal(t *testing.T) {
 		input          *tmproto.Data
 		mutator        func(*tmproto.Data)
 		appVersion     uint64
-		expectedResult abci.ResponseProcessProposal_Result
+		expectedResult abci.ProcessProposalResponse_Result
 	}
 
 	tests := []test{
@@ -109,7 +109,7 @@ func TestProcessProposal(t *testing.T) {
 			input:          validData(),
 			mutator:        func(_ *tmproto.Data) {},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_ACCEPT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
 		},
 		{
 			name:  "removed first blob tx",
@@ -118,7 +118,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = d.Txs[1:]
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "added an extra blob tx",
@@ -127,7 +127,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = append(d.Txs, blobTxs[3])
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "modified a blobTx",
@@ -142,7 +142,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs[0] = blobTxBytes
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "invalid namespace TxNamespace",
@@ -157,7 +157,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs[0] = blobTxBytes
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "invalid namespace in index wrapper tx",
@@ -175,7 +175,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "swap blobTxs",
@@ -185,7 +185,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs[0], d.Txs[1], d.Txs[2] = d.Txs[1], d.Txs[2], d.Txs[0]
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "PFB without blobTx",
@@ -195,7 +195,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = append(d.Txs, btx.Tx)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "undecodable tx with app version 1",
@@ -206,7 +206,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     v1.Version,
-			expectedResult: abci.ResponseProcessProposal_ACCEPT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
 		},
 		{
 			name:  "undecodable tx with app version 2",
@@ -217,7 +217,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     v2.Version,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "incorrectly sorted; send tx after pfb",
@@ -227,7 +227,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs[3], d.Txs[2] = d.Txs[2], d.Txs[3]
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "included pfb with bad signature",
@@ -237,7 +237,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "included pfb with incorrect nonce",
@@ -247,7 +247,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name: "tampered sequence start",
@@ -275,7 +275,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = dah.Hash()
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name:  "valid v1 authored blob",
@@ -290,7 +290,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_ACCEPT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
 		},
 		{
 			name:  "v1 authored blob with invalid signer",
@@ -313,7 +313,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 		{
 			name: "blob tx that takes up too many shares",
@@ -326,7 +326,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = append(d.Txs, tooManyShareBtx)
 			},
 			appVersion:     v3.Version,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
+			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
 		},
 	}
 
@@ -335,7 +335,7 @@ func TestProcessProposal(t *testing.T) {
 			height := testApp.LastBlockHeight() + 1
 			blockTime := time.Now()
 
-			resp := testApp.PrepareProposal(abci.RequestPrepareProposal{
+			resp := testApp.PrepareProposal(abci.PrepareProposalRequest{
 				BlockData: tt.input,
 				ChainId:   testutil.ChainID,
 				Height:    height,
@@ -343,7 +343,7 @@ func TestProcessProposal(t *testing.T) {
 			})
 			require.Equal(t, len(tt.input.Txs), len(resp.BlockData.Txs))
 			tt.mutator(resp.BlockData)
-			res := testApp.ProcessProposal(abci.RequestProcessProposal{
+			res := testApp.ProcessProposal(abci.ProcessProposalRequest{
 				BlockData: resp.BlockData,
 				Header: tmproto.Header{
 					Height:   1,

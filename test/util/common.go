@@ -32,6 +32,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	blobsteamkeeper "github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmed "github.com/cometbft/cometbft/crypto/ed25519"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	ccodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -45,9 +48,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	tmed "github.com/tendermint/tendermint/crypto/ed25519"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 var (
@@ -323,13 +323,14 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	blobstreamKeeper := keeper.NewKeeper(marshaler, keyBlobstream, getSubspace(paramsKeeper, blobstreamtypes.DefaultParamspace), &stakingKeeper)
 	blobstreamKeeper.SetParams(ctx, *blobstreamtypes.DefaultGenesis().Params)
 
-	stakingKeeper = *stakingKeeper.SetHooks(
+	stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			distKeeper.Hooks(),
 			slashingKeeper.Hooks(),
 			blobstreamKeeper.Hooks(),
 		),
 	)
+
 	return TestInput{
 		BlobstreamKeeper: *blobstreamKeeper,
 		AccountKeeper:    accountKeeper,
@@ -440,7 +441,7 @@ func RegisterEVMAddress(
 	evmAddr gethcommon.Address,
 ) {
 	bsMsgServer := keeper.NewMsgServerImpl(input.BlobstreamKeeper)
-	registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, evmAddr)
+	registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), evmAddr)
 	_, err := bsMsgServer.RegisterEVMAddress(input.Context, registerMsg)
 	require.NoError(t, err)
 }
@@ -452,14 +453,14 @@ func NewTestMsgCreateValidator(
 ) *stakingtypes.MsgCreateValidator {
 	commission := stakingtypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec())
 	out, err := stakingtypes.NewMsgCreateValidator(
-		address, pubKey, sdk.NewCoin("stake", amt),
+		address.String(), pubKey, sdk.NewCoin("stake", amt),
 		stakingtypes.Description{
 			Moniker:         "",
 			Identity:        "",
 			Website:         "",
 			SecurityContact: "",
 			Details:         "",
-		}, commission, sdk.OneInt(),
+		}, commission, math.OneInt(),
 	)
 	if err != nil {
 		panic(err)
@@ -509,7 +510,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 		)
 		require.NoError(t, err)
 
-		registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, EVMAddrs[i])
+		registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), EVMAddrs[i])
 		_, err = bsMsgServer.RegisterEVMAddress(input.Context, registerMsg)
 		require.NoError(t, err)
 
@@ -529,7 +530,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 }
 
 func NewTestMsgUnDelegateValidator(address sdk.ValAddress, amt cosmosmath.Int) *stakingtypes.MsgUndelegate {
-	msg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(address), address, sdk.NewCoin("stake", amt))
+	msg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(address).String(), address.String(), sdk.NewCoin("stake", amt))
 	return msg
 }
 
@@ -550,7 +551,7 @@ func ExecuteBlobstreamHeights(ctx sdk.Context, bsKeeper keeper.Keeper, beginHeig
 func ExecuteBlobstreamHeightsWithTime(ctx sdk.Context, bsKeeper keeper.Keeper, beginHeight int64, endHeight int64, blockInterval time.Duration) sdk.Context {
 	blockTime := ctx.BlockTime()
 	for i := beginHeight; i < endHeight; i++ {
-		ctx = ctx.WithBlockHeight(i).WithBlockTime(blockTime)
+		ctx = ctx.WithBlockHeight(i).WithBlockHeader(tmproto.Header{Time: blockTime})
 		blobstream.EndBlocker(ctx, bsKeeper)
 		blockTime = blockTime.Add(blockInterval)
 	}

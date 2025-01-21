@@ -3,6 +3,7 @@ package blobfactory_test
 import (
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -12,7 +13,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 // TestGenerateManyRandomRawSendTxsSameSigner_Deterministic tests whether with the same random seed the GenerateManyRandomRawSendTxsSameSigner function produces the same send transactions.

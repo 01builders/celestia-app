@@ -9,17 +9,19 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	cserver "github.com/celestiaorg/celestia-app/v3/server"
 	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cast"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // OutOfOrderNamesapceConfig returns a testnode config that will start producing
@@ -52,8 +54,8 @@ func NewTestApp(cparams *tmproto.ConsensusParams, mcfg BehaviorConfig, genAccoun
 }
 
 // NewAppServer creates a new AppServer using the malicious application.
-func NewAppServer(logger log.Logger, db corestore.KVStoreWithBatch, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
-	var cache sdk.MultiStorePersistentCache
+func NewAppServer(logger log.Logger, db corestore.KVStoreWithBatch, traceStore io.Writer, appOpts servertypes.AppOptions) cserver.Application {
+	var cache storetypes.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
 		cache = store.NewCommitKVStoreCacheManager()
@@ -67,7 +69,7 @@ func NewAppServer(logger log.Logger, db corestore.KVStoreWithBatch, traceStore i
 	// Add snapshots
 	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
 	//nolint: staticcheck
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+	snapshotDB, err := dbm.NewGoLevelDB("metadata", snapshotDir, dbm.OptionsMap{})
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +82,6 @@ func NewAppServer(logger log.Logger, db corestore.KVStoreWithBatch, traceStore i
 		logger, db, traceStore,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		encoding.MakeConfig(app.ModuleEncodingRegisters...), // Ideally, we would reuse the one created by NewRootCmd.
-		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),

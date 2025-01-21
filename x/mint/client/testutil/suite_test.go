@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/celestiaorg/celestia-app/v3/x/mint/client/cli"
 	mint "github.com/celestiaorg/celestia-app/v3/x/mint/types"

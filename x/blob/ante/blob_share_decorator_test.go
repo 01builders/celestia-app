@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
@@ -18,7 +19,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 const (

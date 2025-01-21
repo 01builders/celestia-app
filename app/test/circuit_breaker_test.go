@@ -13,11 +13,11 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 const (

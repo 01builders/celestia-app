@@ -9,8 +9,8 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/go-square/v2/inclusion"
 	"github.com/celestiaorg/go-square/v2/share"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
 	"golang.org/x/exp/slices"
 )
 

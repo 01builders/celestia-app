@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/cometbft/cometbft/crypto"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -18,10 +18,10 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
+	"github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func init() {
@@ -63,7 +63,7 @@ func benchmarkCheckTxPFB(b *testing.B, size int) {
 
 	checkTxRequest := types.RequestCheckTx{
 		Tx:   rawTxs[0],
-		Type: types.CheckTxType_New,
+		Type: types.CHECK_TX_TYPE_CHECK,
 	}
 
 	b.ResetTimer()
@@ -159,7 +159,7 @@ func benchmarkPrepareProposalPFB(b *testing.B, count, size int) {
 	blockData := &tmproto.Data{
 		Txs: rawTxs,
 	}
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: blockData,
 		ChainId:   testApp.ChainID(),
 		Height:    10,
@@ -211,7 +211,7 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	blockData := &tmproto.Data{
 		Txs: rawTxs,
 	}
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalRequest := types.PrepareProposalRequest{
 		BlockData: blockData,
 		ChainId:   testApp.ChainID(),
 		Height:    10,
@@ -220,7 +220,7 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
 	require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
-	processProposalRequest := types.RequestProcessProposal{
+	processProposalRequest := types.ProcessProposalRequest{
 		BlockData: prepareProposalResponse.BlockData,
 		Header: tmproto.Header{
 			Height:   10,
@@ -235,7 +235,7 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	b.ResetTimer()
 	resp := testApp.ProcessProposal(processProposalRequest)
 	b.StopTimer()
-	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+	require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 	b.ReportMetric(float64(b.Elapsed().Nanoseconds()), "process_proposal_time(ns)")
 	b.ReportMetric(float64(len(prepareProposalResponse.BlockData.Txs)), "number_of_transactions")
@@ -289,7 +289,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 			break
 		}
 
-		prepareProposalRequest := types.RequestPrepareProposal{
+		prepareProposalRequest := types.PrepareProposalRequest{
 			BlockData: &tmproto.Data{
 				Txs: rawTxs[start:end],
 			},
@@ -299,7 +299,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 		prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
 		require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
-		processProposalRequest := types.RequestProcessProposal{
+		processProposalRequest := types.ProcessProposalRequest{
 			BlockData: prepareProposalResponse.BlockData,
 			Header: tmproto.Header{
 				Height:   10,
@@ -314,7 +314,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 		startTime := time.Now()
 		resp := testApp.ProcessProposal(processProposalRequest)
 		endTime := time.Now()
-		require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+		require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 		timeElapsed := float64(endTime.Sub(startTime).Nanoseconds()) / 1e9
 

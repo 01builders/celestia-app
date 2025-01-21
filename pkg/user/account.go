@@ -6,6 +6,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"google.golang.org/grpc"
 )
@@ -72,7 +73,7 @@ func QueryAccount(ctx context.Context, conn *grpc.ClientConn, registry codectype
 		return accNum, seqNum, err
 	}
 
-	var acc authtypes.AccountI
+	var acc sdk.AccountI
 	err = registry.UnpackAny(resp.Account, &acc)
 	if err != nil {
 		return accNum, seqNum, err

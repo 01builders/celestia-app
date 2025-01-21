@@ -6,19 +6,19 @@ import (
 	"testing"
 	"time"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmconfig "github.com/cometbft/cometbft/config"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmconfig "github.com/tendermint/tendermint/config"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 func TestIntegrationTestSuite(t *testing.T) {

@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/client/local"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	comettypes "github.com/cometbft/cometbft/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
@@ -22,8 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/gogoproto/grpc"
-	tmlog "github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/rpc/client/local"
 )
 
 // deepClone deep clones the given object using reflection.
@@ -66,33 +65,6 @@ func deepClone(src, dst reflect.Value) error {
 	}
 
 	return nil
-}
-
-// logWrapperCoreToTM wraps cosmossdk.io/log.Logger to implement tendermint/libs/log.Logger.
-type logWrapperCoreToTM struct {
-	log.Logger
-}
-
-func (w *logWrapperCoreToTM) With(keyvals ...interface{}) tmlog.Logger {
-	return &logWrapperCoreToTM{Logger: w.Logger.With(keyvals...)}
-}
-
-var _ log.Logger = (*logWrapperTmToCore)(nil)
-
-type logWrapperTmToCore struct {
-	tmlog.Logger
-}
-
-func (l *logWrapperTmToCore) Impl() any {
-	panic("unimplemented")
-}
-
-func (l *logWrapperTmToCore) Warn(msg string, keyVals ...any) {
-	panic("unimplemented")
-}
-
-func (w *logWrapperTmToCore) With(keyvals ...interface{}) log.Logger {
-	return &logWrapperTmToCore{Logger: w.Logger.With(keyvals...)}
 }
 
 var _ sdkclient.CometRPC = (*tmLocalWrapper)(nil)

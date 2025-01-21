@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // wrapEndBlocker overrides the app's endblocker to set the timeout commit to a

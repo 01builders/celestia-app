@@ -15,9 +15,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/knuu/pkg/knuu"
 	"github.com/celestiaorg/knuu/pkg/preloader"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 const (

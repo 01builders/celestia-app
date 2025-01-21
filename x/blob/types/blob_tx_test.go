@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -16,11 +17,10 @@ import (
 	"github.com/celestiaorg/go-square/v2/inclusion"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestNewV0Blob(t *testing.T) {

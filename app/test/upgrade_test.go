@@ -15,7 +15,6 @@ import (
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	v3 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v3"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
@@ -27,11 +26,11 @@ import (
 
 	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	"cosmossdk.io/log"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestAppUpgradeV3(t *testing.T) {
@@ -183,17 +182,13 @@ func TestAppUpgradeV2(t *testing.T) {
 		t.Run(tt.module, func(t *testing.T) {
 			testApp, _ := SetupTestAppWithUpgradeHeight(t, 3)
 
-			ctx := testApp.NewContext(true, tmproto.Header{
-				Version: tmversion.Consensus{
-					App: 1,
-				},
-			})
+			ctx := testApp.NewContext(true)
 			testApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
 				Height:  2,
 				Version: tmversion.Consensus{App: 1},
 			}})
 			// app version should not have changed yet
-			appVersion, err := testApp.AppVersion()
+			appVersion, err := testApp.AppVersion(ctx)
 			require.NoError(t, err)
 
 			require.EqualValues(t, 1, appVersion)
@@ -210,11 +205,11 @@ func TestAppUpgradeV2(t *testing.T) {
 			testApp.EndBlock(abci.RequestEndBlock{Height: 2})
 			testApp.Commit()
 
-			appVersion, err = testApp.AppVersion()
+			appVersion, err = testApp.AppVersion(ctx)
 			require.NoError(t, err)
 			require.EqualValues(t, 2, appVersion)
 
-			newCtx := testApp.NewContext(true, tmproto.Header{Version: tmversion.Consensus{App: 2}})
+			newCtx := testApp.NewContext(true)
 			got, err := testApp.ParamsKeeper.Params(newCtx, &proposal.QueryParamsRequest{
 				Subspace: tt.subspace,
 				Key:      tt.key,
@@ -260,7 +255,7 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 
 	db := coretesting.NewMemDB()
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0, util.EmptyAppOptions{})
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0)
 	genesis := genesis.NewDefaultGenesis().
 		WithChainID(appconsts.TestChainID).
 		WithValidators(genesis.NewDefaultValidator(testnode.DefaultValidatorAccountName)).
@@ -268,8 +263,8 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	genDoc, err := genesis.Export()
 	require.NoError(t, err)
 	cp := genDoc.ConsensusParams
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			MaxBytes: cp.Block.MaxBytes,
 			MaxGas:   cp.Block.MaxGas,
 		},
@@ -278,8 +273,8 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 		Version:   &cp.Version,
 	}
 
-	_ = testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            genDoc.GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -287,9 +282,11 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 			ChainId:         genDoc.ChainID,
 		},
 	)
+	require.NoError(t, err)
 
 	// assert that the chain starts with version provided in genesis
-	infoResp := testApp.Info(abci.RequestInfo{})
+	infoResp, err := testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
 	appVersion := app.DefaultInitialConsensusParams().Version.AppVersion
 	require.EqualValues(t, appVersion, infoResp.AppVersion)
 	require.EqualValues(t, appconsts.GetTimeoutCommit(appVersion), infoResp.Timeouts.TimeoutCommit)

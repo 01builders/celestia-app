@@ -10,12 +10,12 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	coretypes "github.com/cometbft/cometbft/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 // Document will create a valid genesis doc with funded addresses.
@@ -45,7 +45,10 @@ func Document(
 	bankGenState := banktypes.DefaultGenesisState()
 	authGenState.Accounts = append(authGenState.Accounts, sdkAccounts...)
 	bankGenState.Balances = append(bankGenState.Balances, genBals...)
-	bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	if err != nil {
+		return nil, fmt.Errorf("sanitizing genesis balances: %w", err)
+	}
 
 	// perform some basic validation of the genesis state
 	if err := authtypes.ValidateGenesis(*authGenState); err != nil {
@@ -58,7 +61,7 @@ func Document(
 		return nil, err
 	}
 
-	state := app.ModuleBasics.DefaultGenesis(ecfg.Codec)
+	state := app.ModuleBasics.DefaultGenesis()
 	state[authtypes.ModuleName] = ecfg.Codec.MustMarshalJSON(authGenState)
 	state[banktypes.ModuleName] = ecfg.Codec.MustMarshalJSON(bankGenState)
 	state[genutiltypes.ModuleName] = ecfg.Codec.MustMarshalJSON(genutilGenState)
@@ -73,10 +76,11 @@ func Document(
 	}
 
 	// Create the genesis doc
+	cp := coretypes.ConsensusParamsFromProto(*params)
 	genesisDoc := &coretypes.GenesisDoc{
 		ChainID:         chainID,
 		GenesisTime:     genesisTime,
-		ConsensusParams: params,
+		ConsensusParams: &cp,
 		AppState:        stateBz,
 	}
 

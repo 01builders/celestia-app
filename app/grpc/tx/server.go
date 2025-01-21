@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 )

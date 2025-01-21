@@ -122,7 +122,7 @@ func (app *App) GovMaxSquareSize(ctx sdk.Context) int {
 	return int(gmax)
 }
 
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
 	...
 
 	// build the square from the set of valid and prioritised transactions.
@@ -134,7 +134,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
     ...
 }
 
-func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+func (app *App) ProcessProposal(req abci.ProcessProposalRequest) abci.ProcessProposalResponse {
     ...
 
 	// Construct the data square from the block's transactions

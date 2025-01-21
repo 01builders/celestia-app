@@ -41,6 +41,7 @@ Replace directives to local copies of ibc-apps, until PFM is ugpraded.
   - [ ] Wrap x/mint within celestia mint for extending queries and keeping query path identical
 - [x] Goal #11: Replace x/paramfilter by ante handler
 - [ ] Cache consensus keeper AppVersion calls as each addition is a state read
+- [ ] It looks like we could totally delete their custom `start.go`, and add the checkBBR flag using the start options, as well as, wrapping the RunE method to inject their `checkBBR` function first
 
 ### app.go checklist
 

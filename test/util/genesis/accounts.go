@@ -10,12 +10,12 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/crypto"
 )
 
 const (
@@ -140,7 +140,7 @@ func (v *Validator) GenTx(ecfg encoding.Config, kr keyring.Keyring, chainID stri
 		WithKeybase(kr).
 		WithTxConfig(ecfg.TxConfig)
 
-	err = tx.Sign(client.Context{}.WithAddressCodec(), txFactory, v.Name, txBuilder, true)
+	err = tx.Sign(client.Context{}.WithAddressCodec(ecfg.InterfaceRegistry.SigningContext().AddressCodec()), txFactory, v.Name, txBuilder, true)
 	if err != nil {
 		return nil, err
 	}

@@ -11,10 +11,10 @@ import (
 	square "github.com/celestiaorg/go-square/square"
 	squarev2 "github.com/celestiaorg/go-square/v2"
 	sharev2 "github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	version "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	abci "github.com/tendermint/tendermint/abci/types"
-	core "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 // PrepareProposal fulfills the celestia-core version of the ABCI interface by
@@ -22,7 +22,7 @@ import (
 // the proposal block and passes it back to tendermint via the BlockData. Panics
 // indicate a developer error and should immediately halt the node for
 // visibility and so they can be quickly resolved.
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	defer telemetry.MeasureSince(time.Now(), "prepare_proposal")
 	// Create a context using a branch of the state.
 	sdkCtx := app.NewProposalContext(core.Header{
@@ -30,19 +30,27 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 		Height:  req.Height,
 		Time:    req.Time,
 		Version: version.Consensus{
-			App: app.AppVersion(),
+			// App: app.AppVersion(), // how to get this? we need the context to get it.
 		},
 	})
+	appVersion, err := app.ConsensusKeeper.AppVersion(sdkCtx)
+	if err != nil {
+		logInvalidPropBlockError(app.Logger(), req.Header, "failure to get app version", err)
+	}
+
 	handler := ante.NewAnteHandler(
 		app.AuthKeeper,
+		app.AccountsKeeper,
 		app.BankKeeper,
 		app.BlobKeeper,
+		app.ConsensusKeeper,
 		app.FeeGrantKeeper,
 		app.GetTxConfig().SignModeHandler(),
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
 		app.ParamsKeeper,
 		app.MsgGateKeeper,
+		app.BlockedParamsGovernance(),
 	)
 
 	// Filter out invalid transactions.
@@ -52,16 +60,15 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 	// The txs returned are the ones used in the square and block.
 	var (
 		dataSquareBytes [][]byte
-		err             error
 		size            uint64
 	)
 
-	switch app.AppVersion() {
+	switch appVersion {
 	case v3:
 		var dataSquare squarev2.Square
 		dataSquare, txs, err = squarev2.Build(txs,
 			app.MaxEffectiveSquareSize(sdkCtx),
-			appconsts.SubtreeRootThreshold(app.GetBaseApp().AppVersion()),
+			appconsts.SubtreeRootThreshold(appVersion),
 		)
 		dataSquareBytes = sharev2.ToBytes(dataSquare)
 		size = uint64(dataSquare.Size())
@@ -69,12 +76,12 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 		var dataSquare square.Square
 		dataSquare, txs, err = square.Build(txs,
 			app.MaxEffectiveSquareSize(sdkCtx),
-			appconsts.SubtreeRootThreshold(app.GetBaseApp().AppVersion()),
+			appconsts.SubtreeRootThreshold(appVersion),
 		)
 		dataSquareBytes = shares.ToBytes(dataSquare)
 		size = uint64(dataSquare.Size())
 	default:
-		err = fmt.Errorf("unsupported app version: %d", app.AppVersion())
+		err = fmt.Errorf("unsupported app version: %d", appVersion)
 	}
 	if err != nil {
 		panic(err)
@@ -106,11 +113,11 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 	// Tendermint doesn't need to use any of the erasure data because only the
 	// protobuf encoded version of the block data is gossiped. Therefore, the
 	// eds is not returned here.
-	return abci.ResponsePrepareProposal{
+	return &abci.PrepareProposalResponse{
 		BlockData: &core.Data{
 			Txs:        txs,
 			SquareSize: size,
 			Hash:       dah.Hash(), // also known as the data root
 		},
-	}
+	}, nil
 }

@@ -4,11 +4,11 @@ import (
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/go-square/v2/tx"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 // separateTxs decodes raw tendermint txs into normal and blob txs.

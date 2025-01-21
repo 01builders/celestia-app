@@ -11,7 +11,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -20,14 +19,14 @@ import (
 
 	banktypes "cosmossdk.io/x/bank/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v9/testing/mock"
 )
@@ -91,7 +90,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 	txConfig := app.GetTxConfig()
 
 	chain := &ibctesting.TestChain{
-		T:              t,
+		TB:             t,
 		Coordinator:    coord,
 		ChainID:        chainID,
 		App:            app,
@@ -146,7 +145,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	db := coretesting.NewMemDB()
 	encCdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	genesisState := app.NewDefaultGenesisState()
-	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, util.EmptyAppOptions{})
+	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0)
 
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
@@ -177,7 +176,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 		}
 
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), math.LegacyOneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 	}
 
 	// set validators and delegations
@@ -207,17 +206,17 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 
 	// init chain will set the validator set and initialize the genesis accounts
 	app.InitChain(
-		abci.RequestInitChain{
+		&abci.InitChainRequest{
 			ChainId:    chainID,
 			Validators: []abci.ValidatorUpdate{},
-			ConsensusParams: &abci.ConsensusParams{
-				Block: &abci.BlockParams{
+			ConsensusParams: &tmproto.ConsensusParams{
+				Block: &tmproto.BlockParams{
 					MaxBytes: params.Block.MaxBytes,
 					MaxGas:   params.Block.MaxGas,
 				},
-				Evidence:  &params.Evidence,
-				Validator: &params.Validator,
-				Version:   &params.Version,
+				Evidence:  params.Evidence,
+				Validator: params.Validator,
+				Version:   params.Version,
 			},
 			AppStateBytes: stateBytes,
 		},

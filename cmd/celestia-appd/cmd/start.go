@@ -22,6 +22,14 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	celestiaserver "github.com/celestiaorg/celestia-app/v3/server"
+	tmserver "github.com/cometbft/cometbft/abci/server"
+	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	tmcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/node"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/rpc/client/local"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -30,19 +38,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	srvrtypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
-	tmserver "github.com/tendermint/tendermint/abci/server"
-	cmtcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -233,25 +233,26 @@ func startStandAlone(ctx *server.Context, appCreator celestiaserver.AppCreator) 
 		return err
 	}
 
-	svr, err := tmserver.NewServer(addr, transport, app)
+	cmtApp := server.NewCometABCIWrapper(app)
+	svr, err := tmserver.NewServer(addr, transport, cmtApp)
 	if err != nil {
 		return fmt.Errorf("error creating listener: %v", err)
 	}
 
-	svr.SetLogger(&logWrapperCoreToTM{ctx.Logger.With("module", "abci-server")})
+	svr.SetLogger(servercmtlog.CometLoggerWrapper{Logger: ctx.Logger.With("module", "abci-server")})
 
 	err = svr.Start()
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	defer func() {
 		if err = svr.Stop(); err != nil {
-			tmos.Exit(err.Error())
+			panic(err)
 		}
 
 		if err = app.Close(); err != nil {
-			tmos.Exit(err.Error())
+			panic(err)
 		}
 	}()
 
@@ -307,15 +308,19 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ce
 	} else {
 		ctx.Logger.Info("starting node with ABCI Tendermint in-process")
 
+		prival, err := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile(), app.ValidatorKeyProvider())
+
+		cmtApp := server.NewCometABCIWrapper(app)
 		tmNode, err = node.NewNode(
+			clientCtx.CmdContext,
 			tmCfg,
-			privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
+			prival,
 			nodeKey,
-			proxy.NewLocalClientCreator(app),
+			proxy.NewLocalClientCreator(cmtApp),
 			genDocProvider,
-			node.DefaultDBProvider,
+			tmcfg.DefaultDBProvider,
 			node.DefaultMetricsProvider(tmCfg.Instrumentation),
-			&logWrapperCoreToTM{ctx.Logger},
+			&servercmtlog.CometLoggerWrapper{Logger: ctx.Logger},
 		)
 		if err != nil {
 			return err

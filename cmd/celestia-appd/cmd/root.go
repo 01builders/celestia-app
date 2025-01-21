@@ -10,7 +10,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cosmos/cosmos-sdk/client"
 	clientconfig "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -24,8 +26,6 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/cmd/cometbft/commands"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 )
 
 const (

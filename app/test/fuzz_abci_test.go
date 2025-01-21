@@ -4,18 +4,18 @@ import (
 	"testing"
 	"time"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	core "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 // TestPrepareProposalConsistency produces blocks with random data using
@@ -124,7 +124,7 @@ func TestPrepareProposalConsistency(t *testing.T) {
 					blockTime := time.Now()
 					height := testApp.LastBlockHeight() + 1
 
-					resp := testApp.PrepareProposal(abci.RequestPrepareProposal{
+					resp := testApp.PrepareProposal(abci.PrepareProposalRequest{
 						BlockData: &core.Data{
 							Txs: coretypes.Txs(txs).ToSliceOfBytes(),
 						},
@@ -137,7 +137,7 @@ func TestPrepareProposalConsistency(t *testing.T) {
 					// the specified size
 					require.LessOrEqual(t, resp.BlockData.SquareSize, uint64(size.govMaxSquareSize))
 
-					res := testApp.ProcessProposal(abci.RequestProcessProposal{
+					res := testApp.ProcessProposal(abci.PrepareProposalRequest{
 						BlockData: resp.BlockData,
 						Header: core.Header{
 							DataHash: resp.BlockData.Hash,
@@ -147,7 +147,7 @@ func TestPrepareProposalConsistency(t *testing.T) {
 						},
 					},
 					)
-					require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Result)
+					require.Equal(t, abci.PROCESS_PROPOSAL_STATUS_ACCEPT, res.Result)
 					// At least all of the send transactions and one blob tx
 					// should make it into the block. This should be expected to
 					// change if PFB transactions are not separated and put into

@@ -338,5 +338,4 @@ replace (
 	// ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
 	// github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9 =>  github.com/01builders/ibc-apps/middleware/packet-forward-middleware/v9 v9.0.0-20250107215950-d8473b7e9e39
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.44.1-tm-v0.34.35
 )

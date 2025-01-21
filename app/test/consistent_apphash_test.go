@@ -27,6 +27,9 @@ import (
 	signal "github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -37,9 +40,6 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 type blobTx struct {
@@ -189,8 +189,8 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	grantExpiration := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 	authorization := authz.NewGenericAuthorization(blobtypes.URLMsgPayForBlobs)
 	msgGrant, err := authz.NewMsgGrant(
-		accountAddresses[0],
-		accountAddresses[1],
+		accountAddresses[0].String(),
+		accountAddresses[1].String(),
 		authorization,
 		&grantExpiration,
 	)
@@ -201,7 +201,7 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	basicAllowance := feegrant.BasicAllowance{
 		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1000))),
 	}
-	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0], accountAddresses[1])
+	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0].String(), accountAddresses[1].String())
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, feegrantMsg)
 
@@ -212,7 +212,7 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 		ToAddress:   accountAddresses[1].String(),
 		Amount:      amount,
 	}
-	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "")
+	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "metadata", "title", "summary", govtypes.ProposalType_PROPOSAL_TYPE_STANDARD)
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, proposal)
 
@@ -453,7 +453,7 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 	genesisTime := testutil.GenesisTime
 
 	// Prepare Proposal
-	resPrepareProposal := testApp.PrepareProposal(abci.RequestPrepareProposal{
+	resPrepareProposal, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 		BlockData: &tmproto.Data{
 			Txs: encodedSdkTxs,
 		},
@@ -462,6 +462,10 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 		// Dynamically increase time so the validator can be unjailed (1m duration)
 		Time: genesisTime.Add(time.Duration(height) * time.Minute),
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("PrepareProposal failed: %w", err)
+	}
+
 	if len(resPrepareProposal.BlockData.Txs) != len(encodedSdkTxs) {
 		return nil, nil, fmt.Errorf("PrepareProposal removed transactions. Was %d, now %d", len(encodedSdkTxs), len(resPrepareProposal.BlockData.Txs))
 	}
@@ -478,13 +482,17 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 	}
 
 	// Process Proposal
-	resProcessProposal := testApp.ProcessProposal(abci.RequestProcessProposal{
+	resProcessProposal, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
 		BlockData: resPrepareProposal.BlockData,
 		Header:    header,
 	},
 	)
-	if abci.ResponseProcessProposal_ACCEPT != resProcessProposal.Result {
-		return nil, nil, fmt.Errorf("ProcessProposal failed: %v", resProcessProposal.Result)
+	if err != nil {
+		return nil, nil, fmt.Errorf("ProcessProposal failed: %w", err)
+	}
+
+	if abci.PROCESS_PROPOSAL_STATUS_ACCEPT != resProcessProposal.Status {
+		return nil, nil, fmt.Errorf("ProcessProposal failed: %v", resProcessProposal.Status)
 	}
 
 	// Begin block

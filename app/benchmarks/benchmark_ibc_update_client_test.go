@@ -20,17 +20,17 @@ package benchmarks_test
 // 	types2 "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
 // 	types4 "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint/types"
 // 	"github.com/stretchr/testify/require"
-// 	"github.com/tendermint/tendermint/abci/types"
-// 	"github.com/tendermint/tendermint/crypto"
-// 	"github.com/tendermint/tendermint/crypto/tmhash"
-// 	crypto2 "github.com/tendermint/tendermint/proto/tendermint/crypto"
-// 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-// 	tmprotoversion "github.com/tendermint/tendermint/proto/tendermint/version"
-// 	"github.com/tendermint/tendermint/version"
+// 	"github.com/cometbft/cometbft/abci/types"
+// 	"github.com/cometbft/cometbft/crypto"
+// 	"github.com/cometbft/cometbft/crypto/tmhash"
+// 	crypto2 "github.com/cometbft/cometbft/proto/tendermint/crypto"
+// 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+// 	tmprotoversion "github.com/cometbft/cometbft/proto/tendermint/version"
+// 	"github.com/cometbft/cometbft/version"
 
-// 	"github.com/tendermint/tendermint/crypto/ed25519"
-// 	sm "github.com/tendermint/tendermint/state"
-// 	types0 "github.com/tendermint/tendermint/types"
+// 	"github.com/cometbft/cometbft/crypto/ed25519"
+// 	sm "github.com/cometbft/cometbft/state"
+// 	types0 "github.com/cometbft/cometbft/types"
 // )
 
 // func BenchmarkIBC_CheckTx_Update_Client_Multi(b *testing.B) {
@@ -65,7 +65,7 @@ package benchmarks_test
 // 	testApp.Commit()
 
 // 	checkTxRequest := types.RequestCheckTx{
-// 		Type: types.CheckTxType_New,
+// 		Type: types.CHECK_TX_TYPE_CHECK,
 // 		Tx:   rawTxs[0],
 // 	}
 
@@ -158,7 +158,7 @@ package benchmarks_test
 // 	blockData := &tmproto.Data{
 // 		Txs: rawTxs,
 // 	}
-// 	prepareProposalRequest := types.RequestPrepareProposal{
+// 	prepareProposalRequest := types.PrepareProposalRequest{
 // 		BlockData: blockData,
 // 		ChainId:   testApp.ChainID(),
 // 		Height:    10,
@@ -210,7 +210,7 @@ package benchmarks_test
 // 	blockData := &tmproto.Data{
 // 		Txs: rawTxs,
 // 	}
-// 	prepareProposalRequest := types.RequestPrepareProposal{
+// 	prepareProposalRequest := types.PrepareProposalRequest{
 // 		BlockData: blockData,
 // 		ChainId:   testApp.ChainID(),
 // 		Height:    10,
@@ -219,7 +219,7 @@ package benchmarks_test
 // 	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
 // 	require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
-// 	processProposalRequest := types.RequestProcessProposal{
+// 	processProposalRequest := types.ProcessProposalRequest{
 // 		BlockData: prepareProposalResponse.BlockData,
 // 		Header: tmproto.Header{
 // 			Height:   10,
@@ -234,7 +234,7 @@ package benchmarks_test
 // 	b.ResetTimer()
 // 	resp := testApp.ProcessProposal(processProposalRequest)
 // 	b.StopTimer()
-// 	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
+// 	require.Equal(b, types.PROCESS_PROPOSAL_STATUS_ACCEPT, resp.Result)
 
 // 	b.ReportMetric(float64(b.Elapsed().Nanoseconds()), "process_proposal_time(ns)")
 // 	b.ReportMetric(float64(len(prepareProposalResponse.BlockData.Txs)), "number_of_transactions")

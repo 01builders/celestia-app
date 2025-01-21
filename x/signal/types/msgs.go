@@ -21,9 +21,9 @@ var (
 
 var ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
 
-func NewMsgSignalVersion(valAddress sdk.ValAddress, version uint64) *MsgSignalVersion {
+func NewMsgSignalVersion(valAddress string, version uint64) *MsgSignalVersion {
 	return &MsgSignalVersion{
-		ValidatorAddress: valAddress.String(),
+		ValidatorAddress: valAddress,
 		Version:          version,
 	}
 }

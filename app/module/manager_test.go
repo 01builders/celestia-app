@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"cosmossdk.io/log"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/celestiaorg/celestia-app/v3/app/module"
 	"github.com/cosmos/cosmos-sdk/codec"

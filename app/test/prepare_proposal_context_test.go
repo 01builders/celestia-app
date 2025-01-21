@@ -11,6 +11,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,7 +19,6 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestTimeInPrepareProposalContext checks for an edge case where the block time

@@ -16,10 +16,10 @@ import (
 
 	"cosmossdk.io/x/authz"
 	bank "cosmossdk.io/x/bank/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestTxClientTestSuite(t *testing.T) {

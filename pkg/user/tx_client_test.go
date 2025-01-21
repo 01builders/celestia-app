@@ -92,7 +92,7 @@ func (suite *TxClientTestSuite) TestSubmitTx() {
 	gasLimitOption := user.SetGasLimit(gasLimit)
 	feeOption := user.SetFee(1e6)
 	addr := suite.txClient.DefaultAddress()
-	msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+	msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 
 	t.Run("submit tx without provided fee and gas limit", func(t *testing.T) {
 		resp, err := suite.txClient.SubmitTx(suite.ctx.GoContext(), []sdk.Msg{msg})
@@ -129,7 +129,7 @@ func (suite *TxClientTestSuite) TestSubmitTx() {
 
 	t.Run("submit tx with a different account", func(t *testing.T) {
 		addr := suite.txClient.Account("b").Address()
-		msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+		msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 		resp, err := suite.txClient.SubmitTx(suite.ctx.GoContext(), []sdk.Msg{msg})
 		require.NoError(t, err)
 		require.Equal(t, abci.CodeTypeOK, resp.Code)
@@ -155,7 +155,7 @@ func (suite *TxClientTestSuite) TestConfirmTx() {
 		defer cancel()
 
 		seqBeforeBroadcast := suite.txClient.Signer().Account(suite.txClient.DefaultAccountName()).Sequence()
-		msg := bank.NewMsgSend(suite.txClient.DefaultAddress(), testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+		msg := bank.NewMsgSend(suite.txClient.DefaultAddress().String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 		resp, err := suite.txClient.BroadcastTx(ctx, []sdk.Msg{msg})
 		require.NoError(t, err)
 		assertTxInTxTracker(t, suite.txClient, resp.TxHash, suite.txClient.DefaultAccountName(), seqBeforeBroadcast)
@@ -175,8 +175,8 @@ func (suite *TxClientTestSuite) TestConfirmTx() {
 
 	t.Run("should return error log when execution fails", func(t *testing.T) {
 		seqBeforeBroadcast := suite.txClient.Signer().Account(suite.txClient.DefaultAccountName()).Sequence()
-		innerMsg := bank.NewMsgSend(testnode.RandomAddress().(sdk.AccAddress), testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
-		msg := authz.NewMsgExec(suite.txClient.DefaultAddress(), []sdk.Msg{innerMsg})
+		innerMsg := bank.NewMsgSend(testnode.RandomAddress().String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+		msg := authz.NewMsgExec(suite.txClient.DefaultAddress().String(), []sdk.Msg{innerMsg})
 		resp, err := suite.txClient.BroadcastTx(suite.ctx.GoContext(), []sdk.Msg{&msg}, fee, gas)
 		require.NoError(t, err)
 		assertTxInTxTracker(t, suite.txClient, resp.TxHash, suite.txClient.DefaultAccountName(), seqBeforeBroadcast)
@@ -191,7 +191,7 @@ func (suite *TxClientTestSuite) TestConfirmTx() {
 	t.Run("should success when tx is found immediately", func(t *testing.T) {
 		addr := suite.txClient.DefaultAddress()
 		seqBeforeBroadcast := suite.txClient.Signer().Account(suite.txClient.DefaultAccountName()).Sequence()
-		msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+		msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 		resp, err := suite.txClient.BroadcastTx(suite.ctx.GoContext(), []sdk.Msg{msg}, fee, gas)
 		require.NoError(t, err)
 		require.Equal(t, resp.Code, abci.CodeTypeOK)
@@ -210,7 +210,7 @@ func (suite *TxClientTestSuite) TestConfirmTx() {
 		addr := suite.txClient.DefaultAddress()
 		seqBeforeBroadcast := suite.txClient.Signer().Account(suite.txClient.DefaultAccountName()).Sequence()
 		// Create a msg send with out of balance, ensure this tx fails
-		msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 1+balance)))
+		msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 1+balance)))
 		resp, err := suite.txClient.BroadcastTx(suite.ctx.GoContext(), []sdk.Msg{msg}, fee, gas)
 		require.NoError(t, err)
 		require.Equal(t, resp.Code, abci.CodeTypeOK)
@@ -233,7 +233,7 @@ func TestEvictions(t *testing.T) {
 
 	// Keep submitting the transaction until we get the eviction error
 	sender := txClient.Signer().Account(txClient.DefaultAccountName())
-	msg := bank.NewMsgSend(sender.Address(), testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+	msg := bank.NewMsgSend(sender.Address().String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 	var seqBeforeEviction uint64
 	// Loop five times until the tx is evicted
 	for i := 0; i < 5; i++ {
@@ -254,7 +254,7 @@ func TestEvictions(t *testing.T) {
 
 func (suite *TxClientTestSuite) TestGasEstimation() {
 	addr := suite.txClient.DefaultAddress()
-	msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
+	msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
 	gas, err := suite.txClient.EstimateGas(suite.ctx.GoContext(), []sdk.Msg{msg})
 	require.NoError(suite.T(), err)
 	require.Greater(suite.T(), gas, uint64(0))
@@ -269,7 +269,7 @@ func (suite *TxClientTestSuite) TestGasConsumption() {
 
 	utiaToSend := int64(1)
 	addr := suite.txClient.DefaultAddress()
-	msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, utiaToSend)))
+	msg := bank.NewMsgSend(addr.String(), testnode.RandomAddress().String(), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, utiaToSend)))
 
 	gasPrice := int64(1)
 	gasLimit := uint64(1e6)

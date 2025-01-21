@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -262,7 +263,7 @@ func (s *Signer) createSignature(builder client.TxBuilder, account *Account, seq
 
 	bytesToSign, err := s.enc.SignModeHandler().GetSignBytes(
 		context.Background(),
-		signing.SignMode_SIGN_MODE_DIRECT,
+		signingv1beta1.SignMode_SIGN_MODE_DIRECT,
 		signerData,
 		builder.GetTx(),
 	)

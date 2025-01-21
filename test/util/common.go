@@ -184,14 +184,14 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	t.Helper()
 
 	// Initialize store keys
-	keyBlobstream := sdk.NewKVStoreKey(blobstreamtypes.StoreKey)
-	keyAuth := sdk.NewKVStoreKey(authtypes.StoreKey)
-	keyStaking := sdk.NewKVStoreKey(stakingtypes.StoreKey)
-	keyBank := sdk.NewKVStoreKey(banktypes.StoreKey)
-	keyDistribution := sdk.NewKVStoreKey(distrtypes.StoreKey)
-	keyParams := sdk.NewKVStoreKey(paramstypes.StoreKey)
-	tkeyParams := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	keySlashing := sdk.NewKVStoreKey(slashingtypes.StoreKey)
+	keyBlobstream := storetypes.NewKVStoreKey(blobstreamtypes.StoreKey)
+	keyAuth := storetypes.NewKVStoreKey(authtypes.StoreKey)
+	keyStaking := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
+	keyBank := storetypes.NewKVStoreKey(banktypes.StoreKey)
+	keyDistribution := storetypes.NewKVStoreKey(distrtypes.StoreKey)
+	keyParams := storetypes.NewKVStoreKey(paramstypes.StoreKey)
+	tkeyParams := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
+	keySlashing := storetypes.NewKVStoreKey(slashingtypes.StoreKey)
 
 	// Initialize memory database and mount stores on it
 	db := coretesting.NewMemDB()
@@ -207,7 +207,7 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	err := ms.LoadLatestVersion()
 	require.NoError(t, err)
 
-	ctx := sdk.NewContext(ms, tmproto.Header{
+	header := tmproto.Header{
 		Version: tmversion.Consensus{
 			Block: 0,
 			App:   0,
@@ -231,7 +231,8 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		LastResultsHash:    []byte{},
 		EvidenceHash:       []byte{},
 		ProposerAddress:    []byte{},
-	}, false, log.TestingLogger())
+	}
+	ctx := sdk.NewContext(ms, false, log.NewTestLogger(t))
 
 	cdc := MakeTestCodec()
 	marshaler := MakeTestMarshaler()

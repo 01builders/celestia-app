@@ -55,6 +55,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 		err             error
 		size            uint64
 	)
+
 	switch app.AppVersion() {
 	case v3:
 		var dataSquare squarev2.Square

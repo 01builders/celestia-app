@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	rand "cosmossdk.io/math/unsafe"
 	v1 "cosmossdk.io/x/gov/types/v1"
 	oldgov "cosmossdk.io/x/gov/types/v1beta1"
 	"cosmossdk.io/x/params/types/proposal"
@@ -21,7 +22,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	"github.com/cometbft/cometbft/libs/rand"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stretchr/testify/require"

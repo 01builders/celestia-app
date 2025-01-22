@@ -6,7 +6,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

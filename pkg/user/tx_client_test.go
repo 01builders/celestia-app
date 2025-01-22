@@ -14,10 +14,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 
+	"cosmossdk.io/math/unsafe"
 	"cosmossdk.io/x/authz"
 	bank "cosmossdk.io/x/bank/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	"github.com/cometbft/cometbft/libs/rand"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -45,7 +45,7 @@ func (suite *TxClientTestSuite) SetupSuite() {
 
 func (suite *TxClientTestSuite) TestSubmitPayForBlob() {
 	t := suite.T()
-	blobs := blobfactory.ManyRandBlobs(rand.NewRand(), 1e3, 1e4)
+	blobs := blobfactory.ManyRandBlobs(unsafe.NewRand(), 1e3, 1e4)
 
 	subCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

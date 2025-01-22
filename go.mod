@@ -54,8 +54,6 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
-	github.com/tendermint/tendermint v0.34.29
-	github.com/tendermint/tm-db v0.6.7
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
 	google.golang.org/grpc v1.69.4
@@ -313,7 +311,7 @@ require (
 )
 
 replace (
-	cosmossdk.io/client/v2 => cosmossdk.io/client/v2 v2.10.0-beta.1
+	cosmossdk.io/client/v2 => cosmossdk.io/client/v2 v2.10.0-beta.2
 	cosmossdk.io/x/accounts => cosmossdk.io/x/accounts v0.2.0-rc.1
 	cosmossdk.io/x/accounts/defaults/lockup => cosmossdk.io/x/accounts/defaults/lockup v0.2.0-rc.1
 	cosmossdk.io/x/accounts/defaults/multisig => cosmossdk.io/x/accounts/defaults/multisig v0.2.0-rc.1
@@ -331,8 +329,9 @@ replace (
 	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk a2fdd50b20bc62d57526b033d3d82efa3ab53ed5
-	github.com/cometbft/cometbft => github.com/01builders/cometbft 91ec4106d0226f6e36b82f87c30832ac19349bcb
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250120125515-a79ed8c188b0
+	// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk a2fdd50b20bc62d57526b033d3d82efa3ab53ed5
+	// github.com/cometbft/cometbft => github.com/01builders/cometbft tbd
 
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990, this a v10 pre-release with a v9 module path
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
+	coreheader "cosmossdk.io/core/header"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -64,6 +65,7 @@ import (
 	minttypes "github.com/celestiaorg/celestia-app/v3/x/mint/types"
 	"github.com/celestiaorg/celestia-app/v3/x/signal"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	cmted25519 "github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -997,4 +999,24 @@ func (app *App) BlockedParamsGovernance() map[string][]string {
 		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
 	}
 
+}
+
+// NewProposalContext returns a context with a branched version of the state
+// that is safe to query during ProcessProposal.
+func (app *App) NewProposalContext(header cmtproto.Header) sdk.Context {
+	// use custom query multistore if provided
+	ms := app.CommitMultiStore().CacheMultiStore()
+	ctx := sdk.NewContext(ms, false, app.Logger()).
+		WithBlockGasMeter(storetypes.NewInfiniteGasMeter()).
+		WithBlockHeader(header).
+		WithHeaderInfo(coreheader.Info{
+			Height:  header.Height,
+			AppHash: header.AppHash,
+			Hash:    header.ConsensusHash,
+			Time:    header.Time,
+			ChainID: header.ChainID,
+		})
+	ctx = ctx.WithConsensusParams(app.GetConsensusParams(ctx))
+
+	return ctx
 }

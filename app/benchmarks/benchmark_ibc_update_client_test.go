@@ -23,9 +23,9 @@ package benchmarks_test
 // 	"github.com/cometbft/cometbft/abci/types"
 // 	"github.com/cometbft/cometbft/crypto"
 // 	"github.com/cometbft/cometbft/crypto/tmhash"
-// 	crypto2 "github.com/cometbft/cometbft/proto/tendermint/crypto"
+// 	crypto2 "github.com/cometbft/cometbft/api/cometbft/crypto"
 // 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-// 	tmprotoversion "github.com/cometbft/cometbft/proto/tendermint/version"
+// 	tmprotoversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 // 	"github.com/cometbft/cometbft/version"
 
 // 	"github.com/cometbft/cometbft/crypto/ed25519"

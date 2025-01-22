@@ -7,7 +7,7 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/proto/tendermint/version"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 )
 
 // OutOfOrderPrepareProposal fulfills the celestia-core version of the ABCI

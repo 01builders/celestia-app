@@ -9,7 +9,7 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"

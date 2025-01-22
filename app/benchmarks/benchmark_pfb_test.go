@@ -20,7 +20,7 @@ import (
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 	"github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/stretchr/testify/require"
 )
 

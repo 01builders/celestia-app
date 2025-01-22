@@ -82,7 +82,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	endBlockResp := testApp.EndBlock(abci.RequestEndBlock{
 		Height: 3,
 	})
-	require.Equal(t, v2.Version, endBlockResp.ConsensusParamUpdates.Version.AppVersion)
+	require.Equal(t, v2.Version, endBlockResp.ConsensusParamUpdates.Version.App)
 	require.Equal(t, appconsts.GetTimeoutCommit(v2.Version),
 		endBlockResp.Timeouts.TimeoutCommit)
 	require.Equal(t, appconsts.GetTimeoutPropose(v2.Version),
@@ -114,7 +114,7 @@ func TestAppUpgradeV3(t *testing.T) {
 
 		_ = testApp.Commit()
 	}
-	require.Equal(t, v3.Version, endBlockResp.ConsensusParamUpdates.Version.AppVersion)
+	require.Equal(t, v3.Version, endBlockResp.ConsensusParamUpdates.Version.App)
 
 	// confirm that an authored blob tx works
 	blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("hello world"), accAddr.Bytes())
@@ -287,7 +287,7 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	// assert that the chain starts with version provided in genesis
 	infoResp, err := testApp.Info(&abci.InfoRequest{})
 	require.NoError(t, err)
-	appVersion := app.DefaultInitialConsensusParams().Version.AppVersion
+	appVersion := app.DefaultInitialConsensusParams().Version.App
 	require.EqualValues(t, appVersion, infoResp.AppVersion)
 	require.EqualValues(t, appconsts.GetTimeoutCommit(appVersion), infoResp.Timeouts.TimeoutCommit)
 	require.EqualValues(t, appconsts.GetTimeoutPropose(appVersion), infoResp.Timeouts.TimeoutPropose)

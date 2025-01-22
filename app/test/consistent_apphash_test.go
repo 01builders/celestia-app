@@ -104,7 +104,7 @@ func TestConsistentAppHash(t *testing.T) {
 			// Create deterministic keys
 			kr, pubKeys := deterministicKeyRing(enc.Codec)
 			consensusParams := app.DefaultConsensusParams()
-			consensusParams.Version.AppVersion = tt.version
+			consensusParams.Version.App = tt.version
 			// Apply genesis state to the app.
 			valKeyRing, _, err := testutil.SetupDeterministicGenesisState(testApp, pubKeys, 20_000_000_000, consensusParams)
 			require.NoError(t, err)

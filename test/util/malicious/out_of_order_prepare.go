@@ -6,7 +6,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	version "github.com/cometbft/cometbft/proto/tendermint/version"
 )
 
@@ -15,15 +15,21 @@ import (
 // used to create malicious block proposals that fraud proofs can be created
 // for. It will swap the order of two blobs in the square and then use the
 // modified nmt to create a commitment over the modified square.
-func (a *App) OutOfOrderPrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
+func (a *App) OutOfOrderPrepareProposal(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	// create a context using a branch of the state and loaded using the
 	// proposal height and chain-id
+	ctx := a.NewContext(false)
+	appVersion, err := a.AppVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	sdkCtx := a.NewProposalContext(core.Header{
 		ChainID: req.ChainId,
 		Height:  req.Height,
 		Time:    req.Time,
 		Version: version.Consensus{
-			App: a.BaseApp.AppVersion(),
+			App: appVersion,
 		},
 	})
 	// filter out invalid transactions.
@@ -32,14 +38,17 @@ func (a *App) OutOfOrderPrepareProposal(req abci.PrepareProposalRequest) abci.Pr
 	// passed CheckTx.
 	handler := ante.NewAnteHandler(
 		a.AuthKeeper,
+		a.AccountsKeeper,
 		a.BankKeeper,
 		a.BlobKeeper,
+		a.ConsensusKeeper,
 		a.FeeGrantKeeper,
 		a.GetTxConfig().SignModeHandler(),
 		ante.DefaultSigVerificationGasConsumer,
 		a.IBCKeeper,
 		a.ParamsKeeper,
 		a.MsgGateKeeper,
+		app.BlockedParamsGovernance(),
 	)
 
 	txs := app.FilterTxs(a.Logger(), sdkCtx, handler, a.GetTxConfig(), req.BlockData.Txs)

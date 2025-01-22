@@ -12,7 +12,7 @@ import (
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/proto/tendermint/version"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"

@@ -45,7 +45,7 @@ func MajorUpgradeToV3(logger *log.Logger) error {
 	testnet.NoError("failed to get latest version", err)
 
 	consensusParams := app.DefaultConsensusParams()
-	consensusParams.Version.AppVersion = v2.Version // Start the test on v2
+	consensusParams.Version.App = v2.Version // Start the test on v2
 	testNet.SetConsensusParams(consensusParams)
 
 	preloader, err := testNet.NewPreloader()

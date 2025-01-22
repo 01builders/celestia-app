@@ -79,7 +79,7 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 		Version: tmversion.Consensus{
-			App: cparams.Version.AppVersion,
+			App: cparams.Version.App,
 		},
 	}})
 }
@@ -175,7 +175,7 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 		ValidatorsHash:     genDoc.ValidatorHash(),
 		NextValidatorsHash: genDoc.ValidatorHash(),
 		Version: tmversion.Consensus{
-			App: cparams.Version.AppVersion,
+			App: cparams.Version.App,
 		},
 	}})
 
@@ -505,7 +505,7 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	// assert that the chain starts with version provided in genesis
 	infoResp, err = testApp.Info(&abci.InfoRequest{})
 	require.NoError(t, err)
-	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.AppVersion, infoResp.AppVersion)
+	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.App, infoResp.AppVersion)
 
 	_, err = testApp.Commit()
 	require.NoError(t, err)

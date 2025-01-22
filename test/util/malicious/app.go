@@ -32,7 +32,7 @@ type BehaviorConfig struct {
 	StartHeight int64 `json:"start_height"`
 }
 
-type PrepareProposalHandler func(req abci.PrepareProposalRequest) abci.PrepareProposalResponse
+type PrepareProposalHandler func(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error)
 
 // PrepareProposalHandlerMap is a map of all the known prepare proposal handlers.
 func (a *App) PrepareProposalHandlerMap() map[string]PrepareProposalHandler {
@@ -56,7 +56,7 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-	goodApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, 0, 0, appOpts, baseAppOptions...)
+	goodApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, 0, 0, baseAppOptions...)
 	badApp := &App{App: goodApp}
 
 	// set the malicious prepare proposal handler if it is set in the app options
@@ -78,7 +78,7 @@ func (a *App) SetMaliciousBehavior(mcfg BehaviorConfig) {
 
 // PrepareProposal overwrites the default app's method to use the configured
 // malicious behavior after a given height.
-func (a *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
+func (a *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	if a.LastBlockHeight()+1 >= a.maliciousStartHeight {
 		return a.malPrepareProposalHandler(req)
 	}
@@ -87,8 +87,8 @@ func (a *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PreparePropo
 
 // ProcessProposal overwrites the default app's method to auto accept any
 // proposal.
-func (a *App) ProcessProposal(_ abci.ProcessProposalRequest) (resp abci.ProcessProposalResponse) {
-	return abci.ProcessProposalResponse{
+func (a *App) ProcessProposal(_ *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
+	return &abci.ProcessProposalResponse{
 		Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
-	}
+	}, nil
 }

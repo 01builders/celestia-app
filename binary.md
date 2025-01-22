@@ -112,6 +112,12 @@ In the root command, began to reason about and fix genesis commands including De
 - Remove test/pfm
 - More build issue fix
 
+### 2025-01-21/22
+
+- Upgrade to cometbft/cometbft
+- Fix more build issues
+- Remove custom start.go in favor of SDK's
+
 ## Problems
 
 - SDK 0.52 has modules with `cosmossdk.io/*` import paths

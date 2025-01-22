@@ -6,8 +6,6 @@ import (
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -18,8 +16,8 @@ import (
 // has been reached and then calls TryUpgrade, asserting that the upgrade module returns the new app version
 func TestUpgradeIntegration(t *testing.T) {
 	cp := app.DefaultConsensusParams()
-	cp.Version.AppVersion = v2.Version
-	app, _ := testutil.SetupTestAppWithGenesisValSet(cp)
+	cp.ersion
+	apptupTestAppWithGenesisValSet(cp)
 	ctx := sdk.NewContext(app.CommitMultiStore(), false, log.NewNopLogger())
 
 	res, err := app.SignalKeeper.VersionTally(ctx, &types.QueryVersionTallyRequest{

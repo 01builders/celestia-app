@@ -163,7 +163,7 @@ func TestTxSimUpgrade(t *testing.T) {
 		t.Skip("skipping TestTxSimUpgrade in short mode.")
 	}
 	cp := app.DefaultConsensusParams()
-	cp.Version.AppVersion = v2.Version
+	cp.Version.App = v2.Version
 	cfg := testnode.DefaultConfig().
 		WithTimeoutCommit(300 * time.Millisecond).
 		WithConsensusParams(cp).

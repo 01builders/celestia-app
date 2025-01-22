@@ -12,7 +12,7 @@ import (
 	squarev2 "github.com/celestiaorg/go-square/v2"
 	sharev2 "github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	core "github.com/cometbft/cometbft/proto/tendermint/types"
+	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	version "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 )

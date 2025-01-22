@@ -331,7 +331,8 @@ replace (
 	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.1.0.20250120125515-a79ed8c188b0
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk a2fdd50b20bc62d57526b033d3d82efa3ab53ed5
+	github.com/cometbft/cometbft => github.com/01builders/cometbft 91ec4106d0226f6e36b82f87c30832ac19349bcb
 
 	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990, this a v10 pre-release with a v9 module path
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	kitlog "github.com/go-kit/log"
@@ -21,6 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
@@ -131,13 +133,32 @@ func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config)
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	addCommands(rootCommand, app.DefaultNodeHome, appExporter)
+	server.AddCommands(rootCommand, newCmdApplication, server.StartCmdOptions[servertypes.Application]{
+		AddFlags: addStartFlags,
+	})
+
+	// find start command
+	startCmd, _, err := rootCommand.Find([]string{"start"})
+	if err != nil {
+		panic(fmt.Errorf("failed to find start command: %w", err))
+	}
+	startCmdRunE := startCmd.RunE
+
+	// Add the BBR check to the start command
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := checkBBR(cmd); err != nil {
+			return err
+		}
+
+		return startCmdRunE(cmd, args)
+	}
 }
 
 // addStartFlags adds flags to the start command.
 func addStartFlags(startCmd *cobra.Command) {
 	startCmd.Flags().Int64(UpgradeHeightFlag, 0, "Upgrade height to switch from v1 to v2. Must be coordinated amongst all validators")
 	startCmd.Flags().Duration(TimeoutCommitFlag, 0, "Override the application configured timeout_commit. Note: only for testing purposes.")
+	startCmd.Flags().Bool(FlagForceNoBBR, false, "bypass the requirement to use bbr locally")
 }
 
 // replaceLogger optionally replaces the logger with a file logger if the flag

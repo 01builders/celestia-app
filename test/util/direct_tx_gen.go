@@ -44,11 +44,16 @@ func RandBlobTxsWithAccounts(
 	require.Greater(t, blobCount, 0)
 
 	txs := make([]coretypes.Tx, len(accounts))
+
+	ctx := capp.NewContext(false)
+	appVersion, err := capp.AppVersion(ctx)
+	require.NoError(t, err)
+
 	for i := 0; i < len(accounts); i++ {
 		addr := testfactory.GetAddress(kr, accounts[i])
 		acc := DirectQueryAccount(capp, addr)
 		account := user.NewAccount(accounts[i], acc.GetAccountNumber(), acc.GetSequence())
-		signer, err := user.NewSigner(kr, cfg, chainid, capp.AppVersion(), account)
+		signer, err := user.NewSigner(kr, cfg, chainid, appVersion, account)
 		require.NoError(t, err)
 
 		randomizedSize := size

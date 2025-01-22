@@ -7,39 +7,35 @@ import (
 	"testing"
 	"time"
 
+	coretesting "cosmossdk.io/core/testing"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/snapshots"
+	snapshottypes "cosmossdk.io/store/snapshots/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 func TestNew(t *testing.T) {
 	logger := log.NewNopLogger()
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
 	invCheckPeriod := uint(1)
 	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(0)
 	timeoutCommit := time.Second
-	appOptions := NoopAppOptions{}
-
-	got := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit, appOptions)
+	got := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
 
 	t.Run("initializes ICAHostKeeper", func(t *testing.T) {
 		assert.NotNil(t, got.ICAHostKeeper)
-	})
-	t.Run("initializes ScopedICAHostKeeper", func(t *testing.T) {
-		assert.NotNil(t, got.ScopedICAHostKeeper)
 	})
 	t.Run("initializes StakingKeeper", func(t *testing.T) {
 		assert.NotNil(t, got.StakingKeeper)
@@ -62,14 +58,13 @@ func TestNew(t *testing.T) {
 
 func TestInitChain(t *testing.T) {
 	logger := log.NewNopLogger()
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
 	invCheckPeriod := uint(1)
 	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(0)
 	timeoutCommit := time.Second
-	appOptions := NoopAppOptions{}
-	testApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit, appOptions)
+	testApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
 	genesisState, _, _ := util.GenesisStateWithSingleValidator(testApp, "account")
 	appStateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
@@ -77,24 +72,24 @@ func TestInitChain(t *testing.T) {
 
 	type testCase struct {
 		name      string
-		request   abci.RequestInitChain
+		request   abci.InitChainRequest
 		wantPanic bool
 	}
 	testCases := []testCase{
 		{
 			name:      "should panic if consensus params not set",
-			request:   abci.RequestInitChain{},
+			request:   abci.InitChainRequest{},
 			wantPanic: true,
 		},
 		{
 			name: "should not panic on a genesis that does not contain an app version",
-			request: abci.RequestInitChain{
+			request: abci.InitChainRequest{
 				Time:    genesis.GenesisTime,
 				ChainId: genesis.ChainID,
-				ConsensusParams: &abci.ConsensusParams{
-					Block:     &abci.BlockParams{},
-					Evidence:  &genesis.ConsensusParams.Evidence,
-					Validator: &genesis.ConsensusParams.Validator,
+				ConsensusParams: &tmproto.ConsensusParams{
+					Block:     &tmproto.BlockParams{},
+					Evidence:  genesis.ConsensusParams.Evidence,
+					Validator: genesis.ConsensusParams.Validator,
 					Version:   &tmproto.VersionParams{}, // explicitly set to empty to remove app version.,
 				},
 				AppStateBytes: appStateBytes,
@@ -106,11 +101,11 @@ func TestInitChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			application := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit, appOptions)
+			application := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
 			if tc.wantPanic {
-				assert.Panics(t, func() { application.InitChain(tc.request) })
+				assert.Panics(t, func() { application.InitChain(&tc.request) })
 			} else {
-				assert.NotPanics(t, func() { application.InitChain(tc.request) })
+				assert.NotPanics(t, func() { application.InitChain(&tc.request) })
 			}
 		})
 	}
@@ -121,46 +116,51 @@ func TestOfferSnapshot(t *testing.T) {
 		// Snapshots taken before the app version field was introduced to RequestOfferSnapshot should still be accepted.
 		app := createTestApp(t)
 		request := createRequest()
-		want := abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
-		got := app.OfferSnapshot(request)
-		assert.Equal(t, want, got)
+		want := abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}
+		got, err := app.OfferSnapshot(&request)
+		require.NoError(t, err)
+		require.Equal(t, want, got)
 	})
 	t.Run("should ACCEPT a snapshot with app version 1", func(t *testing.T) {
 		app := createTestApp(t)
 		request := createRequest()
 		request.AppVersion = 1
-		want := abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
-		got := app.OfferSnapshot(request)
-		assert.Equal(t, want, got)
+		want := abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}
+		got, err := app.OfferSnapshot(&request)
+		require.NoError(t, err)
+		require.Equal(t, want, got)
 	})
 	t.Run("should ACCEPT a snapshot with app version 2", func(t *testing.T) {
 		app := createTestApp(t)
 		request := createRequest()
 		request.AppVersion = 2
-		want := abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
-		got := app.OfferSnapshot(request)
+		want := abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}
+		got, err := app.OfferSnapshot(&request)
+		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 	t.Run("should ACCEPT a snapshot with app version 3", func(t *testing.T) {
 		app := createTestApp(t)
 		request := createRequest()
 		request.AppVersion = 3
-		want := abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
-		got := app.OfferSnapshot(request)
+		want := abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}
+		got, err := app.OfferSnapshot(&request)
+		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 	t.Run("should REJECT a snapshot with unsupported app version", func(t *testing.T) {
 		app := createTestApp(t)
 		request := createRequest()
 		request.AppVersion = 4 // unsupported app version
-		want := abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_REJECT}
-		got := app.OfferSnapshot(request)
+		want := abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_REJECT}
+		got, err := app.OfferSnapshot(&request)
+		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
 }
 
 func createTestApp(t *testing.T) *app.App {
-	db := tmdb.NewMemDB()
+	db := coretesting.NewMemDB()
 	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(3)
 	timeoutCommit := time.Second
@@ -169,7 +169,7 @@ func createTestApp(t *testing.T) *app.App {
 		err := os.RemoveAll(snapshotDir)
 		require.NoError(t, err)
 	})
-	snapshotDB, err := tmdb.NewDB("metadata", tmdb.GoLevelDBBackend, snapshotDir)
+	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
 	t.Cleanup(func() {
 		err := snapshotDB.Close()
 		require.NoError(t, err)
@@ -178,15 +178,16 @@ func createTestApp(t *testing.T) *app.App {
 	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
 	require.NoError(t, err)
 	baseAppOption := baseapp.SetSnapshot(snapshotStore, snapshottypes.NewSnapshotOptions(10, 10))
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, config, upgradeHeight, timeoutCommit, util.EmptyAppOptions{}, baseAppOption)
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, config, upgradeHeight, timeoutCommit, baseAppOption)
 	require.NoError(t, err)
-	response := testApp.Info(abci.RequestInfo{})
+	response, err := testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
 	require.Equal(t, uint64(0), response.AppVersion)
 	return testApp
 }
 
-func createRequest() abci.RequestOfferSnapshot {
-	return abci.RequestOfferSnapshot{
+func createRequest() abci.OfferSnapshotRequest {
+	return abci.OfferSnapshotRequest{
 		// Snapshot was created by logging the contents of OfferSnapshot on a
 		// node that was syncing via state sync.
 		Snapshot: &abci.Snapshot{
@@ -206,11 +207,4 @@ type NoopWriter struct{}
 
 func (nw *NoopWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
-}
-
-// NoopAppOptions is a no-op implementation of servertypes.AppOptions.
-type NoopAppOptions struct{}
-
-func (nao NoopAppOptions) Get(string) interface{} {
-	return nil
 }

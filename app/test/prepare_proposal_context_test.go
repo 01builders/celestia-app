@@ -4,20 +4,21 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestTimeInPrepareProposalContext checks for an edge case where the block time
@@ -50,7 +51,7 @@ func TestTimeInPrepareProposalContext(t *testing.T) {
 				msg := vestingtypes.NewMsgCreateVestingAccount(
 					sendingAccAddr,
 					vestAccAddr,
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000))),
 					time.Now().Unix(),
 					time.Now().Add(time.Second*100).Unix(),
 					false,
@@ -64,9 +65,9 @@ func TestTimeInPrepareProposalContext(t *testing.T) {
 				sendingAccAddr := testfactory.GetAddress(cctx.Keyring, sendAccName)
 				vestAccAddr := testfactory.GetAddress(cctx.Keyring, vestAccName)
 				msg := banktypes.NewMsgSend(
-					vestAccAddr,
-					sendingAccAddr,
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1))),
+					vestAccAddr.String(),
+					sendingAccAddr.String(),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1))),
 				)
 				return []sdk.Msg{msg}, vestAccName
 			},

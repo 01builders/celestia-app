@@ -21,11 +21,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	bank "cosmossdk.io/x/bank/types"
+	distribution "cosmossdk.io/x/distribution/types"
+	staking "cosmossdk.io/x/staking/types"
 	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distribution "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -163,7 +163,7 @@ func TestTxSimUpgrade(t *testing.T) {
 		t.Skip("skipping TestTxSimUpgrade in short mode.")
 	}
 	cp := app.DefaultConsensusParams()
-	cp.Version.AppVersion = v2.Version
+	cp.Version.App = v2.Version
 	cfg := testnode.DefaultConfig().
 		WithTimeoutCommit(300 * time.Millisecond).
 		WithConsensusParams(cp).

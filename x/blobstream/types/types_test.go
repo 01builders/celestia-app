@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -16,7 +16,7 @@ func TestValsetPowerDiff(t *testing.T) {
 	specs := map[string]struct {
 		start types.BridgeValidators
 		diff  types.BridgeValidators
-		exp   sdk.Dec
+		exp   math.LegacyDec
 	}{
 		"no diff": {
 			start: types.BridgeValidators{
@@ -29,7 +29,7 @@ func TestValsetPowerDiff(t *testing.T) {
 				{Power: 2, EvmAddress: "0x8E91960d704Df3fF24ECAb78AB9df1B5D9144140"},
 				{Power: 3, EvmAddress: "0xF14879a175A2F1cEFC7c616f35b6d9c2b0Fd8326"},
 			},
-			exp: sdk.NewDecWithPrec(0, 1), // 0.0
+			exp: math.LegacyNewDecWithPrec(0, 1), // 0.0
 		},
 		"one": {
 			start: types.BridgeValidators{
@@ -42,7 +42,7 @@ func TestValsetPowerDiff(t *testing.T) {
 				{Power: 858993459, EvmAddress: "0x8E91960d704Df3fF24ECAb78AB9df1B5D9144140"},
 				{Power: 2576980377, EvmAddress: "0xF14879a175A2F1cEFC7c616f35b6d9c2b0Fd8326"},
 			},
-			exp: sdk.NewDecWithPrec(2, 1), // 0.2
+			exp: math.LegacyNewDecWithPrec(2, 1), // 0.2
 		},
 		"real world": {
 			start: types.BridgeValidators{
@@ -65,7 +65,7 @@ func TestValsetPowerDiff(t *testing.T) {
 				{Power: 291759231, EvmAddress: "0xF14879a175A2F1cEFC7c616f35b6d9c2b0Fd8326"},
 				{Power: 6785098, EvmAddress: "0x37A0603dA2ff6377E5C7f75698dabA8EE4Ba97B8"},
 			},
-			exp: sdk.NewDecWithPrec(10000000011641532, 18), // 0.010000000011641532
+			exp: math.LegacyNewDecWithPrec(10000000011641532, 18), // 0.010000000011641532
 		},
 	}
 

@@ -42,7 +42,7 @@ func (k Keeper) NextDataCommitment(ctx sdk.Context) (types.DataCommitment, error
 }
 
 func (k Keeper) GetDataCommitmentWindowParam(ctx sdk.Context) uint64 {
-	resp, err := k.Params(sdk.WrapSDKContext(ctx), &types.QueryParamsRequest{})
+	resp, err := k.Params(ctx, &types.QueryParamsRequest{})
 	if err != nil {
 		panic(err)
 	}

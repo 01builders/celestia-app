@@ -1,9 +1,9 @@
-package mint
+package keeper
 
 import (
+	"context"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/x/mint/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,19 +11,23 @@ import (
 
 // BeginBlocker updates the inflation rate, annual provisions, and then mints
 // the block provision for the current block.
-func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
+func (k Keeper) BeginBlocker(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
-	maybeUpdateMinter(ctx, k)
-	mintBlockProvision(ctx, k)
-	setPreviousBlockTime(ctx, k)
+	maybeUpdateMinter(sdkCtx, k)
+	mintBlockProvision(sdkCtx, k)
+	setPreviousBlockTime(sdkCtx, k)
+
+	return nil
 }
 
 // maybeUpdateMinter updates the inflation rate and annual provisions if the
 // inflation rate has changed. The inflation rate is expected to change once per
 // year at the genesis time anniversary until the TargetInflationRate is
 // reached.
-func maybeUpdateMinter(ctx sdk.Context, k keeper.Keeper) {
+func maybeUpdateMinter(ctx sdk.Context, k Keeper) {
 	minter := k.GetMinter(ctx)
 	genesisTime := k.GetGenesisTime(ctx).GenesisTime
 	newInflationRate := minter.CalculateInflationRate(ctx, *genesisTime)
@@ -44,7 +48,7 @@ func maybeUpdateMinter(ctx sdk.Context, k keeper.Keeper) {
 }
 
 // mintBlockProvision mints the block provision for the current block.
-func mintBlockProvision(ctx sdk.Context, k keeper.Keeper) {
+func mintBlockProvision(ctx sdk.Context, k Keeper) {
 	minter := k.GetMinter(ctx)
 	if minter.PreviousBlockTime == nil {
 		// exit early if previous block time is nil
@@ -82,7 +86,7 @@ func mintBlockProvision(ctx sdk.Context, k keeper.Keeper) {
 	)
 }
 
-func setPreviousBlockTime(ctx sdk.Context, k keeper.Keeper) {
+func setPreviousBlockTime(ctx sdk.Context, k Keeper) {
 	minter := k.GetMinter(ctx)
 	blockTime := ctx.BlockTime()
 	minter.PreviousBlockTime = &blockTime

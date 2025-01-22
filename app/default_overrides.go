@@ -5,41 +5,36 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/bank"
+	banktypes "cosmossdk.io/x/bank/types"
+	distribution "cosmossdk.io/x/distribution"
+	distributiontypes "cosmossdk.io/x/distribution/types"
+	"cosmossdk.io/x/gov"
+	govtypes "cosmossdk.io/x/gov/types/v1"
+	"cosmossdk.io/x/slashing"
+	slashingtypes "cosmossdk.io/x/slashing/types"
+	"cosmossdk.io/x/staking"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/mint"
 	minttypes "github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmcfg "github.com/cometbft/cometbft/config"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ica "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts"
-	icagenesistypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/genesis/types"
-	ibc "github.com/cosmos/ibc-go/v6/modules/core"
-	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
-	ibctypes "github.com/cosmos/ibc-go/v6/modules/core/types"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	coretypes "github.com/tendermint/tendermint/types"
+	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
+	icagenesistypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/genesis/types"
+	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+	ibctypes "github.com/cosmos/ibc-go/v9/modules/core/types"
 )
 
 // bankModule defines a custom wrapper around the x/bank module's AppModuleBasic
 // implementation to provide custom default genesis state.
 type bankModule struct {
-	bank.AppModuleBasic
+	bank.AppModule
 }
 
 // DefaultGenesis returns custom x/bank module genesis state.
@@ -75,7 +70,7 @@ func (bankModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type stakingModule struct {
-	staking.AppModuleBasic
+	staking.AppModule
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
@@ -83,7 +78,7 @@ func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := stakingtypes.DefaultParams()
 	params.UnbondingTime = appconsts.DefaultUnbondingTime
 	params.BondDenom = BondDenom
-	params.MinCommissionRate = sdk.NewDecWithPrec(5, 2) // 5%
+	params.MinCommissionRate = math.LegacyNewDecWithPrec(5, 2) // 5%
 
 	return cdc.MustMarshalJSON(&stakingtypes.GenesisState{
 		Params: params,
@@ -93,50 +88,39 @@ func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type slashingModule struct {
-	slashing.AppModuleBasic
+	slashing.AppModule
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
 func (slashingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := slashingtypes.DefaultParams()
-	params.MinSignedPerWindow = sdk.NewDecWithPrec(75, 2) // 75%
+	params.MinSignedPerWindow = math.LegacyNewDecWithPrec(75, 2) // 75%
 	params.SignedBlocksWindow = 5000
 	params.DowntimeJailDuration = time.Minute * 1
-	params.SlashFractionDoubleSign = sdk.NewDecWithPrec(2, 2) // 2%
-	params.SlashFractionDowntime = sdk.ZeroDec()              // 0%
+	params.SlashFractionDoubleSign = math.LegacyNewDecWithPrec(2, 2) // 2%
+	params.SlashFractionDowntime = math.LegacyZeroDec()              // 0%
 
 	return cdc.MustMarshalJSON(&slashingtypes.GenesisState{
 		Params: params,
 	})
 }
 
-type crisisModule struct {
-	crisis.AppModuleBasic
-}
-
-// DefaultGenesis returns custom x/crisis module genesis state.
-func (crisisModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(&crisistypes.GenesisState{
-		ConstantFee: sdk.NewCoin(BondDenom, sdk.NewInt(1000)),
-	})
-}
-
 type distributionModule struct {
-	distribution.AppModuleBasic
+	distribution.AppModule
 }
 
 // DefaultGenesis returns custom x/distribution module genesis state.
 func (distributionModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	params := distributiontypes.DefaultParams()
-	params.BaseProposerReward = sdk.ZeroDec()  // 0%
-	params.BonusProposerReward = sdk.ZeroDec() // 0%
+	params.BaseProposerReward = math.LegacyZeroDec()  // 0%
+	params.BonusProposerReward = math.LegacyZeroDec() // 0%
 	return cdc.MustMarshalJSON(&distributiontypes.GenesisState{
 		Params: params,
 	})
 }
 
 type ibcModule struct {
-	ibc.AppModuleBasic
+	ibc.AppModule
 }
 
 // DefaultGenesis returns custom x/ibc module genesis state.
@@ -154,7 +138,7 @@ func (ibcModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // icaModule defines a custom wrapper around the ica module to provide custom
 // default genesis state.
 type icaModule struct {
-	ica.AppModuleBasic
+	ica.AppModule
 }
 
 // DefaultGenesis returns custom ica module genesis state.
@@ -167,7 +151,7 @@ func (icaModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 type mintModule struct {
-	mint.AppModuleBasic
+	mint.AppModule
 }
 
 // DefaultGenesis returns custom x/mint module genesis state.
@@ -179,13 +163,13 @@ func (mintModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 func newGovModule() govModule {
-	return govModule{gov.NewAppModuleBasic(getLegacyProposalHandlers())}
+	return govModule{gov.AppModule{}}
 }
 
 // govModule is a custom wrapper around the x/gov module's AppModuleBasic
 // implementation to provide custom default genesis state.
 type govModule struct {
-	gov.AppModuleBasic
+	gov.AppModule
 }
 
 // DefaultGenesis returns custom x/gov module genesis state.
@@ -194,22 +178,11 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	day := time.Hour * 24
 	oneWeek := day * 7
 
-	genState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, sdk.NewInt(10_000_000_000))) // 10,000 TIA
+	genState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, math.NewInt(10_000_000_000))) // 10,000 TIA
 	genState.DepositParams.MaxDepositPeriod = &oneWeek
 	genState.VotingParams.VotingPeriod = &oneWeek
 
 	return cdc.MustMarshalJSON(genState)
-}
-
-func getLegacyProposalHandlers() (result []govclient.ProposalHandler) {
-	result = append(result,
-		paramsclient.ProposalHandler,
-		distrclient.ProposalHandler,
-		ibcclientclient.UpdateClientProposalHandler,
-		ibcclientclient.UpgradeProposalHandler,
-	)
-
-	return result
 }
 
 // DefaultConsensusParams returns a ConsensusParams with a MaxBytes
@@ -219,8 +192,8 @@ func DefaultConsensusParams() *tmproto.ConsensusParams {
 		Block:     DefaultBlockParams(),
 		Evidence:  DefaultEvidenceParams(),
 		Validator: coretypes.DefaultValidatorParams(),
-		Version: tmproto.VersionParams{
-			AppVersion: appconsts.LatestVersion,
+		Version: &tmproto.VersionParams{
+			App: appconsts.LatestVersion,
 		},
 	}
 }
@@ -230,16 +203,16 @@ func DefaultInitialConsensusParams() *tmproto.ConsensusParams {
 		Block:     DefaultBlockParams(),
 		Evidence:  DefaultEvidenceParams(),
 		Validator: coretypes.DefaultValidatorParams(),
-		Version: tmproto.VersionParams{
-			AppVersion: DefaultInitialVersion,
+		Version: &tmproto.VersionParams{
+			App: DefaultInitialVersion,
 		},
 	}
 }
 
 // DefaultBlockParams returns a default BlockParams with a MaxBytes determined
 // using a goal square size.
-func DefaultBlockParams() tmproto.BlockParams {
-	return tmproto.BlockParams{
+func DefaultBlockParams() *tmproto.BlockParams {
+	return &tmproto.BlockParams{
 		MaxBytes:   appconsts.DefaultMaxBytes,
 		MaxGas:     -1,
 		TimeIotaMs: 1, // 1ms
@@ -248,11 +221,11 @@ func DefaultBlockParams() tmproto.BlockParams {
 
 // DefaultEvidenceParams returns a default EvidenceParams with a MaxAge
 // determined using a goal block time.
-func DefaultEvidenceParams() tmproto.EvidenceParams {
+func DefaultEvidenceParams() *tmproto.EvidenceParams {
 	evdParams := coretypes.DefaultEvidenceParams()
 	evdParams.MaxAgeDuration = appconsts.DefaultUnbondingTime
 	evdParams.MaxAgeNumBlocks = int64(appconsts.DefaultUnbondingTime.Seconds())/int64(appconsts.GoalBlockTime.Seconds()) + 1
-	return evdParams
+	return &evdParams
 }
 
 func DefaultConsensusConfig() *tmcfg.Config {
@@ -285,7 +258,6 @@ func DefaultAppConfig() *serverconfig.Config {
 	cfg := serverconfig.DefaultConfig()
 	cfg.API.Enable = false
 	cfg.GRPC.Enable = false
-	cfg.GRPCWeb.Enable = false
 
 	// the default snapshot interval was determined by picking a large enough
 	// value as to not dramatically increase resource requirements while also

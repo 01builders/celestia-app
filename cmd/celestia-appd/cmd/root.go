@@ -1,29 +1,33 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	kitlog "github.com/go-kit/log"
+
+	"cosmossdk.io/log"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands"
+	cmtcfg "github.com/cometbft/cometbft/config"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cosmos/cosmos-sdk/client"
 	clientconfig "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	simdcmd "github.com/cosmos/cosmos-sdk/simapp/simd/cmd"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/cmd/cometbft/commands"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -52,7 +56,7 @@ func NewRootCmd() *cobra.Command {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithBroadcastMode(flags.BroadcastBlock).
+		WithBroadcastMode(flags.BroadcastSync).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper(EnvPrefix)
 
@@ -77,9 +81,13 @@ func NewRootCmd() *cobra.Command {
 			appTemplate := serverconfig.DefaultConfigTemplate
 			appConfig := app.DefaultAppConfig()
 			tmConfig := app.DefaultConsensusConfig()
+			cometConfig := &cmtcfg.Config{}
+			if err := DeepClone(tmConfig, cometConfig); err != nil {
+				return err
+			}
 
 			// Override the default tendermint config and app config for celestia-app
-			err = server.InterceptConfigsPreRunHandler(command, appTemplate, appConfig, tmConfig)
+			err = server.InterceptConfigsPreRunHandler(command, appTemplate, appConfig, cometConfig)
 			if err != nil {
 				return err
 			}
@@ -92,7 +100,7 @@ func NewRootCmd() *cobra.Command {
 				}
 			}
 
-			return setDefaultConsensusParams(command)
+			return nil
 		},
 		SilenceUsage: true,
 	}
@@ -105,45 +113,52 @@ func NewRootCmd() *cobra.Command {
 
 // initRootCommand performs a bunch of side-effects on the root command.
 func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config) {
+	genesisModule := app.ModuleBasics.Modules[genutiltypes.ModuleName].(genutil.AppModule)
+	genesisCmd := genutilcli.Commands(genesisModule, app.ModuleBasics, appExporter)
 	rootCommand.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
-		genutilcli.MigrateGenesisCmd(),
-		simdcmd.AddGenesisAccountCmd(app.DefaultNodeHome),
-		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
+		genesisCmd,
 		tmcli.NewCompletionCmd(rootCommand, true),
 		debug.Cmd(),
-		clientconfig.Cmd(),
+		confixcmd.ConfigCommand(),
 		commands.CompactGoLevelDBCmd,
 		addrbookCommand(),
 		downloadGenesisCommand(),
 		addrConversionCmd(),
-		rpc.StatusCommand(),
+		server.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome),
+		keys.Commands(),
 		blobstreamclient.VerifyCmd(),
-		snapshot.Cmd(NewAppServer),
+		snapshot.Cmd(newCmdApplication),
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	addCommands(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, addStartFlags)
-}
+	server.AddCommands(rootCommand, newCmdApplication, server.StartCmdOptions[servertypes.Application]{
+		AddFlags: addStartFlags,
+	})
 
-// setDefaultConsensusParams sets the default consensus parameters for the
-// embedded server context.
-func setDefaultConsensusParams(command *cobra.Command) error {
-	ctx := server.GetServerContextFromCmd(command)
-	ctx.DefaultConsensusParams = app.DefaultConsensusParams()
-	return server.SetCmdServerContext(command, ctx)
+	// find start command
+	startCmd, _, err := rootCommand.Find([]string{"start"})
+	if err != nil {
+		panic(fmt.Errorf("failed to find start command: %w", err))
+	}
+	startCmdRunE := startCmd.RunE
+
+	// Add the BBR check to the start command
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := checkBBR(cmd); err != nil {
+			return err
+		}
+
+		return startCmdRunE(cmd, args)
+	}
 }
 
 // addStartFlags adds flags to the start command.
 func addStartFlags(startCmd *cobra.Command) {
-	crisis.AddModuleInitFlags(startCmd)
 	startCmd.Flags().Int64(UpgradeHeightFlag, 0, "Upgrade height to switch from v1 to v2. Must be coordinated amongst all validators")
 	startCmd.Flags().Duration(TimeoutCommitFlag, 0, "Override the application configured timeout_commit. Note: only for testing purposes.")
+	startCmd.Flags().Bool(FlagForceNoBBR, false, "bypass the requirement to use bbr locally")
 }
 
 // replaceLogger optionally replaces the logger with a file logger if the flag
@@ -164,6 +179,6 @@ func replaceLogger(cmd *cobra.Command) error {
 	}
 
 	sctx := server.GetServerContextFromCmd(cmd)
-	sctx.Logger = log.NewTMLogger(log.NewSyncWriter(file))
+	sctx.Logger = log.NewLogger(kitlog.NewSyncWriter(file))
 	return server.SetCmdServerContext(cmd, sctx)
 }

@@ -5,19 +5,20 @@ import (
 	"io"
 	"time"
 
+	corestore "cosmossdk.io/core/store"
+	coretesting "cosmossdk.io/core/testing"
+	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v3/server"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmconfig "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	tmconfig "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 const (
@@ -35,7 +36,7 @@ type UniversalTestingConfig struct {
 	// AppOptions are the application options of the test node.
 	AppOptions *KVAppOptions
 	// AppCreator is used to create the application for the testnode.
-	AppCreator srvtypes.AppCreator
+	AppCreator server.AppCreator
 	// SuppressLogs in testnode. This should be set to true when running
 	// network tests.
 	SuppressLogs bool
@@ -71,7 +72,7 @@ func (c *Config) WithAppOptions(opts *KVAppOptions) *Config {
 }
 
 // WithAppCreator sets the AppCreator and returns the Config.
-func (c *Config) WithAppCreator(creator srvtypes.AppCreator) *Config {
+func (c *Config) WithAppCreator(creator server.AppCreator) *Config {
 	c.AppCreator = creator
 	return c
 }
@@ -140,7 +141,7 @@ func DefaultConsensusParams() *tmproto.ConsensusParams {
 	cparams := types.DefaultConsensusParams()
 	cparams.Block.TimeIotaMs = 1
 	cparams.Block.MaxBytes = appconsts.DefaultMaxBytes
-	cparams.Version.AppVersion = appconsts.LatestVersion
+	cparams.Version.App = appconsts.LatestVersion
 	return cparams
 }
 
@@ -153,7 +154,7 @@ func DefaultTendermintConfig() *tmconfig.Config {
 	// Set all the ports to random open ones.
 	tmCfg.RPC.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", mustGetFreePort())
 	tmCfg.P2P.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", mustGetFreePort())
-	tmCfg.RPC.GRPCListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", mustGetFreePort())
+	tmCfg.GRPC.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", mustGetFreePort())
 
 	return tmCfg
 }
@@ -166,18 +167,17 @@ func WithTimeoutCommit(d time.Duration) AppCreationOptions {
 	}
 }
 
-func DefaultAppCreator(opts ...AppCreationOptions) srvtypes.AppCreator {
-	return func(_ log.Logger, _ tmdb.DB, _ io.Writer, _ srvtypes.AppOptions) srvtypes.Application {
+func DefaultAppCreator(opts ...AppCreationOptions) server.AppCreator {
+	return func(log.Logger, corestore.KVStoreWithBatch, io.Writer, srvtypes.AppOptions) server.Application {
 		encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 		app := app.New(
 			log.NewNopLogger(),
-			tmdb.NewMemDB(),
+			coretesting.NewMemDB(),
 			nil, // trace store
 			0,   // invCheckPerid
 			encodingConfig,
 			0, // v2 upgrade height
 			0, // timeout commit
-			simapp.EmptyAppOptions{},
 			baseapp.SetMinGasPrices(fmt.Sprintf("%v%v", appconsts.DefaultMinGasPrice, app.BondDenom)),
 		)
 
@@ -189,18 +189,17 @@ func DefaultAppCreator(opts ...AppCreationOptions) srvtypes.AppCreator {
 	}
 }
 
-func CustomAppCreator(minGasPrice string) srvtypes.AppCreator {
-	return func(_ log.Logger, _ tmdb.DB, _ io.Writer, _ srvtypes.AppOptions) srvtypes.Application {
+func CustomAppCreator(minGasPrice string) server.AppCreator {
+	return func(log.Logger, corestore.KVStoreWithBatch, io.Writer, srvtypes.AppOptions) server.Application {
 		encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 		app := app.New(
 			log.NewNopLogger(),
-			tmdb.NewMemDB(),
+			coretesting.NewMemDB(),
 			nil, // trace store
 			0,   // invCheckPerid
 			encodingConfig,
 			0, // v2 upgrade height
 			0, // timeout commit
-			simapp.EmptyAppOptions{},
 			baseapp.SetMinGasPrices(minGasPrice),
 		)
 		app.SetEndBlocker(wrapEndBlocker(app, time.Millisecond*0))

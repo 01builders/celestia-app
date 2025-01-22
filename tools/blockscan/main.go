@@ -10,10 +10,10 @@ import (
 	"strconv"
 
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	"github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/types"
 )
 
 func main() {
@@ -54,7 +54,7 @@ Usage: blockscan <rpc-address> [from-height] [to-height]
 }
 
 func Scan(ctx context.Context, rpcAddress string, fromHeight, toHeight int64) error {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return err
 	}
@@ -145,10 +145,15 @@ func PrintBlock(block *types.Block) error {
 
 func PrintTx(tx authsigning.Tx) {
 	msgs := tx.GetMsgs()
+	signers, err := tx.GetSigners()
+	if err != nil {
+		log.Println("ERR:", err)
+	}
+
 	fmt.Printf(`Tx - Signer: %s, Fee: %s {
 %s
 }
-`, tx.GetSigners(), tx.GetFee(), printMessages(msgs))
+`, signers, tx.GetFee(), printMessages(msgs))
 }
 
 func printMessages(msgs []sdk.Msg) string {

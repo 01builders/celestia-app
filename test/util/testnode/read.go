@@ -7,13 +7,13 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/go-square/v2/tx"
+	"github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/types"
 )
 
 func ReadRecentBlocks(ctx context.Context, rpcAddress string, blocks int64) ([]*types.Block, error) {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func ReadRecentBlocks(ctx context.Context, rpcAddress string, blocks int64) ([]*
 }
 
 func ReadBlockchain(ctx context.Context, rpcAddress string) ([]*types.Block, error) {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func ReadBlockchain(ctx context.Context, rpcAddress string) ([]*types.Block, err
 // latest available height from the node at rpcAddress and returns it.
 // The headers are returned in ascending order (lowest first).
 func ReadBlockchainHeaders(ctx context.Context, rpcAddress string) ([]*types.BlockMeta, error) {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func reverseSlice[T any](s []T) {
 }
 
 func ReadBlockHeights(ctx context.Context, rpcAddress string, fromHeight, toHeight int64) ([]*types.Block, error) {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func DecodeBlockData(data types.Data) ([]sdk.Tx, error) {
 }
 
 func CalculateMeanGasFromRecentBlocks(ctx context.Context, rpcAddress, msgType string, blocks int64) (float64, int64, error) {
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return 0.0, 0, err
 	}
@@ -161,7 +161,7 @@ func CalculateMeanGas(ctx context.Context, rpcAddress, msgType string, fromHeigh
 			return float64(totalGas) / float64(count)
 		}
 	)
-	client, err := http.New(rpcAddress, "/websocket")
+	client, err := http.New(rpcAddress)
 	if err != nil {
 		return 0.0, 0, err
 	}

@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/celestiaorg/celestia-app/v3/test/util"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestAfterValidatorBeginUnbonding(t *testing.T) {
@@ -16,7 +16,7 @@ func TestAfterValidatorBeginUnbonding(t *testing.T) {
 	height := int64(1)
 
 	t.Run("should be a no-op if app version is 2", func(t *testing.T) {
-		ctx := testEnv.Context.WithBlockHeader(tmproto.Header{Version: version.Consensus{App: 2}, Height: height})
+		ctx := testEnv.Context.WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: 2}, Height: height})
 		err := testEnv.BlobstreamKeeper.Hooks().AfterValidatorBeginUnbonding(ctx, sdk.ConsAddress{}, sdk.ValAddress{})
 		assert.NoError(t, err)
 
@@ -24,7 +24,7 @@ func TestAfterValidatorBeginUnbonding(t *testing.T) {
 		assert.Equal(t, uint64(0), got)
 	})
 	t.Run("should set latest unboding height if app version is 1", func(t *testing.T) {
-		ctx := testEnv.Context.WithBlockHeader(tmproto.Header{Version: version.Consensus{App: 1}, Height: height})
+		ctx := testEnv.Context.WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: 1}, Height: height})
 		err := testEnv.BlobstreamKeeper.Hooks().AfterValidatorBeginUnbonding(ctx, sdk.ConsAddress{}, sdk.ValAddress{})
 		assert.NoError(t, err)
 
@@ -38,7 +38,7 @@ func TestAfterValidatorCreated(t *testing.T) {
 	height := int64(1)
 	valAddress := sdk.ValAddress([]byte("valAddress"))
 	t.Run("should be a no-op if app version is 2", func(t *testing.T) {
-		ctx := testEnv.Context.WithBlockHeader(tmproto.Header{Version: version.Consensus{App: 2}, Height: height})
+		ctx := testEnv.Context.WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: 2}, Height: height})
 		err := testEnv.BlobstreamKeeper.Hooks().AfterValidatorCreated(ctx, valAddress)
 		assert.NoError(t, err)
 
@@ -47,7 +47,7 @@ func TestAfterValidatorCreated(t *testing.T) {
 		assert.Empty(t, address)
 	})
 	t.Run("should set EVM address if app version is 1", func(t *testing.T) {
-		ctx := testEnv.Context.WithBlockHeader(tmproto.Header{Version: version.Consensus{App: 1}, Height: height})
+		ctx := testEnv.Context.WithBlockHeader(cmtproto.Header{Version: version.Consensus{App: 1}, Height: height})
 		err := testEnv.BlobstreamKeeper.Hooks().AfterValidatorCreated(ctx, valAddress)
 		assert.NoError(t, err)
 

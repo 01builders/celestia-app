@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tendermint/tendermint/rpc/client/http"
+	"github.com/cometbft/cometbft/rpc/client/http"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func Run() error {
 	}
 
 	url := os.Args[1]
-	c, err := http.New(url, "/websocket")
+	c, err := http.New(url)
 	if err != nil {
 		return err
 	}

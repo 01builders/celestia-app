@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestExportAppStateAndValidators(t *testing.T) {
@@ -20,7 +20,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 		exported, err := testApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 		require.NoError(t, err)
 		assert.NotNil(t, exported)
-		assert.Equal(t, uint64(1), exported.ConsensusParams.Version.AppVersion)
+		assert.Equal(t, uint64(1), exported.ConsensusParams.Version.App)
 	})
 	t.Run("should return exported app for version 2", func(t *testing.T) {
 		forZeroHeight := false
@@ -33,7 +33,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, exported)
 		// TODO: the following assertion is commented out because the exported app does not populate consensus params.version
-		// assert.Equal(t, uint64(2), exported.ConsensusParams.Version.AppVersion)
+		// assert.Equal(t, uint64(2), exported.ConsensusParams.Version.App)
 	})
 }
 
@@ -45,7 +45,9 @@ func upgradeToV2(t *testing.T, testApp *app.App) {
 	// Upgrade from v1 -> v2
 	testApp.EndBlock(abci.RequestEndBlock{Height: 2})
 	testApp.Commit()
-	require.EqualValues(t, 2, testApp.AppVersion())
+	appVersion, err := testApp.AppVersion()
+	require.NoError(t, err)
+	require.EqualValues(t, 2, appVersion)
 	testApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
 		Height:  3,
 		Version: tmversion.Consensus{App: 2},

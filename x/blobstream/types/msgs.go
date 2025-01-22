@@ -7,9 +7,9 @@ import (
 
 var _ sdk.Msg = &MsgRegisterEVMAddress{}
 
-func NewMsgRegisterEVMAddress(valAddress sdk.ValAddress, evmAddress common.Address) *MsgRegisterEVMAddress {
+func NewMsgRegisterEVMAddress(valAddress string, evmAddress common.Address) *MsgRegisterEVMAddress {
 	msg := &MsgRegisterEVMAddress{
-		ValidatorAddress: valAddress.String(),
+		ValidatorAddress: valAddress,
 		EvmAddress:       evmAddress.Hex(),
 	}
 	return msg
@@ -27,13 +27,4 @@ func (msg MsgRegisterEVMAddress) ValidateBasic() error {
 	}
 
 	return nil
-}
-
-// GetSigners fulfills the sdk.Msg interface. The signer must be the validator address
-func (msg MsgRegisterEVMAddress) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{sdk.AccAddress(valAddr)}
 }

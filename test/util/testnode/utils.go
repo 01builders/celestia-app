@@ -7,18 +7,19 @@ import (
 	"os"
 	"path"
 
+	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	rpctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 func TestAddress() sdk.AccAddress {
@@ -75,7 +76,7 @@ func FundKeyringAccounts(accounts ...string) (keyring.Keyring, []banktypes.Balan
 
 	for i, addr := range addresses {
 		balances := sdk.NewCoins(
-			sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(DefaultInitialBalance)),
+			sdk.NewCoin(appconsts.BondDenom, math.NewInt(DefaultInitialBalance)),
 		)
 
 		genBalances[i] = banktypes.Balance{Address: addr.String(), Coins: balances.Sort()}

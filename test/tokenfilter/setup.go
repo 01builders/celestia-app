@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	coretesting "cosmossdk.io/core/testing"
+	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -15,21 +17,18 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 
+	banktypes "cosmossdk.io/x/bank/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/ibc-go/v6/testing/mock"
-	"github.com/cosmos/ibc-go/v6/testing/simapp"
+	"github.com/cosmos/ibc-go/v9/testing/mock"
 )
 
 // NewTestChainWithValSet initializes a new TestChain instance with the given validator set
@@ -56,7 +55,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 	for i := 0; i < ibctesting.MaxAccounts; i++ {
 		senderPrivKey := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(i), 0)
-		amount, ok := sdk.NewIntFromString("10000000000000000000")
+		amount, ok := math.NewIntFromString("10000000000000000000")
 		require.True(t, ok)
 
 		// add sender account
@@ -91,7 +90,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 	txConfig := app.GetTxConfig()
 
 	chain := &ibctesting.TestChain{
-		T:              t,
+		TB:             t,
 		Coordinator:    coord,
 		ChainID:        chainID,
 		App:            app,
@@ -143,10 +142,10 @@ func NewTestChain(t *testing.T, coord *ibctesting.Coordinator, chainID string) *
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
 func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) ibctesting.TestingApp {
-	db := dbm.NewMemDB()
+	db := coretesting.NewMemDB()
 	encCdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	genesisState := app.NewDefaultGenesisState(encCdc.Codec)
-	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0, simapp.EmptyAppOptions{})
+	genesisState := app.NewDefaultGenesisState()
+	app := app.New(log.NewNopLogger(), db, nil, 5, encCdc, 0, 0)
 
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
@@ -158,7 +157,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	bondAmt := sdk.TokensFromConsensusPower(1, powerReduction)
 
 	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
 		require.NoError(t, err)
@@ -168,16 +167,16 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 			Jailed:            false,
 			Status:            stakingtypes.Bonded,
 			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			DelegatorShares:   math.LegacyOneDec(),
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 	}
 
 	// set validators and delegations
@@ -189,7 +188,7 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, bondAmt.Mul(sdk.NewInt(int64(len(valSet.Validators)))))},
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, bondAmt.Mul(math.NewInt(int64(len(valSet.Validators)))))},
 	})
 
 	// set validators and delegations
@@ -207,17 +206,17 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 
 	// init chain will set the validator set and initialize the genesis accounts
 	app.InitChain(
-		abci.RequestInitChain{
+		&abci.InitChainRequest{
 			ChainId:    chainID,
 			Validators: []abci.ValidatorUpdate{},
-			ConsensusParams: &abci.ConsensusParams{
-				Block: &abci.BlockParams{
+			ConsensusParams: &tmproto.ConsensusParams{
+				Block: &tmproto.BlockParams{
 					MaxBytes: params.Block.MaxBytes,
 					MaxGas:   params.Block.MaxGas,
 				},
-				Evidence:  &params.Evidence,
-				Validator: &params.Validator,
-				Version:   &params.Version,
+				Evidence:  params.Evidence,
+				Validator: params.Validator,
+				Version:   params.Version,
 			},
 			AppStateBytes: stateBytes,
 		},
@@ -243,8 +242,8 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	// do not require a network fee for this test
 	subspace := app.GetSubspace(minfee.ModuleName)
 	subspace = minfee.RegisterMinFeeParamTable(subspace)
-	ctx := sdk.NewContext(app.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
-	subspace.Set(ctx, minfee.KeyNetworkMinGasPrice, sdk.NewDec(0))
+	ctx := sdk.NewContext(app.CommitMultiStore(), false, log.NewNopLogger())
+	subspace.Set(ctx, minfee.KeyNetworkMinGasPrice, math.LegacyNewDec(0))
 
 	return app
 }

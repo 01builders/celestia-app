@@ -5,6 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/authz"
+	banktypes "cosmossdk.io/x/bank/types"
+	distribution "cosmossdk.io/x/distribution/types"
+	"cosmossdk.io/x/feegrant"
+	govtypes "cosmossdk.io/x/gov/types/v1"
+	slashingtypes "cosmossdk.io/x/slashing/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -19,6 +27,9 @@ import (
 	signal "github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -27,19 +38,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	crisisTypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distribution "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 type blobTx struct {
@@ -104,7 +104,7 @@ func TestConsistentAppHash(t *testing.T) {
 			// Create deterministic keys
 			kr, pubKeys := deterministicKeyRing(enc.Codec)
 			consensusParams := app.DefaultConsensusParams()
-			consensusParams.Version.AppVersion = tt.version
+			consensusParams.Version.App = tt.version
 			// Apply genesis state to the app.
 			valKeyRing, _, err := testutil.SetupDeterministicGenesisState(testApp, pubKeys, 20_000_000_000, consensusParams)
 			require.NoError(t, err)
@@ -112,7 +112,8 @@ func TestConsistentAppHash(t *testing.T) {
 			// Get account names and addresses from the keyring and create signer
 			signer, accountAddresses := getAccountsAndCreateSigner(t, kr, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 			// Validators from genesis state
-			genValidators := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false, tmproto.Header{}))
+			genValidators, err := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false))
+			require.NoError(t, err)
 			valSigner, _ := getAccountsAndCreateSigner(t, valKeyRing, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 
 			// Convert validators to ABCI validators
@@ -159,28 +160,26 @@ func getAccountsAndCreateSigner(t *testing.T, kr keyring.Keyring, enc client.TxC
 func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer *user.Signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
 	// ----------- Create v1 SDK Messages ------------
 
-	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1_000)))
+	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1_000)))
 	// Minimum deposit required for a gov proposal to become active
-	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(10000000000)))
-	twoInt := sdk.NewInt(2)
+	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(10000000000)))
+	twoInt := math.NewInt(2)
 
 	// ---------------- First Block ------------
 	var firstBlockSdkMsgs []sdk.Msg
 
 	// NewMsgSend - sends funds from account-0 to account-1
-	sendFundsMsg := banktypes.NewMsgSend(accountAddresses[0], accountAddresses[1], amount)
+	sendFundsMsg := banktypes.NewMsgSend(accountAddresses[0].String(), accountAddresses[1].String(), amount)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, sendFundsMsg)
 
 	// MultiSend - creates a multi-send transaction from account-0 to account-1
-	multiSendFundsMsg := banktypes.NewMsgMultiSend([]banktypes.Input{
-		banktypes.NewInput(
-			accountAddresses[0],
-			amount,
-		),
-	},
+	multiSendFundsMsg := banktypes.NewMsgMultiSend(banktypes.NewInput(
+		accountAddresses[0].String(),
+		amount,
+	),
 		[]banktypes.Output{
 			banktypes.NewOutput(
-				accountAddresses[1],
+				accountAddresses[1].String(),
 				amount,
 			),
 		})
@@ -190,57 +189,53 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	grantExpiration := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 	authorization := authz.NewGenericAuthorization(blobtypes.URLMsgPayForBlobs)
 	msgGrant, err := authz.NewMsgGrant(
-		accountAddresses[0],
-		accountAddresses[1],
+		accountAddresses[0].String(),
+		accountAddresses[1].String(),
 		authorization,
 		&grantExpiration,
 	)
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgGrant)
 
-	// MsgVerifyInvariant - verifies the nonnegative-outstanding invariant within the bank module for the account-0
-	msgVerifyInvariant := crisisTypes.NewMsgVerifyInvariant(accountAddresses[0], banktypes.ModuleName, "nonnegative-outstanding")
-	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgVerifyInvariant)
-
 	// MsgGrantAllowance - creates a grant allowance for account-1
 	basicAllowance := feegrant.BasicAllowance{
-		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1000))),
+		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1000))),
 	}
-	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0], accountAddresses[1])
+	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0].String(), accountAddresses[1].String())
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, feegrantMsg)
 
 	// NewMsgSubmitProposal - submits a proposal to send funds from the governance account to account-1
-	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false, tmproto.Header{})).GetAddress()
+	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false)).GetAddress()
 	msgSend := banktypes.MsgSend{
 		FromAddress: govAccount.String(),
 		ToAddress:   accountAddresses[1].String(),
 		Amount:      amount,
 	}
-	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "")
+	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "metadata", "title", "summary", govtypes.ProposalType_PROPOSAL_TYPE_STANDARD)
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, proposal)
 
 	// NewMsgDeposit - deposits funds to a governance proposal
-	msgDeposit := govtypes.NewMsgDeposit(accountAddresses[0], 1, depositAmount)
+	msgDeposit := govtypes.NewMsgDeposit(accountAddresses[0].String(), 1, depositAmount)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgDeposit)
 
 	// NewMsgCreateValidator - creates a new validator
-	msgCreateValidator, err := stakingtypes.NewMsgCreateValidator(sdk.ValAddress(accountAddresses[6]),
+	msgCreateValidator, err := stakingtypes.NewMsgCreateValidator(sdk.ValAddress(accountAddresses[6]).String(),
 		ed25519.GenPrivKeyFromSecret([]byte("validator")).PubKey(),
 		amount[0],
 		stakingtypes.NewDescription("taco tuesday", "my keybase", "www.celestia.org", "ping @celestiaorg on twitter", "fake validator"),
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(6, 0o2), sdk.NewDecWithPrec(12, 0o2), sdk.NewDecWithPrec(1, 0o2)),
-		sdk.OneInt())
+		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(6, 0o2), math.LegacyNewDecWithPrec(12, 0o2), math.LegacyNewDecWithPrec(1, 0o2)),
+		math.OneInt())
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgCreateValidator)
 
 	// NewMsgDelegate - delegates funds to validator-0
-	msgDelegate := stakingtypes.NewMsgDelegate(accountAddresses[0], genValidators[0].GetOperator(), amount[0])
+	msgDelegate := stakingtypes.NewMsgDelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), amount[0])
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgDelegate)
 
 	// NewMsgBeginRedelegate - re-delegates funds from validator-0 to validator-1
-	msgBeginRedelegate := stakingtypes.NewMsgBeginRedelegate(accountAddresses[0], genValidators[0].GetOperator(), genValidators[1].GetOperator(), amount[0])
+	msgBeginRedelegate := stakingtypes.NewMsgBeginRedelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), genValidators[1].GetOperator(), amount[0])
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgBeginRedelegate)
 
 	// ------------ Second Block ------------
@@ -248,23 +243,23 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	var secondBlockSdkMsgs []sdk.Msg
 
 	// NewMsgVote - votes yes on a governance proposal
-	msgVote := govtypes.NewMsgVote(accountAddresses[0], 1, govtypes.VoteOption_VOTE_OPTION_YES, "")
+	msgVote := govtypes.NewMsgVote(accountAddresses[0].String(), 1, govtypes.VoteOption_VOTE_OPTION_YES, "")
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgVote)
 
 	// NewMsgRevoke - revokes authorization from account-1
 	msgRevoke := authz.NewMsgRevoke(
-		accountAddresses[0],
-		accountAddresses[1],
+		accountAddresses[0].String(),
+		accountAddresses[1].String(),
 		blobtypes.URLMsgPayForBlobs,
 	)
 
 	// NewMsgExec - executes the revoke authorization message
-	msgExec := authz.NewMsgExec(accountAddresses[0], []sdk.Msg{&msgRevoke})
+	msgExec := authz.NewMsgExec(accountAddresses[0].String(), []sdk.Msg{&msgRevoke})
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, &msgExec)
 
 	// NewMsgVoteWeighted - votes with a weighted vote
 	msgVoteWeighted := govtypes.NewMsgVoteWeighted(
-		accountAddresses[0],
+		accountAddresses[0].String(),
 		1,
 		govtypes.WeightedVoteOptions([]*govtypes.WeightedVoteOption{{Option: govtypes.OptionYes, Weight: "1.0"}}), // Cast the slice to the expected type
 		"",
@@ -272,37 +267,37 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgVoteWeighted)
 
 	// NewMsgEditValidator - edits the newly created validator's description
-	msgEditValidator := stakingtypes.NewMsgEditValidator(sdk.ValAddress(accountAddresses[6]), stakingtypes.NewDescription("add", "new", "val", "desc", "."), nil, &twoInt)
+	msgEditValidator := stakingtypes.NewMsgEditValidator(sdk.ValAddress(accountAddresses[6]).String(), stakingtypes.NewDescription("add", "new", "val", "desc", "."), nil, &twoInt)
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgEditValidator)
 
 	// NewMsgUndelegate - undelegates funds from validator-1
-	msgUndelegate := stakingtypes.NewMsgUndelegate(accountAddresses[0], genValidators[1].GetOperator(), amount[0])
+	msgUndelegate := stakingtypes.NewMsgUndelegate(accountAddresses[0].String(), genValidators[1].GetOperator(), amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgUndelegate)
 
 	// NewMsgDelegate - delegates funds to validator-0
-	msgDelegate = stakingtypes.NewMsgDelegate(accountAddresses[0], genValidators[0].GetOperator(), amount[0])
+	msgDelegate = stakingtypes.NewMsgDelegate(accountAddresses[0].String(), genValidators[0].GetOperator(), amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgDelegate)
 
 	// Block 2 height
 	blockHeight := testApp.LastBlockHeight() + 2
 	// NewMsgCancelUnbondingDelegation - cancels unbonding delegation from validator-1
-	msgCancelUnbondingDelegation := stakingtypes.NewMsgCancelUnbondingDelegation(accountAddresses[0], genValidators[1].GetOperator(), blockHeight, amount[0])
+	msgCancelUnbondingDelegation := stakingtypes.NewMsgCancelUnbondingDelegation(accountAddresses[0].String(), genValidators[1].GetOperator(), blockHeight, amount[0])
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgCancelUnbondingDelegation)
 
 	// NewMsgSetWithdrawAddress - sets the withdraw address for account-0
-	msgSetWithdrawAddress := distribution.NewMsgSetWithdrawAddress(accountAddresses[0], accountAddresses[1])
+	msgSetWithdrawAddress := distribution.NewMsgSetWithdrawAddress(accountAddresses[0].String(), accountAddresses[1].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgSetWithdrawAddress)
 
 	// NewMsgRevokeAllowance - revokes the allowance granted to account-1
-	msgRevokeAllowance := feegrant.NewMsgRevokeAllowance(accountAddresses[0], accountAddresses[1])
+	msgRevokeAllowance := feegrant.NewMsgRevokeAllowance(accountAddresses[0].String(), accountAddresses[1].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, &msgRevokeAllowance)
 
 	// NewMsgFundCommunityPool - funds the community pool
-	msgFundCommunityPool := distribution.NewMsgFundCommunityPool(amount, accountAddresses[0])
+	msgFundCommunityPool := distribution.NewMsgFundCommunityPool(amount, accountAddresses[0].String())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgFundCommunityPool)
 
 	// NewMsgWithdrawDelegatorReward - withdraws delegator rewards
-	msgWithdrawDelegatorReward := distribution.NewMsgWithdrawDelegatorReward(accountAddresses[0], genValidators[0].GetOperator())
+	msgWithdrawDelegatorReward := distribution.NewMsgWithdrawDelegatorReward(accountAddresses[0].String(), genValidators[0].GetOperator())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgWithdrawDelegatorReward)
 
 	// NewMsgCreatePeriodicVestingAccount - creates a periodic vesting account
@@ -453,12 +448,12 @@ func processSdkMessages(signer *user.Signer, sdkMessages []sdk.Msg) ([][]byte, e
 // executeTxs executes a set of transactions and returns the data hash and app hash
 func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, validators []abci.Validator, lastCommitHash []byte) ([]byte, []byte, error) {
 	height := testApp.LastBlockHeight() + 1
-	chainID := testApp.GetChainID()
+	chainID := testApp.ChainID()
 
 	genesisTime := testutil.GenesisTime
 
 	// Prepare Proposal
-	resPrepareProposal := testApp.PrepareProposal(abci.RequestPrepareProposal{
+	resPrepareProposal, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 		BlockData: &tmproto.Data{
 			Txs: encodedSdkTxs,
 		},
@@ -467,6 +462,10 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 		// Dynamically increase time so the validator can be unjailed (1m duration)
 		Time: genesisTime.Add(time.Duration(height) * time.Minute),
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("PrepareProposal failed: %w", err)
+	}
+
 	if len(resPrepareProposal.BlockData.Txs) != len(encodedSdkTxs) {
 		return nil, nil, fmt.Errorf("PrepareProposal removed transactions. Was %d, now %d", len(encodedSdkTxs), len(resPrepareProposal.BlockData.Txs))
 	}
@@ -483,13 +482,17 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 	}
 
 	// Process Proposal
-	resProcessProposal := testApp.ProcessProposal(abci.RequestProcessProposal{
+	resProcessProposal, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
 		BlockData: resPrepareProposal.BlockData,
 		Header:    header,
 	},
 	)
-	if abci.ResponseProcessProposal_ACCEPT != resProcessProposal.Result {
-		return nil, nil, fmt.Errorf("ProcessProposal failed: %v", resProcessProposal.Result)
+	if err != nil {
+		return nil, nil, fmt.Errorf("ProcessProposal failed: %w", err)
+	}
+
+	if abci.PROCESS_PROPOSAL_STATUS_ACCEPT != resProcessProposal.Status {
+		return nil, nil, fmt.Errorf("ProcessProposal failed: %v", resProcessProposal.Status)
 	}
 
 	// Begin block

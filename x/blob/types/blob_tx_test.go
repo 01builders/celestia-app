@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"testing"
 
+	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -14,12 +17,10 @@ import (
 	"github.com/celestiaorg/go-square/v2/inclusion"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestNewV0Blob(t *testing.T) {
@@ -149,7 +150,7 @@ func TestValidateBlobTx(t *testing.T) {
 		{
 			name: "complex transaction with one send and one pfb",
 			getTx: func() *tx.BlobTx {
-				sendMsg := banktypes.NewMsgSend(addr, addr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(10))))
+				sendMsg := banktypes.NewMsgSend(addr.String(), addr.String(), sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(10))))
 				transaction := blobfactory.ComplexBlobTxWithOtherMsgs(
 					t,
 					tmrand.NewRand(),

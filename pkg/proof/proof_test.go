@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 
 	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
@@ -270,7 +270,7 @@ func TestAllSharesInclusionProof(t *testing.T) {
 // https://github.com/celestiaorg/celestia-app/issues/3140
 func TestQueryTxInclusionProofRejectsNegativeValues(t *testing.T) {
 	path := []string{"-2"}
-	req := abci.RequestQuery{Data: []byte{}}
+	req := abci.QueryRequest{Data: []byte{}}
 	ctx := sdk.Context{}
 	rawProof, err := proof.QueryTxInclusionProof(ctx, path, req)
 	if err == nil {

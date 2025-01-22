@@ -3,6 +3,7 @@ package ante_test
 import (
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
@@ -18,9 +19,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const (
@@ -155,10 +153,9 @@ func TestBlobShareDecorator(t *testing.T) {
 			sdkTx, err := ecfg.TxConfig.TxDecoder()(btx.Tx)
 			require.NoError(t, err)
 
-			decorator := ante.NewBlobShareDecorator(mockBlobKeeper{})
+			decorator := ante.NewBlobShareDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: tc.appVersion})
 			ctx := sdk.Context{}.
 				WithIsCheckTx(true).
-				WithBlockHeader(tmproto.Header{Version: version.Consensus{App: tc.appVersion}}).
 				WithTxBytes(btx.Tx)
 			_, err = decorator.AnteHandle(ctx, sdkTx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)

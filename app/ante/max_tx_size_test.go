@@ -8,14 +8,9 @@ import (
 	v3 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v3"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestMaxTxSizeDecorator(t *testing.T) {
-	decorator := ante.NewMaxTxSizeDecorator()
-	anteHandler := sdk.ChainAnteDecorators(decorator)
-
 	testCases := []struct {
 		name        string
 		txSize      int
@@ -56,12 +51,10 @@ func TestMaxTxSizeDecorator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, isCheckTx := range tc.isCheckTx {
+				decorator := ante.NewMaxTxSizeDecorator(mockConsensusKeeper{appVersion: tc.appVersion})
+				anteHandler := sdk.ChainAnteDecorators(decorator)
 
-				ctx := sdk.NewContext(nil, tmproto.Header{
-					Version: version.Consensus{
-						App: tc.appVersion,
-					},
-				}, isCheckTx, nil)
+				ctx := sdk.NewContext(nil, isCheckTx, nil)
 
 				txBytes := make([]byte, tc.txSize)
 

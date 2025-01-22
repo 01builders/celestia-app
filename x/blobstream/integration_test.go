@@ -3,6 +3,7 @@ package blobstream_test
 import (
 	"testing"
 
+	staking "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
@@ -10,13 +11,12 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func TestBlobstreamIntegrationSuite(t *testing.T) {
@@ -63,7 +63,7 @@ func (s *BlobstreamIntegrationSuite) TestBlobstream() {
 			msgFunc: func() ([]sdk.Msg, sdk.AccAddress) {
 				addr := testfactory.GetAddress(s.cctx.Keyring, "validator")
 				valAddr := sdk.ValAddress(addr)
-				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
+				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
 				return []sdk.Msg{msg}, addr
 			},
 			expectedTxCode: abci.CodeTypeOK,
@@ -73,7 +73,7 @@ func (s *BlobstreamIntegrationSuite) TestBlobstream() {
 			msgFunc: func() ([]sdk.Msg, sdk.AccAddress) {
 				addr := testfactory.GetAddress(s.cctx.Keyring, s.accounts[0])
 				valAddr := sdk.ValAddress(addr)
-				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr, gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
+				msg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), gethcommon.HexToAddress("0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5"))
 				return []sdk.Msg{msg}, addr
 			},
 			expectedTxCode: staking.ErrNoValidatorFound.ABCICode(),

@@ -6,11 +6,9 @@ import (
 	"math/big"
 	"sort"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/ethereum/go-ethereum/common"
-
 	"cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ToInternal transforms a BridgeValidator into its fully validated internal
@@ -115,17 +113,17 @@ func EVMAddrLessThan(e common.Address, o common.Address) bool {
 // increases by 1% due to inflation, we shouldn't have to generate a new
 // validator set, after all the validators retained their relative percentages
 // during inflation and normalized Blobstream power shows no difference.
-func (ibv InternalBridgeValidators) PowerDiff(c InternalBridgeValidators) sdk.Dec {
-	powers := map[string]sdk.Dec{}
+func (ibv InternalBridgeValidators) PowerDiff(c InternalBridgeValidators) sdkmath.LegacyDec {
+	powers := map[string]sdkmath.LegacyDec{}
 	// loop over ibv and initialize the map with their powers
 	for _, bv := range ibv {
-		powers[bv.EVMAddress.Hex()] = sdk.NewDecFromBigInt(new(big.Int).SetUint64(bv.Power))
+		powers[bv.EVMAddress.Hex()] = sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(bv.Power))
 	}
 
 	// subtract c powers from powers in the map, initializing
 	// uninitialized keys with negative numbers
 	for _, bv := range c {
-		bvPower := sdk.NewDecFromBigInt(new(big.Int).SetUint64(bv.Power))
+		bvPower := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(bv.Power))
 		if val, ok := powers[bv.EVMAddress.Hex()]; ok {
 			powers[bv.EVMAddress.Hex()] = val.Sub(bvPower)
 		} else {
@@ -133,14 +131,14 @@ func (ibv InternalBridgeValidators) PowerDiff(c InternalBridgeValidators) sdk.De
 		}
 	}
 
-	delta := sdk.NewDec(0)
+	delta := sdkmath.LegacyNewDec(0)
 	for _, v := range powers {
 		// NOTE: we care about the absolute value of the changes
 		v = v.Abs()
 		delta = delta.Add(v)
 	}
 
-	decMaxUint32 := sdk.NewDec(math.MaxUint32)
+	decMaxUint32 := sdkmath.LegacyNewDec(math.MaxUint32)
 	q := delta.Quo(decMaxUint32)
 
 	return q

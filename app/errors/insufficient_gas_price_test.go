@@ -18,7 +18,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // This will detect any changes to the DeductFeeDecorator which may cause a
@@ -33,7 +32,7 @@ func TestInsufficientMinGasPriceIntegration(t *testing.T) {
 	testApp, kr := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams(), account)
 	minGasPrice, err := sdk.ParseDecCoins(fmt.Sprintf("%v%s", appconsts.DefaultMinGasPrice, app.BondDenom))
 	require.NoError(t, err)
-	ctx := testApp.NewContext(true, tmproto.Header{}).WithMinGasPrices(minGasPrice)
+	ctx := testApp.NewContext(true).WithMinGasPrices(minGasPrice)
 	addr := testfactory.GetAddress(kr, account)
 	enc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	acc := testutil.DirectQueryAccount(testApp, addr)
@@ -49,7 +48,7 @@ func TestInsufficientMinGasPriceIntegration(t *testing.T) {
 	rawTx, err := signer.CreateTx([]sdk.Msg{msg}, user.SetGasLimit(gasLimit), user.SetFee(feeAmount))
 	require.NoError(t, err)
 
-	decorator := ante.NewDeductFeeDecorator(testApp.AccountKeeper, testApp.BankKeeper, testApp.FeeGrantKeeper, nil)
+	decorator := ante.NewDeductFeeDecorator(testApp.AuthKeeper, testApp.BankKeeper, testApp.FeeGrantKeeper, nil)
 	anteHandler := sdk.ChainAnteDecorators(decorator)
 
 	sdkTx, err := signer.DecodeTx(rawTx)

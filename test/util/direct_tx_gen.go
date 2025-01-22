@@ -4,23 +4,23 @@ import (
 	"math/rand"
 	"testing"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	tmrand "cosmossdk.io/math/unsafe"
 
+	"cosmossdk.io/math"
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/go-square/v2/tx"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 // RandBlobTxsWithAccounts will create random blob transactions using the
@@ -44,11 +44,16 @@ func RandBlobTxsWithAccounts(
 	require.Greater(t, blobCount, 0)
 
 	txs := make([]coretypes.Tx, len(accounts))
+
+	ctx := capp.NewContext(false)
+	appVersion, err := capp.AppVersion(ctx)
+	require.NoError(t, err)
+
 	for i := 0; i < len(accounts); i++ {
 		addr := testfactory.GetAddress(kr, accounts[i])
 		acc := DirectQueryAccount(capp, addr)
 		account := user.NewAccount(accounts[i], acc.GetAccountNumber(), acc.GetSequence())
-		signer, err := user.NewSigner(kr, cfg, chainid, capp.AppVersion(), account)
+		signer, err := user.NewSigner(kr, cfg, chainid, appVersion, account)
 		require.NoError(t, err)
 
 		randomizedSize := size
@@ -76,8 +81,8 @@ func RandBlobTxsWithAccounts(
 }
 
 func DirectQueryAccount(app *app.App, addr sdk.AccAddress) authtypes.AccountI {
-	ctx := app.NewContext(true, tmproto.Header{})
-	return app.AccountKeeper.GetAccount(ctx, addr)
+	ctx := app.NewContext(true)
+	return app.AuthKeeper.GetAccount(ctx, addr)
 }
 
 // RandBlobTxsWithManualSequence will create random blob transactions using the
@@ -215,7 +220,7 @@ func SendTxWithManualSequence(
 	signer, err := user.NewSigner(kr, cfg, chainid, appconsts.LatestVersion, user.NewAccount(fromAcc, accountNum, sequence))
 	require.NoError(t, err)
 
-	msg := banktypes.NewMsgSend(fromAddr, toAddr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(amount))))
+	msg := banktypes.NewMsgSend(fromAddr.String(), toAddr.String(), sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(amount))))
 	rawTx, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
 	require.NoError(t, err)
 

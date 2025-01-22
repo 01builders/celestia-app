@@ -1,7 +1,6 @@
 package user
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,17 +10,18 @@ import (
 	"sync"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
+	paramtypes "cosmossdk.io/x/params/types/proposal"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cometbft/cometbft/rpc/core"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/rpc/core"
 	"google.golang.org/grpc"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
@@ -198,9 +198,9 @@ func SetupTxClient(
 	encCfg encoding.Config,
 	options ...Option,
 ) (*TxClient, error) {
-	resp, err := tmservice.NewServiceClient(conn).GetLatestBlock(
+	resp, err := cmtservice.NewServiceClient(conn).GetLatestBlock(
 		ctx,
-		&tmservice.GetLatestBlockRequest{},
+		&cmtservice.GetLatestBlockRequest{},
 	)
 	if err != nil {
 		return nil, err
@@ -345,7 +345,7 @@ func (client *TxClient) BroadcastTx(ctx context.Context, msgs []sdktypes.Msg, op
 	if gasLimit == 0 {
 		if !hasUserSetFee {
 			// add at least 1utia as fee to builder as it affects gas calculation.
-			txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdktypes.NewInt(1))))
+			txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdkmath.NewInt(1))))
 		}
 		gasLimit, err = client.estimateGas(ctx, txBuilder)
 		if err != nil {
@@ -356,7 +356,7 @@ func (client *TxClient) BroadcastTx(ctx context.Context, msgs []sdktypes.Msg, op
 
 	if !hasUserSetFee {
 		fee := int64(math.Ceil(appconsts.DefaultMinGasPrice * float64(gasLimit)))
-		txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdktypes.NewInt(fee))))
+		txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdkmath.NewInt(fee))))
 	}
 
 	account, _, err = client.signer.signTransaction(txBuilder)
@@ -511,7 +511,7 @@ func (client *TxClient) EstimateGas(ctx context.Context, msgs []sdktypes.Msg, op
 
 func (client *TxClient) estimateGas(ctx context.Context, txBuilder client.TxBuilder) (uint64, error) {
 	// add at least 1utia as fee to builder as it affects gas calculation.
-	txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdktypes.NewInt(1))))
+	txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewCoin(appconsts.BondDenom, sdkmath.NewInt(1))))
 
 	_, _, err := client.signer.signTransaction(txBuilder)
 	if err != nil {
@@ -579,18 +579,6 @@ func (client *TxClient) checkAccountLoaded(ctx context.Context, account string) 
 
 func (client *TxClient) getAccountNameFromMsgs(msgs []sdktypes.Msg) (string, error) {
 	var addr sdktypes.AccAddress
-	for _, msg := range msgs {
-		signers := msg.GetSigners()
-		if len(signers) != 1 {
-			return "", fmt.Errorf("only one signer per transaction supported, got %d", len(signers))
-		}
-		if addr == nil {
-			addr = signers[0]
-		}
-		if !bytes.Equal(addr, signers[0]) {
-			return "", errors.New("not supported: got two different signers across multiple messages")
-		}
-	}
 	record, err := client.signer.keys.KeyByAddress(addr)
 	if err != nil {
 		return "", err

@@ -3,9 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
-
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
+	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -194,7 +193,7 @@ func TestCheckingEarliestAvailableAttestationNonceInDataCommitments(t *testing.T
 	k := input.BlobstreamKeeper
 
 	// init the latest attestation nonce
-	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, blobstream.InitialLatestAttestationNonce)
+	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, keeper.InitialLatestAttestationNonce)
 
 	tests := []struct {
 		name          string

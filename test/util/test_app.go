@@ -8,6 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
+	banktypes "cosmossdk.io/x/bank/types"
+	slashingtypes "cosmossdk.io/x/slashing/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -16,6 +21,12 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -23,42 +34,22 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/spf13/cast"
+	simulationcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
-
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const ChainID = testfactory.ChainID
 
 var (
 	GenesisTime   = time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC).UTC()
-	TestAppLogger = log.NewTMLogger(os.Stdout)
+	TestAppLogger = log.NewLogger(os.Stdout)
 )
 
 // Get flags every time the simulator is run
 func init() {
-	simapp.GetSimulatorFlags()
-}
-
-type EmptyAppOptions struct{}
-
-// Get implements AppOptions
-func (ao EmptyAppOptions) Get(_ string) interface{} {
-	return nil
+	simulationcli.GetSimulatorFlags()
 }
 
 // SetupTestAppWithGenesisValSet initializes a new app with a validator set and
@@ -88,15 +79,13 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 		Version: tmversion.Consensus{
-			App: cparams.Version.AppVersion,
+			App: cparams.Version.App,
 		},
 	}})
 }
 
 // NewTestApp creates a new app instance with an empty memDB and a no-op logger.
 func NewTestApp() *app.App {
-	// EmptyAppOptions is a stub implementing AppOptions
-	emptyOpts := EmptyAppOptions{}
 	// var anteOpt = func(bapp *baseapp.BaseApp) { bapp.SetAnteHandler(nil) }
 	db := dbm.NewMemDB()
 
@@ -104,17 +93,16 @@ func NewTestApp() *app.App {
 
 	return app.New(
 		TestAppLogger, db, nil,
-		cast.ToUint(emptyOpts.Get(server.FlagInvCheckPeriod)),
+		0,
 		encCfg,
 		0,
 		0,
-		emptyOpts,
 	)
 }
 
 // SetupDeterministicGenesisState sets genesis on initialized testApp with the provided arguments.
 func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubKey, balance int64, cparams *tmproto.ConsensusParams) (keyring.Keyring, []genesis.Account, error) {
-	slashingParams := slashingtypes.NewParams(2, sdk.OneDec(), time.Minute, sdk.OneDec(), sdk.OneDec())
+	slashingParams := slashingtypes.NewParams(2, math.LegacyOneDec(), time.Minute, math.LegacyOneDec(), math.LegacyOneDec())
 
 	// Create genesis
 	gen := genesis.NewDefaultGenesis().
@@ -147,23 +135,26 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 	}
 
 	// Initialise test app against genesis
-	testApp.Info(abci.RequestInfo{})
+	_, err = testApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get app info: %w", err)
+	}
 
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			// Choose some value large enough to not bottleneck the max square
 			// size
 			MaxBytes: int64(appconsts.DefaultUpperBoundMaxBytes),
 			MaxGas:   cparams.Block.MaxGas,
 		},
-		Evidence:  &cparams.Evidence,
-		Validator: &cparams.Validator,
-		Version:   &cparams.Version,
+		Evidence:  cparams.Evidence,
+		Validator: cparams.Validator,
+		Version:   cparams.Version,
 	}
 
 	// Init chain will set the validator set and initialize the genesis accounts
-	testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            gen.GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -171,6 +162,9 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 			ChainId:         genDoc.ChainID,
 		},
 	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to init chain: %w", err)
+	}
 
 	// Commit genesis changes
 	testApp.Commit()
@@ -181,7 +175,7 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 		ValidatorsHash:     genDoc.ValidatorHash(),
 		NextValidatorsHash: genDoc.ValidatorHash(),
 		Version: tmversion.Consensus{
-			App: cparams.Version.AppVersion,
+			App: cparams.Version.App,
 		},
 	}})
 
@@ -230,11 +224,14 @@ func InitialiseTestAppWithGenesis(testApp *app.App, cparams *tmproto.ConsensusPa
 		Version:   &cparams.Version,
 	}
 
-	testApp.Info(abci.RequestInfo{})
+	_, err = testApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		panic(err)
+	}
 
 	// init chain will set the validator set and initialize the genesis accounts
-	testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -242,6 +239,10 @@ func InitialiseTestAppWithGenesis(testApp *app.App, cparams *tmproto.ConsensusPa
 			ChainId:         ChainID,
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
+
 	return testApp
 }
 
@@ -296,8 +297,8 @@ func AddAccount(addr sdk.AccAddress, appState app.GenesisState, cdc codec.Codec)
 	var genAccount authtypes.GenesisAccount
 
 	coins := sdk.Coins{
-		sdk.NewCoin("token", sdk.NewInt(1000000)),
-		sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000)),
+		sdk.NewCoin("token", math.NewInt(1000000)),
+		sdk.NewCoin(app.BondDenom, math.NewInt(1000000)),
 	}
 
 	balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
@@ -340,7 +341,10 @@ func AddAccount(addr sdk.AccAddress, appState app.GenesisState, cdc codec.Codec)
 
 	bankGenState := banktypes.GetGenesisStateFromAppState(cdc, appState)
 	bankGenState.Balances = append(bankGenState.Balances, balances)
-	bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	if err != nil {
+		return appState, fmt.Errorf("failed to sanitize genesis balances: %w", err)
+	}
 
 	bankGenStateBz, err := cdc.MarshalJSON(bankGenState)
 	if err != nil {
@@ -371,7 +375,7 @@ func GenesisStateWithSingleValidator(testApp *app.App, genAccounts ...string) (a
 	balances := make([]banktypes.Balance, 0, len(genAccounts)+1)
 	balances = append(balances, banktypes.Balance{
 		Address: acc.GetAddress().String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(100000000000000))),
+		Coins:   sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(100000000000000))),
 	})
 
 	kr, fundedBankAccs, fundedAuthAccs := testnode.FundKeyringAccounts(genAccounts...)
@@ -379,7 +383,7 @@ func GenesisStateWithSingleValidator(testApp *app.App, genAccounts ...string) (a
 	accs = append(accs, fundedAuthAccs...)
 	balances = append(balances, fundedBankAccs...)
 
-	genesisState := NewDefaultGenesisState(testApp.AppCodec())
+	genesisState := NewDefaultGenesisState()
 	genesisState = genesisStateWithValSet(testApp, genesisState, valSet, accs, balances...)
 
 	return genesisState, valSet, kr
@@ -402,7 +406,7 @@ func genesisStateWithValSet(
 	bondAmt := sdk.DefaultPowerReduction
 
 	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+		pk, err := cryptocodec.FromCmtPubKeyInterface(val.PubKey)
 		if err != nil {
 			panic(err)
 		}
@@ -416,15 +420,15 @@ func genesisStateWithValSet(
 			Jailed:            false,
 			Status:            stakingtypes.Bonded,
 			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			DelegatorShares:   math.LegacyOneDec(),
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 
 	}
 	// set validators and delegations
@@ -458,8 +462,8 @@ func genesisStateWithValSet(
 }
 
 // NewDefaultGenesisState generates the default state for the application.
-func NewDefaultGenesisState(cdc codec.JSONCodec) app.GenesisState {
-	return app.ModuleBasics.DefaultGenesis(cdc)
+func NewDefaultGenesisState() app.GenesisState {
+	return app.ModuleBasics.DefaultGenesis()
 }
 
 func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, keyring.Keyring) {
@@ -468,25 +472,27 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	db := dbm.NewMemDB()
 	chainID := "test_chain"
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0, EmptyAppOptions{})
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0)
 	genesisState, _, kr := GenesisStateWithSingleValidator(testApp, "account")
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
-	infoResp := testApp.Info(abci.RequestInfo{})
+	infoResp, err := testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
+
 	require.EqualValues(t, 0, infoResp.AppVersion)
 	cp := app.DefaultInitialConsensusParams()
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			MaxBytes: cp.Block.MaxBytes,
 			MaxGas:   cp.Block.MaxGas,
 		},
-		Evidence:  &cp.Evidence,
-		Validator: &cp.Validator,
-		Version:   &cp.Version,
+		Evidence:  cp.Evidence,
+		Validator: cp.Validator,
+		Version:   cp.Version,
 	}
 
-	_ = testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            time.Now(),
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -494,12 +500,15 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 			ChainId:         chainID,
 		},
 	)
+	require.NoError(t, err)
 
 	// assert that the chain starts with version provided in genesis
-	infoResp = testApp.Info(abci.RequestInfo{})
-	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.AppVersion, infoResp.AppVersion)
+	infoResp, err = testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
+	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.App, infoResp.AppVersion)
 
-	_ = testApp.Commit()
+	_, err = testApp.Commit()
+	require.NoError(t, err)
 	supportedVersions := []uint64{v1.Version, v2.Version}
 	require.Equal(t, supportedVersions, testApp.SupportedVersions())
 	return testApp, kr

@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 
-	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/math"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Keeper implements the MsgServer and QueryServer interfaces
@@ -20,7 +22,7 @@ var (
 	_ types.QueryServer = Keeper{}
 
 	// defaultSignalThreshold is 5/6 or approximately 83.33%
-	defaultSignalThreshold = sdk.NewDec(5).Quo(sdk.NewDec(6))
+	defaultSignalThreshold = math.LegacyNewDec(5).Quo(math.LegacyNewDec(6))
 )
 
 // Threshold is the fraction of voting power that is required
@@ -28,33 +30,36 @@ var (
 // between 2/3 and 3/3 providing 1/6 fault tolerance to halting the
 // network during an upgrade period. It can be modified through a
 // hard fork change that modified the app version
-func Threshold(_ uint64) sdk.Dec {
+func Threshold(_ uint64) math.LegacyDec {
 	return defaultSignalThreshold
 }
 
 type Keeper struct {
+	appmodule.Environment
+
 	// binaryCodec is used to marshal and unmarshal data from the store.
 	binaryCodec codec.BinaryCodec
-
-	// storeKey is key that is used to fetch the signal store from the multi
-	// store.
-	storeKey storetypes.StoreKey
 
 	// stakingKeeper is used to fetch validators to calculate the total power
 	// signalled to a version.
 	stakingKeeper StakingKeeper
+
+	// consensusKeeper is used to get the app version
+	consensusKeeper ConsensusKeeper
 }
 
 // NewKeeper returns a signal keeper.
 func NewKeeper(
+	env appmodule.Environment,
 	binaryCodec codec.BinaryCodec,
-	storeKey storetypes.StoreKey,
 	stakingKeeper StakingKeeper,
+	consensusKeeper ConsensusKeeper,
 ) Keeper {
 	return Keeper{
-		binaryCodec:   binaryCodec,
-		storeKey:      storeKey,
-		stakingKeeper: stakingKeeper,
+		Environment:     env,
+		binaryCodec:     binaryCodec,
+		stakingKeeper:   stakingKeeper,
+		consensusKeeper: consensusKeeper,
 	}
 }
 
@@ -72,14 +77,18 @@ func (k Keeper) SignalVersion(ctx context.Context, req *types.MsgSignalVersion) 
 	}
 
 	// The signalled version can not be less than the current version.
-	currentVersion := sdkCtx.BlockHeader().Version.App
+	currentVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if req.Version < currentVersion {
 		return nil, types.ErrInvalidSignalVersion.Wrapf("signalled version %d, current version %d", req.Version, currentVersion)
 	}
 
-	_, found := k.stakingKeeper.GetValidator(sdkCtx, valAddr)
-	if !found {
-		return nil, stakingtypes.ErrNoValidatorFound
+	_, err = k.stakingKeeper.GetValidator(sdkCtx, valAddr)
+	if err != nil {
+		return nil, err
 	}
 
 	k.SetValidatorVersion(sdkCtx, valAddr, req.Version)
@@ -100,13 +109,18 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 	threshold := k.GetVotingPowerThreshold(sdkCtx)
 	hasQuorum, version := k.TallyVotingPower(sdkCtx, threshold.Int64())
 	if hasQuorum {
-		if version <= sdkCtx.BlockHeader().Version.App {
-			return &types.MsgTryUpgradeResponse{}, types.ErrInvalidUpgradeVersion.Wrapf("can not upgrade to version %v because it is less than or equal to current version %v", version, sdkCtx.BlockHeader().Version.App)
+		appVersion, err := k.consensusKeeper.AppVersion(sdkCtx)
+		if err != nil {
+			return nil, err
 		}
-		header := sdkCtx.BlockHeader()
+
+		if version <= appVersion {
+			return &types.MsgTryUpgradeResponse{}, types.ErrInvalidUpgradeVersion.Wrapf("can not upgrade to version %v because it is less than or equal to current version %v", version, appVersion)
+		}
+		header := sdkCtx.HeaderInfo()
 		upgrade := types.Upgrade{
 			AppVersion:    version,
-			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID, header.Version.App),
+			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID, appVersion),
 		}
 		k.setUpgrade(sdkCtx, upgrade)
 	}
@@ -117,9 +131,12 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 // signalled for a particular version.
 func (k Keeper) VersionTally(ctx context.Context, req *types.QueryVersionTallyRequest) (*types.QueryVersionTallyResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	totalVotingPower := k.stakingKeeper.GetLastTotalPower(sdkCtx)
-	currentVotingPower := sdk.NewInt(0)
-	store := sdkCtx.KVStore(k.storeKey)
+	totalVotingPower, err := k.stakingKeeper.GetLastTotalPower(sdkCtx)
+	if err != nil {
+		return nil, err
+	}
+	currentVotingPower := math.NewInt(0)
+	store := runtime.KVStoreAdapter(k.Environment.KVStoreService.OpenKVStore(ctx))
 	iterator := store.Iterator(types.FirstSignalKey, nil)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -127,7 +144,10 @@ func (k Keeper) VersionTally(ctx context.Context, req *types.QueryVersionTallyRe
 			continue
 		}
 		valAddress := sdk.ValAddress(iterator.Key())
-		power := k.stakingKeeper.GetLastValidatorPower(sdkCtx, valAddress)
+		power, err := k.stakingKeeper.GetLastValidatorPower(sdkCtx, valAddress)
+		if err != nil {
+			return nil, err
+		}
 		version := VersionFromBytes(iterator.Value())
 		if version == req.Version {
 			currentVotingPower = currentVotingPower.AddRaw(power)
@@ -143,13 +163,13 @@ func (k Keeper) VersionTally(ctx context.Context, req *types.QueryVersionTallyRe
 
 // SetValidatorVersion saves a signalled version for a validator.
 func (k Keeper) SetValidatorVersion(ctx sdk.Context, valAddress sdk.ValAddress, version uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
 	store.Set(valAddress, VersionToBytes(version))
 }
 
 // DeleteValidatorVersion deletes a signalled version for a validator.
 func (k Keeper) DeleteValidatorVersion(ctx sdk.Context, valAddress sdk.ValAddress) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
 	store.Delete(valAddress)
 }
 
@@ -158,7 +178,7 @@ func (k Keeper) DeleteValidatorVersion(ctx sdk.Context, valAddress sdk.ValAddres
 // Returns false and 0 otherwise.
 func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64) {
 	versionToPower := make(map[uint64]int64)
-	store := ctx.KVStore(k.storeKey)
+	store := runtime.KVStoreAdapter(k.Environment.KVStoreService.OpenKVStore(ctx))
 	iterator := store.Iterator(types.FirstSignalKey, nil)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -167,16 +187,24 @@ func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64
 		}
 		valAddress := sdk.ValAddress(iterator.Key())
 		// check that the validator is still part of the bonded set
-		val, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-		if !found {
-			// if it no longer exists, delete the version
-			k.DeleteValidatorVersion(ctx, valAddress)
+		found := true
+		val, err := k.stakingKeeper.GetValidator(ctx, valAddress)
+		if err != nil {
+			if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+				k.DeleteValidatorVersion(ctx, valAddress)
+				found = false
+			} else {
+				panic(err)
+			}
 		}
 		// if the validator is not bonded, skip it's voting power
 		if !found || !val.IsBonded() {
 			continue
 		}
-		power := k.stakingKeeper.GetLastValidatorPower(ctx, valAddress)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx, valAddress)
+		if err != nil {
+			panic(err)
+		}
 		version := VersionFromBytes(iterator.Value())
 		if _, ok := versionToPower[version]; !ok {
 			versionToPower[version] = power
@@ -192,9 +220,18 @@ func (k Keeper) TallyVotingPower(ctx sdk.Context, threshold int64) (bool, uint64
 
 // GetVotingPowerThreshold returns the voting power threshold required to
 // upgrade to a new version.
-func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) sdkmath.Int {
-	totalVotingPower := k.stakingKeeper.GetLastTotalPower(ctx)
-	thresholdFraction := Threshold(ctx.BlockHeader().Version.App)
+func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) math.Int {
+	totalVotingPower, err := k.stakingKeeper.GetLastTotalPower(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	appVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	thresholdFraction := Threshold(appVersion)
 	return thresholdFraction.MulInt(totalVotingPower).Ceil().TruncateInt()
 }
 
@@ -218,7 +255,7 @@ func (k *Keeper) ShouldUpgrade(ctx sdk.Context) (isQuorumVersion bool, version u
 // store and deletes all versions. It also resets the quorumVersion and
 // upgradeHeight to 0.
 func (k *Keeper) ResetTally(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
+	store := runtime.KVStoreAdapter(k.Environment.KVStoreService.OpenKVStore(ctx))
 	iterator := store.Iterator(nil, nil)
 	defer iterator.Close()
 	// delete the value in the upgrade key and all signals.
@@ -257,9 +294,9 @@ func (k *Keeper) IsUpgradePending(ctx sdk.Context) bool {
 // If an upgrade is found, it returns the upgrade object and true.
 // If no upgrade is found, it returns an empty upgrade object and false.
 func (k *Keeper) getUpgrade(ctx sdk.Context) (upgrade types.Upgrade, ok bool) {
-	store := ctx.KVStore(k.storeKey)
-	value := store.Get(types.UpgradeKey)
-	if value == nil {
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
+	value, err := store.Get(types.UpgradeKey)
+	if value == nil || err != nil {
 		return types.Upgrade{}, false
 	}
 	k.binaryCodec.MustUnmarshal(value, &upgrade)
@@ -268,7 +305,7 @@ func (k *Keeper) getUpgrade(ctx sdk.Context) (upgrade types.Upgrade, ok bool) {
 
 // setUpgrade sets the upgrade in the store.
 func (k *Keeper) setUpgrade(ctx sdk.Context, upgrade types.Upgrade) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.Environment.KVStoreService.OpenKVStore(ctx)
 	value := k.binaryCodec.MustMarshal(&upgrade)
 	store.Set(types.UpgradeKey, value)
 }

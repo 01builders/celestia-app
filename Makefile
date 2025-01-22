@@ -1,9 +1,6 @@
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null || git log -1 --format='%h') | sed 's/^v//')
 COMMIT := $(shell git rev-parse --short HEAD)
 DOCKER := $(shell which docker)
-DOCKER_BUF := $(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace bufbuild/buf
-IMAGE := ghcr.io/tendermint/docker-build-proto:latest
-DOCKER_PROTO_BUILDER := docker run -v $(shell pwd):/workspace --workdir /workspace $(IMAGE)
 PROJECTNAME=$(shell basename "$(PWD)")
 HTTPS_GIT := https://github.com/celestiaorg/celestia-app.git
 PACKAGE_NAME          := github.com/celestiaorg/celestia-app/v3
@@ -21,6 +18,11 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=celestia-app \
 		  -X github.com/celestiaorg/celestia-app/v3/pkg/appconsts.OverrideSquareSizeUpperBoundStr=$(OVERRIDE_MAX_SQUARE_SIZE)
 
 BUILD_FLAGS := -tags "ledger" -ldflags '$(ldflags)'
+
+# proto builder image
+protoVer=0.15.2
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
 ## help: Get more info on make commands.
 help: Makefile
@@ -59,25 +61,25 @@ mod-verify: mod
 ## proto-gen: Generate protobuf files. Requires docker.
 proto-gen:
 	@echo "--> Generating Protobuf files"
-	$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/sdk-proto-gen:v0.7 sh ./scripts/protocgen.sh
+	@$(protoImage) sh ./scripts/protocgen.sh
 .PHONY: proto-gen
 
 ## proto-lint: Lint protobuf files. Requires docker.
 proto-lint:
 	@echo "--> Linting Protobuf files"
-	@$(DOCKER_BUF) lint --error-format=json
+	@$(protoImage) buf lint --error-format=json
 .PHONY: proto-lint
 
 ## proto-check-breaking: Check if there are any breaking change to protobuf definitions.
 proto-check-breaking:
 	@echo "--> Checking if Protobuf definitions have any breaking changes"
-	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
+	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 .PHONY: proto-check-breaking
 
 ## proto-format: Format protobuf files. Requires Docker.
 proto-format:
 	@echo "--> Formatting Protobuf files"
-	@$(DOCKER_PROTO_BUILDER) find . -name '*.proto' -path "./proto/*" -exec clang-format -i {} \;
+	@$(protoImage) find ./ -name "*.proto" -exec clang-format -i {} \;
 .PHONY: proto-format
 
 build-docker:

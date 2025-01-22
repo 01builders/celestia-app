@@ -9,16 +9,16 @@ import (
 	"sync"
 	"time"
 
+	bank "cosmossdk.io/x/bank/types"
+	"cosmossdk.io/x/feegrant"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
 	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
@@ -199,19 +199,10 @@ func (am *AccountManager) Submit(ctx context.Context, op Operation) error {
 
 	var address types.AccAddress
 	for _, msg := range op.Msgs {
-		if err := msg.ValidateBasic(); err != nil {
-			return fmt.Errorf("error validating message: %w", err)
-		}
-
-		signers := msg.GetSigners()
-		if len(signers) != 1 {
-			return fmt.Errorf("only a single signer is supported got: %d", len(signers))
-		}
-
-		if address == nil {
-			address = signers[0]
-		} else if !address.Equals(signers[0]) {
-			return fmt.Errorf("all messages must be signed by the same account")
+		if m, ok := msg.(types.HasValidateBasic); ok {
+			if err := m.ValidateBasic(); err != nil {
+				return fmt.Errorf("error validating message: %w", err)
+			}
 		}
 	}
 
@@ -317,7 +308,7 @@ func (am *AccountManager) GenerateAccounts(ctx context.Context) error {
 
 		if am.useFeegrant {
 			// create a feegrant message so that the master account pays for all the fees of the sub accounts
-			feegrantMsg, err := feegrant.NewMsgGrantAllowance(&feegrant.BasicAllowance{}, am.txClient.DefaultAddress(), acc.address)
+			feegrantMsg, err := feegrant.NewMsgGrantAllowance(&feegrant.BasicAllowance{}, am.txClient.DefaultAddress().String(), acc.address.String())
 			if err != nil {
 				return fmt.Errorf("error creating feegrant message: %w", err)
 			}
@@ -325,7 +316,7 @@ func (am *AccountManager) GenerateAccounts(ctx context.Context) error {
 			gasLimit += FeegrantGasLimit
 		}
 
-		bankMsg := bank.NewMsgSend(am.txClient.DefaultAddress(), acc.address, types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(acc.balance))))
+		bankMsg := bank.NewMsgSend(am.txClient.DefaultAddress().String(), acc.address.String(), types.NewCoins(types.NewInt64Coin(appconsts.BondDenom, int64(acc.balance))))
 		msgs = append(msgs, bankMsg)
 		gasLimit += SendGasLimit
 	}
@@ -401,7 +392,7 @@ func (am *AccountManager) updateHeight(ctx context.Context) (uint64, error) {
 		return am.latestHeight, nil
 	}
 	am.mtx.Unlock()
-	resp, err := tmservice.NewServiceClient(am.conn).GetLatestBlock(ctx, &tmservice.GetLatestBlockRequest{})
+	resp, err := cmtservice.NewServiceClient(am.conn).GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 	if err != nil {
 		return 0, err
 	}

@@ -27,9 +27,9 @@ import (
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	coretypes "github.com/tendermint/tendermint/types"
+	tmrand "cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	coretypes "github.com/cometbft/cometbft/types"
 )
 
 func TestIntegrationTestSuite(t *testing.T) {

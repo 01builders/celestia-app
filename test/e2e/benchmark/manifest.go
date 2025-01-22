@@ -9,7 +9,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/e2e/testnet"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
 
 type LatencyParams struct {
@@ -99,7 +99,7 @@ func (m *Manifest) GetGenesisModifiers() []genesis.Modifier {
 func (m *Manifest) GetConsensusParams() *tmproto.ConsensusParams {
 	cparams := app.DefaultConsensusParams()
 	cparams.Block.MaxBytes = m.MaxBlockBytes
-	cparams.Version.AppVersion = m.GenesisAppVersion
+	cparams.Version.App = m.GenesisAppVersion
 	return cparams
 }
 

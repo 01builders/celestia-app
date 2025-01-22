@@ -3,13 +3,13 @@ package malicious
 import (
 	"io"
 
+	corestore "cosmossdk.io/core/store"
+	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 )
 
 const (
@@ -32,7 +32,7 @@ type BehaviorConfig struct {
 	StartHeight int64 `json:"start_height"`
 }
 
-type PrepareProposalHandler func(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal
+type PrepareProposalHandler func(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error)
 
 // PrepareProposalHandlerMap is a map of all the known prepare proposal handlers.
 func (a *App) PrepareProposalHandlerMap() map[string]PrepareProposalHandler {
@@ -49,14 +49,14 @@ type App struct {
 
 func New(
 	logger log.Logger,
-	db dbm.DB,
+	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
 	invCheckPeriod uint,
 	encodingConfig encoding.Config,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-	goodApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, 0, 0, appOpts, baseAppOptions...)
+	goodApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, 0, 0, baseAppOptions...)
 	badApp := &App{App: goodApp}
 
 	// set the malicious prepare proposal handler if it is set in the app options
@@ -78,7 +78,7 @@ func (a *App) SetMaliciousBehavior(mcfg BehaviorConfig) {
 
 // PrepareProposal overwrites the default app's method to use the configured
 // malicious behavior after a given height.
-func (a *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (a *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	if a.LastBlockHeight()+1 >= a.maliciousStartHeight {
 		return a.malPrepareProposalHandler(req)
 	}
@@ -87,8 +87,8 @@ func (a *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrep
 
 // ProcessProposal overwrites the default app's method to auto accept any
 // proposal.
-func (a *App) ProcessProposal(_ abci.RequestProcessProposal) (resp abci.ResponseProcessProposal) {
-	return abci.ResponseProcessProposal{
-		Result: abci.ResponseProcessProposal_ACCEPT,
-	}
+func (a *App) ProcessProposal(_ *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
+	return &abci.ProcessProposalResponse{
+		Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
+	}, nil
 }

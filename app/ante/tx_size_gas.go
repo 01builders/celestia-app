@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
@@ -47,13 +48,16 @@ func init() {
 // https://github.com/celestiaorg/cosmos-sdk/blob/release/v0.46.x-celestia/x/auth/ante/basic.go
 // In app versions v2 and below, the txSizeCostPerByte used for gas cost estimation is taken from the auth module.
 // In app v3 and above, the versioned constant appconsts.TxSizeCostPerByte is used.
+// In app v4 getting the account has been removed, which is in line with the cosmos-sdk v0.52.x.
 type ConsumeTxSizeGasDecorator struct {
-	ak ante.AccountKeeper
+	ak              ante.AccountKeeper
+	consensusKeeper ConsensusKeeper
 }
 
-func NewConsumeGasForTxSizeDecorator(ak ante.AccountKeeper) ConsumeTxSizeGasDecorator {
+func NewConsumeGasForTxSizeDecorator(ak ante.AccountKeeper, consensusKeeper ConsensusKeeper) ConsumeTxSizeGasDecorator {
 	return ConsumeTxSizeGasDecorator{
-		ak: ak,
+		ak:              ak,
+		consensusKeeper: consensusKeeper,
 	}
 }
 
@@ -64,7 +68,7 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 	}
 	params := cgts.ak.GetParams(ctx)
 
-	consumeGasForTxSize(ctx, sdk.Gas(len(ctx.TxBytes())), params)
+	consumeGasForTxSize(ctx, storetypes.Gas(len(ctx.TxBytes())), params, cgts.consensusKeeper)
 
 	// simulate gas cost for signatures in simulate mode
 	if simulate {
@@ -75,7 +79,7 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 		}
 		n := len(sigs)
 
-		for i, signer := range sigTx.GetSigners() {
+		for i, signer := range sigs {
 			// if signature is already filled in, no need to simulate gas cost
 			if i < n && !isIncompleteSignature(sigs[i].Data) {
 				continue
@@ -83,13 +87,11 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 
 			var pubkey cryptotypes.PubKey
 
-			acc := cgts.ak.GetAccount(ctx, signer)
-
 			// use placeholder simSecp256k1Pubkey if sig is nil
-			if acc == nil || acc.GetPubKey() == nil {
+			if signer.PubKey == nil {
 				pubkey = simSecp256k1Pubkey
 			} else {
-				pubkey = acc.GetPubKey()
+				pubkey = signer.PubKey
 			}
 
 			// use stdsignature to mock the size of a full signature
@@ -99,7 +101,7 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 			}
 
 			sigBz := legacy.Cdc.MustMarshal(simSig)
-			txBytes := sdk.Gas(len(sigBz) + 6)
+			txBytes := storetypes.Gas(len(sigBz) + 6)
 
 			// If the pubkey is a multi-signature pubkey, then we estimate for the maximum
 			// number of signers.
@@ -107,7 +109,7 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 				txBytes *= params.TxSigLimit
 			}
 
-			consumeGasForTxSize(ctx, txBytes, params)
+			consumeGasForTxSize(ctx, txBytes, params, cgts.consensusKeeper)
 		}
 	}
 
@@ -139,13 +141,20 @@ func isIncompleteSignature(data signing.SignatureData) bool {
 
 // consumeGasForTxSize consumes gas based on the size of the transaction.
 // It uses different parameters depending on the app version.
-func consumeGasForTxSize(ctx sdk.Context, txBytes uint64, params auth.Params) {
+func consumeGasForTxSize(ctx sdk.Context, txBytes uint64, params auth.Params, consensusKeeper ConsensusKeeper) error {
+	appVersion, err := consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return err
+	}
+
 	// For app v2 and below we should get txSizeCostPerByte from auth module
-	if ctx.BlockHeader().Version.App <= v2.Version {
+	if appVersion <= v2.Version {
 		ctx.GasMeter().ConsumeGas(params.TxSizeCostPerByte*txBytes, "txSize")
 	} else {
 		// From v3 onwards, we should get txSizeCostPerByte from appconsts
-		txSizeCostPerByte := appconsts.TxSizeCostPerByte(ctx.BlockHeader().Version.App)
+		txSizeCostPerByte := appconsts.TxSizeCostPerByte(appVersion)
 		ctx.GasMeter().ConsumeGas(txSizeCostPerByte*txBytes, "txSize")
 	}
+
+	return err
 }

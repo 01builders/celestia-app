@@ -5,6 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	coretesting "cosmossdk.io/core/testing"
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/params/types/proposal"
 	app "github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -12,7 +15,6 @@ import (
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	v3 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v3"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
@@ -21,16 +23,14 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
-	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
+
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+	"cosmossdk.io/log"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	dbm "github.com/tendermint/tm-db"
 )
 
 func TestAppUpgradeV3(t *testing.T) {
@@ -41,8 +41,9 @@ func TestAppUpgradeV3(t *testing.T) {
 	testApp, genesis := SetupTestAppWithUpgradeHeight(t, 3)
 	upgradeFromV1ToV2(t, testApp)
 
-	ctx := testApp.NewContext(true, tmproto.Header{})
-	validators := testApp.StakingKeeper.GetAllValidators(ctx)
+	ctx := testApp.NewContext(true)
+	validators, err := testApp.StakingKeeper.GetAllValidators(ctx)
+	require.NoError(t, err)
 	valAddr, err := sdk.ValAddressFromBech32(validators[0].OperatorAddress)
 	require.NoError(t, err)
 	record, err := genesis.Keyring().Key(testnode.DefaultValidatorAccountName)
@@ -50,16 +51,9 @@ func TestAppUpgradeV3(t *testing.T) {
 	accAddr, err := record.GetAddress()
 	require.NoError(t, err)
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	resp, err := testApp.AccountKeeper.Account(ctx, &authtypes.QueryAccountRequest{
-		Address: accAddr.String(),
-	})
-	require.NoError(t, err)
-	var account authtypes.AccountI
-	err = encCfg.InterfaceRegistry.UnpackAny(resp.Account, &account)
-	require.NoError(t, err)
-
+	account := testApp.AuthKeeper.GetAccount(ctx, accAddr)
 	signer, err := user.NewSigner(
-		genesis.Keyring(), encCfg.TxConfig, testApp.GetChainID(), v3.Version,
+		genesis.Keyring(), encCfg.TxConfig, testApp.ChainID(), v3.Version,
 		user.NewAccount(testnode.DefaultValidatorAccountName, account.GetAccountNumber(), account.GetSequence()),
 	)
 	require.NoError(t, err)
@@ -88,7 +82,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	endBlockResp := testApp.EndBlock(abci.RequestEndBlock{
 		Height: 3,
 	})
-	require.Equal(t, v2.Version, endBlockResp.ConsensusParamUpdates.Version.AppVersion)
+	require.Equal(t, v2.Version, endBlockResp.ConsensusParamUpdates.Version.App)
 	require.Equal(t, appconsts.GetTimeoutCommit(v2.Version),
 		endBlockResp.Timeouts.TimeoutCommit)
 	require.Equal(t, appconsts.GetTimeoutPropose(v2.Version),
@@ -96,13 +90,13 @@ func TestAppUpgradeV3(t *testing.T) {
 	testApp.Commit()
 	require.NoError(t, signer.IncrementSequence(testnode.DefaultValidatorAccountName))
 
-	ctx = testApp.NewContext(true, tmproto.Header{})
+	ctx = testApp.NewContext(true)
 	getUpgradeResp, err := testApp.SignalKeeper.GetUpgrade(ctx, &signaltypes.QueryGetUpgradeRequest{})
 	require.NoError(t, err)
 	require.Equal(t, v3.Version, getUpgradeResp.Upgrade.AppVersion)
 
 	initialHeight := int64(4)
-	for height := initialHeight; height < initialHeight+appconsts.UpgradeHeightDelay(testApp.GetChainID(), v2.Version); height++ {
+	for height := initialHeight; height < initialHeight+appconsts.UpgradeHeightDelay(testApp.ChainID(), v2.Version); height++ {
 		appVersion := v2.Version
 		_ = testApp.BeginBlock(abci.RequestBeginBlock{
 			Header: tmproto.Header{
@@ -112,7 +106,7 @@ func TestAppUpgradeV3(t *testing.T) {
 		})
 
 		endBlockResp = testApp.EndBlock(abci.RequestEndBlock{
-			Height: 3 + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v2.Version),
+			Height: 3 + appconsts.UpgradeHeightDelay(testApp.ChainID(), v2.Version),
 		})
 
 		require.Equal(t, appconsts.GetTimeoutCommit(appVersion), endBlockResp.Timeouts.TimeoutCommit)
@@ -120,7 +114,7 @@ func TestAppUpgradeV3(t *testing.T) {
 
 		_ = testApp.Commit()
 	}
-	require.Equal(t, v3.Version, endBlockResp.ConsensusParamUpdates.Version.AppVersion)
+	require.Equal(t, v3.Version, endBlockResp.ConsensusParamUpdates.Version.App)
 
 	// confirm that an authored blob tx works
 	blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("hello world"), accAddr.Bytes())
@@ -137,7 +131,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	_ = testApp.BeginBlock(abci.RequestBeginBlock{
 		Header: tmproto.Header{
 			ChainID: genesis.ChainID,
-			Height:  initialHeight + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v3.Version),
+			Height:  initialHeight + appconsts.UpgradeHeightDelay(testApp.ChainID(), v3.Version),
 			Version: tmversion.Consensus{App: 3},
 		},
 	})
@@ -148,7 +142,7 @@ func TestAppUpgradeV3(t *testing.T) {
 	require.Equal(t, abci.CodeTypeOK, deliverTxResp.Code, deliverTxResp.Log)
 
 	respEndBlock := testApp.EndBlock(abci.
-		RequestEndBlock{Height: initialHeight + appconsts.UpgradeHeightDelay(testApp.GetChainID(), v3.Version)})
+		RequestEndBlock{Height: initialHeight + appconsts.UpgradeHeightDelay(testApp.ChainID(), v3.Version)})
 	require.Equal(t, appconsts.GetTimeoutCommit(v3.Version), respEndBlock.Timeouts.TimeoutCommit)
 	require.Equal(t, appconsts.GetTimeoutPropose(v3.Version), respEndBlock.Timeouts.TimeoutPropose)
 }
@@ -156,7 +150,7 @@ func TestAppUpgradeV3(t *testing.T) {
 // TestAppUpgradeV2 verifies that the all module's params are overridden during an
 // upgrade from v1 -> v2 and the app version changes correctly.
 func TestAppUpgradeV2(t *testing.T) {
-	NetworkMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
+	NetworkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -177,28 +171,27 @@ func TestAppUpgradeV2(t *testing.T) {
 			key:           string(icahosttypes.KeyHostEnabled),
 			expectedValue: "true",
 		},
-		{
-			module:        "PFM",
-			subspace:      packetforwardtypes.ModuleName,
-			key:           string(packetforwardtypes.KeyFeePercentage),
-			expectedValue: "0.000000000000000000",
-		},
+		// {
+		// 	module:        "PFM",
+		// 	subspace:      packetforwardtypes.ModuleName,
+		// 	key:           string(packetforwardtypes.KeyFeePercentage),
+		// 	expectedValue: "0.000000000000000000",
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.module, func(t *testing.T) {
 			testApp, _ := SetupTestAppWithUpgradeHeight(t, 3)
 
-			ctx := testApp.NewContext(true, tmproto.Header{
-				Version: tmversion.Consensus{
-					App: 1,
-				},
-			})
+			ctx := testApp.NewContext(true)
 			testApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
 				Height:  2,
 				Version: tmversion.Consensus{App: 1},
 			}})
 			// app version should not have changed yet
-			require.EqualValues(t, 1, testApp.AppVersion())
+			appVersion, err := testApp.AppVersion(ctx)
+			require.NoError(t, err)
+
+			require.EqualValues(t, 1, appVersion)
 
 			// Query the module params
 			gotBefore, err := testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
@@ -211,9 +204,12 @@ func TestAppUpgradeV2(t *testing.T) {
 			// Upgrade from v1 -> v2
 			testApp.EndBlock(abci.RequestEndBlock{Height: 2})
 			testApp.Commit()
-			require.EqualValues(t, 2, testApp.AppVersion())
 
-			newCtx := testApp.NewContext(true, tmproto.Header{Version: tmversion.Consensus{App: 2}})
+			appVersion, err = testApp.AppVersion(ctx)
+			require.NoError(t, err)
+			require.EqualValues(t, 2, appVersion)
+
+			newCtx := testApp.NewContext(true)
 			got, err := testApp.ParamsKeeper.Params(newCtx, &proposal.QueryParamsRequest{
 				Subspace: tt.subspace,
 				Key:      tt.key,
@@ -228,9 +224,12 @@ func TestAppUpgradeV2(t *testing.T) {
 // do not exist in v2.
 func TestBlobstreamRemovedInV2(t *testing.T) {
 	testApp, _ := SetupTestAppWithUpgradeHeight(t, 3)
-	ctx := testApp.NewContext(true, tmproto.Header{})
+	ctx := testApp.NewContext(true)
 
-	require.EqualValues(t, 1, testApp.AppVersion())
+	v, err := testApp.AppVersion(ctx)
+	require.NoError(t, err)
+
+	require.EqualValues(t, 1, v)
 	got, err := testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
 		Subspace: blobstreamtypes.ModuleName,
 		Key:      string(blobstreamtypes.ParamsStoreKeyDataCommitmentWindow),
@@ -240,7 +239,10 @@ func TestBlobstreamRemovedInV2(t *testing.T) {
 
 	upgradeFromV1ToV2(t, testApp)
 
-	require.EqualValues(t, 2, testApp.AppVersion())
+	v, err = testApp.AppVersion(ctx)
+	require.NoError(t, err)
+
+	require.EqualValues(t, 2, v)
 	_, err = testApp.ParamsKeeper.Params(ctx, &proposal.QueryParamsRequest{
 		Subspace: blobstreamtypes.ModuleName,
 		Key:      string(blobstreamtypes.ParamsStoreKeyDataCommitmentWindow),
@@ -251,9 +253,9 @@ func TestBlobstreamRemovedInV2(t *testing.T) {
 func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, *genesis.Genesis) {
 	t.Helper()
 
-	db := dbm.NewMemDB()
+	db := coretesting.NewMemDB()
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0, util.EmptyAppOptions{})
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0)
 	genesis := genesis.NewDefaultGenesis().
 		WithChainID(appconsts.TestChainID).
 		WithValidators(genesis.NewDefaultValidator(testnode.DefaultValidatorAccountName)).
@@ -261,8 +263,8 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	genDoc, err := genesis.Export()
 	require.NoError(t, err)
 	cp := genDoc.ConsensusParams
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
+	abciParams := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
 			MaxBytes: cp.Block.MaxBytes,
 			MaxGas:   cp.Block.MaxGas,
 		},
@@ -271,8 +273,8 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 		Version:   &cp.Version,
 	}
 
-	_ = testApp.InitChain(
-		abci.RequestInitChain{
+	_, err = testApp.InitChain(
+		&abci.InitChainRequest{
 			Time:            genDoc.GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: abciParams,
@@ -280,10 +282,12 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 			ChainId:         genDoc.ChainID,
 		},
 	)
+	require.NoError(t, err)
 
 	// assert that the chain starts with version provided in genesis
-	infoResp := testApp.Info(abci.RequestInfo{})
-	appVersion := app.DefaultInitialConsensusParams().Version.AppVersion
+	infoResp, err := testApp.Info(&abci.InfoRequest{})
+	require.NoError(t, err)
+	appVersion := app.DefaultInitialConsensusParams().Version.App
 	require.EqualValues(t, appVersion, infoResp.AppVersion)
 	require.EqualValues(t, appconsts.GetTimeoutCommit(appVersion), infoResp.Timeouts.TimeoutCommit)
 	require.EqualValues(t, appconsts.GetTimeoutPropose(appVersion), infoResp.Timeouts.TimeoutPropose)

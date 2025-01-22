@@ -7,20 +7,22 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	tmconfig "github.com/cometbft/cometbft/config"
+	tmlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/node"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/rpc/client/local"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/rpc/client/local"
-	tmdbm "github.com/tendermint/tm-db"
+	"github.com/cosmos/cosmos-sdk/server"
 
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +56,7 @@ func TestRun(t *testing.T) {
 	tmCfg := testnode.DefaultTendermintConfig()
 	tmCfg.SetRoot(cfg.ExistingDir)
 
-	appDB, err := tmdbm.NewDB("application", tmdbm.GoLevelDBBackend, tmCfg.DBDir())
+	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	require.NoError(t, err)
 
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
@@ -67,22 +69,26 @@ func TestRun(t *testing.T) {
 		encCfg,
 		0, // upgrade height v2
 		0, // timeout commit
-		util.EmptyAppOptions{},
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 
 	nodeKey, err := p2p.LoadNodeKey(tmCfg.NodeKeyFile())
 	require.NoError(t, err)
 
+	prival, err := privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile(), app.ValidatorKeyProvider())
+	require.NoError(t, err)
+
+	cmtApp := server.NewCometABCIWrapper(app)
 	cometNode, err := node.NewNode(
+		context.TODO(),
 		tmCfg,
-		privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
+		prival,
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
+		proxy.NewLocalClientCreator(cmtApp),
 		node.DefaultGenesisDocProviderFunc(tmCfg),
-		node.DefaultDBProvider,
+		tmconfig.DefaultDBProvider,
 		node.DefaultMetricsProvider(tmCfg.Instrumentation),
-		log.NewNopLogger(),
+		tmlog.NewNopLogger(),
 	)
 	require.NoError(t, err)
 

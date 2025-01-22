@@ -232,7 +232,7 @@ Below is the lightly summarized code for `PrepareProposal` that we can use as a 
 // separating the message and transaction that pays for that message. Lastly,
 // this method generates the data root for the proposal block and passes it back
 // to tendermint via the blockdata.
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    // parse the txs, extracting any MsgWirePayForBlob and performing basic
    // validation for each transaction. Invalid txs are ignored. Original order
    // of the txs is maintained.
@@ -278,7 +278,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 
    // tendermint doesn't need to use any of the erasure data, as only the
    // protobuf encoded version of the block data has gossiped.
-   return abci.ResponsePrepareProposal{
+   return abci.PrepareProposalResponse{
        BlockData: &blockData,
    }
 }
@@ -306,7 +306,7 @@ type parsedTx struct {
 ```
 
 ```go
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    // parse the txs, extracting any MsgWirePayForBlob and performing basic
    // validation for each transaction. Invalid txs are ignored. Original order
    // of the txs is maintained.
@@ -378,7 +378,7 @@ If there are too many transactions and messages in the square to fit in the max 
 The simplest approach, and the one taken in the initial implementation, works by prematurely pruning the txs if we estimate that too many shares are being used. While this does work and fulfills the constraints discussed earlier to create valid blocks, it is suboptimal. Ideally, we would be able to identify the most optimal message and transactions to remove and then simply remove only those. As mentioned earlier, technically, a single-byte difference could change the entire arrangement of the square. This makes arranging the square with complete confidence difficult not only because we have to follow all of the constraints, but also because of our frequent reliance on variable length delimiters, and protobuf changing the amount of bytes used depending on the size of ints/uints.
 
 ```go
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    ...
    // the totalSharesUsed can be larger that the max number of shares if we
    // reach the max square size. In this case, we must prune the deprioritized
@@ -426,7 +426,7 @@ When doing this process over all of the transactions, we also need to add the sh
 
 ```go
 
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    ...
    // in this step we are processing any MsgWirePayForBlob transactions into
    // MsgPayForBlob and their respective messages. The malleatedTxs contain the
@@ -444,7 +444,7 @@ func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePr
 As briefly discussed earlier, one major change in how we are producing blocks is that we are using the normal mechanism for splitting shares.
 
 ```go
-func (app *App) PrepareProposal(req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+func (app *App) PrepareProposal(req abci.PrepareProposalRequest) abci.PrepareProposalResponse {
    ...
    blockData := core.Data{
        Txs:                processedTxs,
@@ -566,14 +566,14 @@ func (stc *EDSSubTreeRootCacher) Constructor() rsmt2d.Tree {
 
 }
 
-func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+func (app *App) ProcessProposal(req abci.ProcessProposalRequest) abci.ProcessProposalResponse {
    ...
    cacher := inclusion.NewSubtreeCacher(data.OriginalSquareSize)
    eds, err := rsmt2d.ComputeExtendedDataSquare(dataSquare, consts.DefaultCodec(), cacher.Constructor)
    if err != nil {
        ...
-       return abci.ResponseProcessProposal{
-           Result: abci.ResponseProcessProposal_REJECT,
+       return abci.ProcessProposalResponse{
+           Result: abci.PROCESS_PROPOSAL_STATUS_REJECT,
        }
    }
 }
@@ -598,7 +598,7 @@ Now we can fulfill the second constraint:
 - The commitments signed over in each `MsgPayForBlob` must consist only of subtree roots of the data square.
 
 ```go
-func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+func (app *App) ProcessProposal(req abci.ProcessProposalRequest) abci.ProcessProposalResponse {
    ...
    // iterate over all of the MsgPayForBlob transactions and ensure that their
    // commitments are subtree roots of the data root.
@@ -618,30 +618,30 @@ func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponsePr
 
            if err = pfb.ValidateBasic(); err != nil {
                ...
-               return abci.ResponseProcessProposal{
-                   Result: abci.ResponseProcessProposal_REJECT,
+               return abci.ProcessProposalResponse{
+                   Result: abci.PROCESS_PROPOSAL_STATUS_REJECT,
                }
            }
 
            commitment, err := inclusion.GetCommit(cacher, dah, int(malleatedTx.ShareIndex), shares.MsgSharesUsed(int(pfb.BlobSize)))
            if err != nil {
                ...
-               return abci.ResponseProcessProposal{
-                   Result: abci.ResponseProcessProposal_REJECT,
+               return abci.ProcessProposalResponse{
+                   Result: abci.PROCESS_PROPOSAL_STATUS_REJECT,
                }
            }
 
            if !bytes.Equal(pfb.ShareCommitment, commitment) {
                ...
-               return abci.ResponseProcessProposal{
-                   Result: abci.ResponseProcessProposal_REJECT,
+               return abci.ProcessProposalResponse{
+                   Result: abci.PROCESS_PROPOSAL_STATUS_REJECT,
                }
            }
        }
    }
    ...
-   return abci.ResponseProcessProposal{
-       Result: abci.ResponseProcessProposal_ACCEPT,
+   return abci.ProcessProposalResponse{
+       Result: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
    }
 }
 ```
@@ -652,7 +652,7 @@ Lastly, we also need to check that each valid `MsgPayForBlob` has a correspondin
 - There must not be a message without a `MsgPayForBlob`.
 
 ```go
-func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+func (app *App) ProcessProposal(req abci.ProcessProposalRequest) abci.ProcessProposalResponse {
    ...
    // iterate over all of the MsgPayForBlob transactions and ensure that they
    // commitments are subtree roots of the data root.
@@ -670,8 +670,8 @@ func (app *App) ProcessProposal(req abci.RequestProcessProposal) abci.ResponsePr
    // identical, then  we already know this block is invalid
    if commitmentCounter != len(req.BlockData.Messages.MessagesList) {
        ...
-       return abci.ResponseProcessProposal{
-           Result: abci.ResponseProcessProposal_REJECT,
+       return abci.ProcessProposalResponse{
+           Result: abci.PROCESS_PROPOSAL_STATUS_REJECT,
        }
    }
    ...

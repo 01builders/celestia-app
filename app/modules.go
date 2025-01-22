@@ -3,6 +3,32 @@ package app
 import (
 	"fmt"
 
+	pooltypes "cosmossdk.io/x/protocolpool/types"
+	ibcfeetypes "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/types"
+
+	"cosmossdk.io/core/comet"
+	"github.com/cosmos/cosmos-sdk/client"
+
+	"cosmossdk.io/x/authz"
+	authzkeeper "cosmossdk.io/x/authz/keeper"
+	authzmodule "cosmossdk.io/x/authz/module"
+	"cosmossdk.io/x/bank"
+	banktypes "cosmossdk.io/x/bank/types"
+	distr "cosmossdk.io/x/distribution"
+	distrtypes "cosmossdk.io/x/distribution/types"
+	"cosmossdk.io/x/evidence"
+	evidencetypes "cosmossdk.io/x/evidence/types"
+	"cosmossdk.io/x/feegrant"
+	feegrantmodule "cosmossdk.io/x/feegrant/module"
+	"cosmossdk.io/x/gov"
+	govtypes "cosmossdk.io/x/gov/types"
+	"cosmossdk.io/x/params"
+	paramstypes "cosmossdk.io/x/params/types"
+	"cosmossdk.io/x/slashing"
+	slashingtypes "cosmossdk.io/x/slashing/types"
+	"cosmossdk.io/x/staking"
+	stakingtypes "cosmossdk.io/x/staking/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/app/module"
 	"github.com/celestiaorg/celestia-app/v3/x/blob"
@@ -19,70 +45,45 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
-	ica "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts"
-	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-	"github.com/cosmos/ibc-go/v6/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v6/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+
+	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
+	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
+	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
+	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
+	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 )
 
 var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	ModuleBasics = sdkmodule.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
+	ModuleBasics = sdkmodule.NewManager(
+		auth.AppModule{},
+		genutil.AppModule{},
 		bankModule{},
-		capability.AppModuleBasic{},
 		stakingModule{},
 		mintModule{},
 		distributionModule{},
 		newGovModule(),
-		params.AppModuleBasic{},
-		crisisModule{},
+		params.AppModule{},
 		slashingModule{},
-		authzmodule.AppModuleBasic{},
-		feegrantmodule.AppModuleBasic{},
+		authzmodule.AppModule{},
+		feegrantmodule.AppModule{},
 		ibcModule{},
-		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
-		vesting.AppModuleBasic{},
-		blob.AppModuleBasic{},
-		blobstream.AppModuleBasic{},
-		signal.AppModuleBasic{},
-		minfee.AppModuleBasic{},
-		packetforward.AppModuleBasic{},
+		evidence.AppModule{},
+		transfer.AppModule{},
+		vesting.AppModule{},
+		blob.AppModule{},
+		blobstream.AppModule{},
+		signal.AppModule{},
+		minfee.AppModule{},
+		// packetforward.AppModuleBasic{},
 		icaModule{},
 	)
 
@@ -91,67 +92,72 @@ var (
 	ModuleEncodingRegisters = extractRegisters(ModuleBasics)
 )
 
-func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
+func (app *App) setupModuleManager(
+	txConfig client.TxConfig,
+	cometService comet.Service,
+	skipGenesisInvariants bool,
+) error {
 	var err error
 	app.manager, err = module.NewManager([]module.VersionedModule{
 		{
-			Module:      genutil.NewAppModule(app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx, app.txConfig),
+			Module:      genutil.NewAppModule(app.appCodec, app.AuthKeeper, app.StakingKeeper, app, txConfig, genutiltypes.DefaultMessageValidator),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      auth.NewAppModule(app.appCodec, app.AccountKeeper, nil),
+			Module:      auth.NewAppModule(app.appCodec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
+			Module:      vesting.NewAppModule(app.AuthKeeper, app.BankKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AccountKeeper),
+			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AuthKeeper),
+			FromVersion: v1, ToVersion: v3,
+		},
+		// {
+		// 	Module:      capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
+		// 	FromVersion: v1, ToVersion: v3,
+		// },
+		{
+			Module:      feegrantmodule.NewAppModule(app.appCodec, app.FeeGrantKeeper, app.interfaceRegistry),
+			FromVersion: v1, ToVersion: v3,
+		},
+		// {
+		// 	Module:      crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
+		// 	FromVersion: v1, ToVersion: v3,
+		// },
+		{
+			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
+			Module:      mint.NewAppModule(app.appCodec, app.MintKeeper, app.AuthKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      feegrantmodule.NewAppModule(app.appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+			Module: slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AuthKeeper,
+				app.BankKeeper, app.StakingKeeper, app.interfaceRegistry, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
+			Module:      distr.NewAppModule(app.appCodec, app.DistrKeeper, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+			Module:      staking.NewAppModule(app.appCodec, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      mint.NewAppModule(app.appCodec, app.MintKeeper, app.AccountKeeper),
+			Module:      evidence.NewAppModule(app.appCodec, app.EvidenceKeeper, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+			Module:      authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      distr.NewAppModule(app.appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-			FromVersion: v1, ToVersion: v3,
-		},
-		{
-			Module:      staking.NewAppModule(app.appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-			FromVersion: v1, ToVersion: v3,
-		},
-		{
-			Module:      evidence.NewAppModule(app.EvidenceKeeper),
-			FromVersion: v1, ToVersion: v3,
-		},
-		{
-			Module:      authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-			FromVersion: v1, ToVersion: v3,
-		},
-		{
-			Module:      ibc.NewAppModule(app.IBCKeeper),
+			Module:      ibc.NewAppModule(app.appCodec, app.IBCKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -159,7 +165,7 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      transfer.NewAppModule(app.TransferKeeper),
+			Module:      transfer.NewAppModule(app.appCodec, app.TransferKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -175,22 +181,19 @@ func (app *App) setupModuleManager(skipGenesisInvariants bool) error {
 			FromVersion: v2, ToVersion: v3,
 		},
 		{
-			Module:      minfee.NewAppModule(app.ParamsKeeper),
+			Module:      minfee.NewAppModule(app.appCodec, app.ParamsKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
+		// {
+		// 	Module:      packetforward.NewAppModule(app.PacketForwardKeeper),
+		// 	FromVersion: v2, ToVersion: v3,
+		// },
 		{
-			Module:      packetforward.NewAppModule(app.PacketForwardKeeper),
-			FromVersion: v2, ToVersion: v3,
-		},
-		{
-			Module:      ica.NewAppModule(nil, &app.ICAHostKeeper),
+			Module:      ica.NewAppModule(nil, &app.ICAControllerKeeper, &app.ICAHostKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
 	})
-	if err != nil {
-		return err
-	}
-	return app.manager.AssertMatchingModules(ModuleBasics)
+	return err
 }
 
 func (app *App) setModuleOrder() {
@@ -199,18 +202,16 @@ func (app *App) setModuleOrder() {
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.manager.SetOrderBeginBlockers(
-		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		blobtypes.ModuleName,
@@ -221,19 +222,19 @@ func (app *App) setModuleOrder() {
 		signaltypes.ModuleName,
 		minfee.ModuleName,
 		icatypes.ModuleName,
-		packetforwardtypes.ModuleName,
+		ibcfeetypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 	)
 
 	app.manager.SetOrderEndBlockers(
-		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
+		pooltypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authtypes.ModuleName,
@@ -246,28 +247,25 @@ func (app *App) setModuleOrder() {
 		vestingtypes.ModuleName,
 		signaltypes.ModuleName,
 		minfee.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
+		ibcfeetypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
-	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
-	// can do so safely.
 	// NOTE: The minfee module must occur before genutil so DeliverTx can
 	// successfully pass the fee checking logic
 	app.manager.SetOrderInitGenesis(
-		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
+		pooltypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
-		crisistypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		minfee.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -279,8 +277,9 @@ func (app *App) setModuleOrder() {
 		paramstypes.ModuleName,
 		authz.ModuleName,
 		signaltypes.ModuleName,
-		packetforwardtypes.ModuleName,
+		// packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
+		ibcfeetypes.ModuleName,
 	)
 }
 
@@ -289,12 +288,14 @@ func allStoreKeys() []string {
 		authtypes.StoreKey, authzkeeper.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, capabilitytypes.StoreKey,
+		pooltypes.StoreKey,
+		evidencetypes.StoreKey,
 		blobstreamtypes.StoreKey,
 		ibctransfertypes.StoreKey,
-		ibchost.StoreKey,
-		packetforwardtypes.StoreKey,
+		ibcexported.StoreKey,
+		// packetforwardtypes.StoreKey,
 		icahosttypes.StoreKey,
+		ibcfeetypes.StoreKey,
 		signaltypes.StoreKey,
 		blobtypes.StoreKey,
 	}
@@ -309,12 +310,11 @@ func versionedStoreKeys() map[uint64][]string {
 			banktypes.StoreKey,
 			blobstreamtypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			minttypes.StoreKey,
 			slashingtypes.StoreKey,
@@ -326,17 +326,16 @@ func versionedStoreKeys() map[uint64][]string {
 			authzkeeper.StoreKey,
 			banktypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey, // added in v2
 			minttypes.StoreKey,
-			packetforwardtypes.StoreKey, // added in v2
-			signaltypes.StoreKey,        // added in v2
+			// packetforwardtypes.StoreKey, // added in v2
+			signaltypes.StoreKey, // added in v2
 			slashingtypes.StoreKey,
 			stakingtypes.StoreKey,
 			upgradetypes.StoreKey,
@@ -346,16 +345,15 @@ func versionedStoreKeys() map[uint64][]string {
 			authzkeeper.StoreKey,
 			banktypes.StoreKey,
 			blobtypes.StoreKey,
-			capabilitytypes.StoreKey,
 			distrtypes.StoreKey,
 			evidencetypes.StoreKey,
 			feegrant.StoreKey,
 			govtypes.StoreKey,
-			ibchost.StoreKey,
+			ibcexported.StoreKey,
 			ibctransfertypes.StoreKey,
 			icahosttypes.StoreKey,
 			minttypes.StoreKey,
-			packetforwardtypes.StoreKey,
+			// packetforwardtypes.StoreKey,
 			signaltypes.StoreKey,
 			slashingtypes.StoreKey,
 			stakingtypes.StoreKey,
@@ -394,9 +392,11 @@ func (app *App) assertAllKeysArePresent() {
 
 // extractRegisters returns the encoding module registers from the basic
 // manager.
-func extractRegisters(manager sdkmodule.BasicManager) (modules []encoding.ModuleRegister) {
-	for _, module := range manager {
-		modules = append(modules, module)
+func extractRegisters(manager *sdkmodule.Manager) (modules []encoding.ModuleRegister) {
+	for _, m := range manager.Modules {
+		if r, ok := m.(encoding.ModuleRegister); ok {
+			modules = append(modules, r)
+		}
 	}
 	return modules
 }

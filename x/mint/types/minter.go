@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const DefaultBondDenom = "utia"
 
 // NewMinter returns a new Minter object.
-func NewMinter(inflationRate sdk.Dec, annualProvisions sdk.Dec, bondDenom string) Minter {
+func NewMinter(inflationRate math.LegacyDec, annualProvisions math.LegacyDec, bondDenom string) Minter {
 	return Minter{
 		InflationRate:    inflationRate,
 		AnnualProvisions: annualProvisions,
@@ -20,7 +21,7 @@ func NewMinter(inflationRate sdk.Dec, annualProvisions sdk.Dec, bondDenom string
 
 // DefaultMinter returns a Minter object with default values.
 func DefaultMinter() Minter {
-	annualProvisions := sdk.NewDec(0)
+	annualProvisions := math.LegacyNewDec(0)
 	return NewMinter(InitialInflationRateAsDec(), annualProvisions, DefaultBondDenom)
 }
 
@@ -41,9 +42,9 @@ func (m Minter) Validate() error {
 // CalculateInflationRate returns the inflation rate for the current year depending on
 // the current block height in context. The inflation rate is expected to
 // decrease every year according to the schedule specified in the README.
-func (m Minter) CalculateInflationRate(ctx sdk.Context, genesis time.Time) sdk.Dec {
+func (m Minter) CalculateInflationRate(ctx sdk.Context, genesis time.Time) math.LegacyDec {
 	years := yearsSinceGenesis(genesis, ctx.BlockTime())
-	inflationRate := InitialInflationRateAsDec().Mul(sdk.OneDec().Sub(DisinflationRateAsDec()).Power(uint64(years)))
+	inflationRate := InitialInflationRateAsDec().Mul(math.LegacyOneDec().Sub(DisinflationRateAsDec()).Power(uint64(years)))
 
 	if inflationRate.LT(TargetInflationRateAsDec()) {
 		return TargetInflationRateAsDec()
@@ -58,7 +59,7 @@ func (m Minter) CalculateBlockProvision(current time.Time, previous time.Time) (
 		return sdk.Coin{}, fmt.Errorf("current time %v cannot be before previous time %v", current, previous)
 	}
 	timeElapsed := current.Sub(previous).Nanoseconds()
-	portionOfYear := sdk.NewDec(timeElapsed).Quo(sdk.NewDec(NanosecondsPerYear))
+	portionOfYear := math.LegacyNewDec(timeElapsed).Quo(math.LegacyNewDec(NanosecondsPerYear))
 	blockProvision := m.AnnualProvisions.Mul(portionOfYear)
 	return sdk.NewCoin(m.BondDenom, blockProvision.TruncateInt()), nil
 }

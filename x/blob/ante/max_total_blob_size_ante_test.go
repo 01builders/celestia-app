@@ -13,8 +13,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestMaxTotalBlobSizeDecorator(t *testing.T) {
@@ -130,8 +128,8 @@ func TestMaxTotalBlobSizeDecorator(t *testing.T) {
 			require.NoError(t, txBuilder.SetMsgs(tc.pfb))
 			tx := txBuilder.GetTx()
 
-			decorator := ante.NewMaxTotalBlobSizeDecorator(mockBlobKeeper{})
-			ctx := sdk.Context{}.WithIsCheckTx(true).WithBlockHeader(tmproto.Header{Version: version.Consensus{App: tc.appVersion}})
+			decorator := ante.NewMaxTotalBlobSizeDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: tc.appVersion})
+			ctx := sdk.Context{}.WithIsCheckTx(true)
 			_, err := decorator.AnteHandle(ctx, tx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)
 		})

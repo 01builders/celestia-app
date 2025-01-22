@@ -6,7 +6,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 
 	"cosmossdk.io/errors"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramtypes "cosmossdk.io/x/params/types"
 )
 
 // DefaultParamspace defines the default blobstream module parameter subspace

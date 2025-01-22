@@ -3,11 +3,11 @@ package sdkutil
 import (
 	"fmt"
 
+	"cosmossdk.io/x/params/types/proposal"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // MaxBlockBytesParamChange returns a param change for the max block bytes

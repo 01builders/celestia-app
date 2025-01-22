@@ -7,31 +7,29 @@ import (
 	"path/filepath"
 	"time"
 
+	"cosmossdk.io/log"
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
-	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	smproto "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/privval"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/privval"
-	smproto "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	tmdbm "github.com/tendermint/tm-db"
 
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
@@ -147,7 +145,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		appCfg.StateSync.SnapshotInterval = 0
 		cp := app.DefaultConsensusParams()
 
-		cp.Version.AppVersion = cfg.AppVersion // set the app version
+		cp.Version.App = cfg.AppVersion // set the app version
 		gen = genesis.NewDefaultGenesis().
 			WithConsensusParams(cp).
 			WithKeyring(kr).
@@ -191,7 +189,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		DiscardABCIResponses: true,
 	})
 
-	appDB, err := tmdbm.NewDB("application", tmdbm.GoLevelDBBackend, tmCfg.DBDir())
+	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create application database: %w", err)
 	}
@@ -204,11 +202,13 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		encCfg,
 		0, // upgrade height v2
 		0, // timeout commit
-		util.EmptyAppOptions{},
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 
-	infoResp := simApp.Info(abci.RequestInfo{})
+	infoResp, err := simApp.Info(&abci.InfoRequest{})
+	if err != nil {
+		return fmt.Errorf("failed to get app info: %w", err)
+	}
 
 	lastHeight := blockStore.Height()
 	if infoResp.LastBlockHeight != lastHeight {
@@ -237,7 +237,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		csParams := types.TM2PB.ConsensusParams(genDoc.ConsensusParams)
-		res := simApp.InitChain(abci.RequestInitChain{
+		res, err := simApp.InitChain(&abci.InitChainRequest{
 			ChainId:         genDoc.ChainID,
 			Time:            genDoc.GenesisTime,
 			ConsensusParams: csParams,
@@ -245,6 +245,9 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			AppStateBytes:   genDoc.AppState,
 			InitialHeight:   genDoc.InitialHeight,
 		})
+		if err != nil {
+			return fmt.Errorf("failed to initialize chain: %w", err)
+		}
 
 		vals, err := types.PB2TM.ValidatorUpdates(res.Validators)
 		if err != nil {
@@ -271,8 +274,8 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		currentTime = state.LastBlockTime.Add(cfg.BlockInterval)
 	}
 
-	if state.ConsensusParams.Version.AppVersion != cfg.AppVersion {
-		return fmt.Errorf("app version mismatch: state has %d, but cfg has %d", state.ConsensusParams.Version.AppVersion, cfg.AppVersion)
+	if state.ConsensusParams.Version.App != cfg.AppVersion {
+		return fmt.Errorf("app version mismatch: state has %d, but cfg has %d", state.ConsensusParams.Version.App, cfg.AppVersion)
 	}
 
 	if state.LastBlockHeight != lastHeight {
@@ -285,7 +288,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		kr,
 		encCfg.TxConfig,
 		state.ChainID,
-		state.ConsensusParams.Version.AppVersion,
+		state.ConsensusParams.Version.App,
 		user.NewAccount(testnode.DefaultValidatorAccountName, 0, uint64(lastHeight)+1),
 	)
 	if err != nil {
@@ -313,7 +316,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		errCh <- persistDataRoutine(ctx, stateStore, blockStore, persistCh)
 	}()
 
-	lastBlock := blockStore.LoadBlock(blockStore.Height())
+	lastBlock, _ := blockStore.LoadBlock(blockStore.Height())
 
 	for height := lastHeight + 1; height <= int64(cfg.NumBlocks)+lastHeight; height++ {
 		if cfg.UpToTime && lastBlock != nil && lastBlock.Time.Add(cfg.BlockInterval).After(time.Now().UTC()) {

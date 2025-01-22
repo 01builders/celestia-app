@@ -1,21 +1,22 @@
 package tokenfilter_test
 
 import (
+	"context"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v9/modules/core/exported"
 
 	"github.com/celestiaorg/celestia-app/v3/x/tokenfilter"
 )
 
 func TestOnRecvPacket(t *testing.T) {
-	data := transfertypes.NewFungibleTokenPacketData("portid/channelid/utia", sdk.NewInt(100).String(), "alice", "bob", "gm")
+	data := transfertypes.NewFungibleTokenPacketData("portid/channelid/utia", math.NewInt(100).String(), "alice", "bob", "gm")
 	packet := channeltypes.NewPacket(data.GetBytes(), 1, "portid", "channelid", "counterpartyportid", "counterpartychannelid", clienttypes.Height{}, 0)
 	packetFromOtherChain := channeltypes.NewPacket(data.GetBytes(), 1, "counterpartyportid", "counterpartychannelid", "portid", "channelid", clienttypes.Height{}, 0)
 	randomPacket := channeltypes.NewPacket([]byte{1, 2, 3, 4}, 1, "portid", "channelid", "counterpartyportid", "counterpartychannelid", clienttypes.Height{}, 0)
@@ -51,6 +52,7 @@ func TestOnRecvPacket(t *testing.T) {
 			ctx = ctx.WithEventManager(sdk.NewEventManager())
 			ack := middleware.OnRecvPacket(
 				ctx,
+				"channelid",
 				tc.packet,
 				[]byte{},
 			)
@@ -76,12 +78,11 @@ func (m *MockIBCModule) MethodCalled() bool {
 }
 
 func (m *MockIBCModule) OnChanOpenInit(
-	_ sdk.Context,
+	_ context.Context,
 	_ channeltypes.Order,
 	_ []string,
 	_ string,
 	_ string,
-	_ *capabilitytypes.Capability,
 	_ channeltypes.Counterparty,
 	_ string,
 ) (string, error) {
@@ -90,12 +91,11 @@ func (m *MockIBCModule) OnChanOpenInit(
 }
 
 func (m *MockIBCModule) OnChanOpenTry(
-	_ sdk.Context,
+	_ context.Context,
 	_ channeltypes.Order,
 	_ []string,
 	_,
 	_ string,
-	_ *capabilitytypes.Capability,
 	_ channeltypes.Counterparty,
 	_ string,
 ) (version string, err error) {
@@ -104,7 +104,7 @@ func (m *MockIBCModule) OnChanOpenTry(
 }
 
 func (m *MockIBCModule) OnChanOpenAck(
-	_ sdk.Context,
+	_ context.Context,
 	_,
 	_ string,
 	_ string,
@@ -115,7 +115,7 @@ func (m *MockIBCModule) OnChanOpenAck(
 }
 
 func (m *MockIBCModule) OnChanOpenConfirm(
-	_ sdk.Context,
+	_ context.Context,
 	_,
 	_ string,
 ) error {
@@ -124,7 +124,7 @@ func (m *MockIBCModule) OnChanOpenConfirm(
 }
 
 func (m *MockIBCModule) OnChanCloseInit(
-	_ sdk.Context,
+	_ context.Context,
 	_,
 	_ string,
 ) error {
@@ -133,7 +133,7 @@ func (m *MockIBCModule) OnChanCloseInit(
 }
 
 func (m *MockIBCModule) OnChanCloseConfirm(
-	_ sdk.Context,
+	_ context.Context,
 	_,
 	_ string,
 ) error {
@@ -142,7 +142,8 @@ func (m *MockIBCModule) OnChanCloseConfirm(
 }
 
 func (m *MockIBCModule) OnRecvPacket(
-	_ sdk.Context,
+	_ context.Context,
+	_ string,
 	_ channeltypes.Packet,
 	_ sdk.AccAddress,
 ) exported.Acknowledgement {
@@ -151,7 +152,8 @@ func (m *MockIBCModule) OnRecvPacket(
 }
 
 func (m *MockIBCModule) OnAcknowledgementPacket(
-	_ sdk.Context,
+	_ context.Context,
+	_ string,
 	_ channeltypes.Packet,
 	_ []byte,
 	_ sdk.AccAddress,
@@ -161,7 +163,8 @@ func (m *MockIBCModule) OnAcknowledgementPacket(
 }
 
 func (m *MockIBCModule) OnTimeoutPacket(
-	_ sdk.Context,
+	_ context.Context,
+	_ string,
 	_ channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

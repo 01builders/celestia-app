@@ -3,21 +3,22 @@ package module_test
 import (
 	"testing"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	metrics "cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/app/module"
 	"github.com/celestiaorg/celestia-app/v3/x/signal"
 	signaltypes "github.com/celestiaorg/celestia-app/v3/x/signal/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/tests/mocks"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 func TestConfigurator(t *testing.T) {
@@ -25,19 +26,20 @@ func TestConfigurator(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockServer := mocks.NewMockServer(mockCtrl)
+		mockServer := mock.NewMockServer(mockCtrl)
 		mockServer.EXPECT().RegisterService(gomock.Any(), gomock.Any()).Times(2).Return()
 
 		config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 		configurator := module.NewConfigurator(config.Codec, mockServer, mockServer)
-		storeKey := sdk.NewKVStoreKey(signaltypes.StoreKey)
+		storeKey := storetypes.NewKVStoreKey(signaltypes.StoreKey)
 
 		db := dbm.NewMemDB()
-		stateStore := store.NewCommitMultiStore(db)
+		logger := log.NewNopLogger()
+		stateStore := store.NewCommitMultiStore(db, logger, metrics.NewNoOpMetrics())
 		stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 		require.NoError(t, stateStore.LoadLatestVersion())
 
-		keeper := signal.NewKeeper(config.Codec, storeKey, nil)
+		keeper := signal.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(storeKey), logger), config.Codec, nil, nil)
 		require.NotNil(t, keeper)
 		upgradeModule := signal.NewAppModule(keeper)
 		manager, err := module.NewManager([]module.VersionedModule{
@@ -60,9 +62,9 @@ func TestConfigurator(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		t.Cleanup(mockCtrl.Finish)
 
-		mockAppModule1 := mocks.NewMockAppModule(mockCtrl)
-		mockAppModule2 := mocks.NewMockAppModule(mockCtrl)
-		mockAppModule3 := mocks.NewMockAppModule(mockCtrl)
+		mockAppModule1 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule2 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+		mockAppModule3 := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
 
 		mockAppModule1.EXPECT().Name().Return("testModule").AnyTimes()
 		mockAppModule2.EXPECT().Name().Return("testModule").AnyTimes()
@@ -70,8 +72,8 @@ func TestConfigurator(t *testing.T) {
 		mockAppModule1.EXPECT().ConsensusVersion().Return(uint64(1)).AnyTimes()
 		mockAppModule2.EXPECT().ConsensusVersion().Return(uint64(2)).AnyTimes()
 		mockAppModule3.EXPECT().ConsensusVersion().Return(uint64(5)).AnyTimes()
-		mockAppModule3.EXPECT().InitGenesis(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-		mockAppModule3.EXPECT().DefaultGenesis(gomock.Any()).Return(nil)
+		mockAppModule3.EXPECT().InitGenesis(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+		mockAppModule3.EXPECT().DefaultGenesis().Return(nil)
 
 		manager, err := module.NewManager([]module.VersionedModule{
 			// this is an existing module that gets updated in v2
@@ -83,7 +85,7 @@ func TestConfigurator(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, manager)
 
-		mockServer := mocks.NewMockServer(mockCtrl)
+		mockServer := mock.NewMockServer(mockCtrl)
 		config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 
 		isCalled := false
@@ -94,7 +96,7 @@ func TestConfigurator(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = manager.RunMigrations(sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger()), configurator, 1, 2)
+		err = manager.RunMigrations(sdk.NewContext(nil, false, log.NewNopLogger()), configurator, 1, 2)
 		require.NoError(t, err)
 		require.True(t, isCalled)
 

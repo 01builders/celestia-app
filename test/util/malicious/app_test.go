@@ -1,8 +1,10 @@
 package malicious
 
 import (
+	"math/rand"
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/celestia-app/v3/pkg/wrapper"
@@ -11,9 +13,8 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 // TestOutOfOrderNMT tests that the malicious NMT implementation is able to
@@ -46,7 +47,7 @@ func TestOutOfOrderNMT(t *testing.T) {
 
 	// test the new tree with unordered data
 	for i := range data {
-		j := tmrand.Intn(len(data))
+		j := rand.Intn(len(data))
 		data[i], data[j] = data[j], data[i]
 	}
 

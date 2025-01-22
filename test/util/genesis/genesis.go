@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	coretypes "github.com/tendermint/tendermint/types"
 )
 
 // Genesis manages the creation of the genesis state of a network. It is meant
@@ -65,7 +65,7 @@ func NewDefaultGenesis() *Genesis {
 	g := &Genesis{
 		ecfg:            ecfg,
 		ConsensusParams: app.DefaultConsensusParams(),
-		ChainID:         tmrand.Str(6),
+		ChainID:         unsafe.Str(6),
 		GenesisTime:     time.Now(),
 		kr:              keyring.NewInMemory(ecfg.Codec),
 		genOps:          []Modifier{},

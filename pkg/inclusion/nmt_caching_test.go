@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/da"
 	"github.com/celestiaorg/celestia-app/v3/pkg/wrapper"
@@ -13,7 +14,6 @@ import (
 	"github.com/celestiaorg/rsmt2d"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestWalkCachedSubTreeRoot(t *testing.T) {

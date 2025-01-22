@@ -5,24 +5,25 @@ import (
 	"math"
 	"testing"
 
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
+	storetypes "cosmossdk.io/store/types"
+	banktypes "cosmossdk.io/x/bank/types"
+	paramkeeper "cosmossdk.io/x/params/keeper"
+	paramtypes "cosmossdk.io/x/params/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/ante"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v3/x/minfee"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 func TestValidateTxFee(t *testing.T) {
@@ -30,15 +31,15 @@ func TestValidateTxFee(t *testing.T) {
 
 	builder := encCfg.TxConfig.NewTxBuilder()
 	err := builder.SetMsgs(banktypes.NewMsgSend(
-		testnode.RandomAddress().(sdk.AccAddress),
-		testnode.RandomAddress().(sdk.AccAddress),
+		testnode.RandomAddress().String(),
+		testnode.RandomAddress().String(),
 		sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10))),
 	)
 	require.NoError(t, err)
 
 	// Set the validator's fee
 	validatorMinGasPrice := 0.8
-	validatorMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", validatorMinGasPrice))
+	validatorMinGasPriceDec, err := sdkmath.LegacyNewDecFromStr(fmt.Sprintf("%f", validatorMinGasPrice))
 	require.NoError(t, err)
 	validatorMinGasPriceCoin := sdk.NewDecCoinFromDec(appconsts.BondDenom, validatorMinGasPriceDec)
 
@@ -134,22 +135,18 @@ func TestValidateTxFee(t *testing.T) {
 			builder.SetFeeAmount(tc.fee)
 			tx := builder.GetTx()
 
-			ctx := sdk.NewContext(stateStore, tmproto.Header{
-				Version: version.Consensus{
-					App: tc.appVersion,
-				},
-			}, tc.isCheckTx, nil)
+			ctx := sdk.NewContext(stateStore, tc.isCheckTx, nil)
 
 			ctx = ctx.WithMinGasPrices(sdk.DecCoins{validatorMinGasPriceCoin})
 
-			networkMinGasPriceDec, err := sdk.NewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
+			networkMinGasPriceDec, err := sdkmath.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
 			require.NoError(t, err)
 
 			subspace, _ := paramsKeeper.GetSubspace(minfee.ModuleName)
 			subspace = minfee.RegisterMinFeeParamTable(subspace)
 			subspace.Set(ctx, minfee.KeyNetworkMinGasPrice, networkMinGasPriceDec)
 
-			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper)
+			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper, &mockConsensusKeeper{appVersion: tc.appVersion})
 			if tc.expErr {
 				require.Error(t, err)
 			} else {
@@ -160,12 +157,13 @@ func TestValidateTxFee(t *testing.T) {
 }
 
 func setUp(t *testing.T) (paramkeeper.Keeper, storetypes.CommitMultiStore) {
-	storeKey := sdk.NewKVStoreKey(paramtypes.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(paramtypes.StoreKey)
 	tStoreKey := storetypes.NewTransientStoreKey(paramtypes.TStoreKey)
 
 	// Create the state store
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	logger := log.NewNopLogger()
+	stateStore := store.NewCommitMultiStore(db, logger, metrics.NewNoOpMetrics())
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(tStoreKey, storetypes.StoreTypeTransient, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())

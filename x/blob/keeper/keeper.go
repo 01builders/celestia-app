@@ -2,15 +2,14 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
+	"cosmossdk.io/core/appmodule"
+	paramtypes "cosmossdk.io/x/params/types"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -19,12 +18,18 @@ const (
 
 // Keeper handles all the state changes for the blob module.
 type Keeper struct {
-	cdc        codec.BinaryCodec
+	appmodule.Environment
+
+	consensusKeeper interface {
+		AppVersion(ctx context.Context) (uint64, error)
+	}
+	cdc        codec.Codec
 	paramStore paramtypes.Subspace
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec,
+	env appmodule.Environment,
+	cdc codec.Codec,
 	ps paramtypes.Subspace,
 ) *Keeper {
 	if !ps.HasKeyTable() {
@@ -32,33 +37,34 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		cdc:        cdc,
-		paramStore: ps,
+		Environment: env,
+		cdc:         cdc,
+		paramStore:  ps,
 	}
-}
-
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
 // PayForBlobs consumes gas based on the blob sizes in the MsgPayForBlobs.
 func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*types.MsgPayForBlobsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	appVersion, err := k.consensusKeeper.AppVersion(ctx)
+	if err != nil {
+		return &types.MsgPayForBlobsResponse{}, err
+	}
+
 	// GasPerBlobByte is a versioned param from version 3 onwards.
 	var gasToConsume uint64
-	if ctx.BlockHeader().Version.App <= v2.Version {
+	if appVersion <= v2.Version {
 		gasToConsume = types.GasToConsume(msg.BlobSizes, k.GasPerBlobByte(ctx))
 	} else {
-		gasToConsume = types.GasToConsume(msg.BlobSizes, appconsts.GasPerBlobByte(ctx.BlockHeader().Version.App))
+		gasToConsume = types.GasToConsume(msg.BlobSizes, appconsts.GasPerBlobByte(appVersion))
 	}
 
 	ctx.GasMeter().ConsumeGas(gasToConsume, payForBlobGasDescriptor)
 
-	err := ctx.EventManager().EmitTypedEvent(
+	if err := ctx.EventManager().EmitTypedEvent(
 		types.NewPayForBlobsEvent(msg.Signer, msg.BlobSizes, msg.Namespaces),
-	)
-	if err != nil {
+	); err != nil {
 		return &types.MsgPayForBlobsResponse{}, err
 	}
 

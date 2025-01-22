@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tendermint/tendermint/rpc/client/http"
+	"github.com/cometbft/cometbft/rpc/client/http"
 )
 
 const (
@@ -54,7 +54,7 @@ func Run() error {
 	}
 
 	_, nodeRPC, targetTimeArg := os.Args[0], os.Args[1], os.Args[2]
-	c, err := http.New(nodeRPC, "/websocket")
+	c, err := http.New(nodeRPC)
 	if err != nil {
 		return err
 	}

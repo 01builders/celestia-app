@@ -13,9 +13,9 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/tx"
+	blocksync "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/proto/tendermint/blockchain"
 )
 
 // TestDecodeBlobTx demonstrates how one can take the response from the
@@ -44,10 +44,6 @@ func TestDecodeBlobTx(t *testing.T) {
 			assert.Equal(t, wantHash, gotHash)
 
 			msg := tx.GetMsgs()[0]
-			wantSigner := "celestia18y3ydyn7uslhuxu4lcm2x83gkdhrrcyaqvg6gk"
-			gotSigner := msg.GetSigners()[0].String()
-			assert.Equal(t, gotSigner, wantSigner)
-
 			msgPayForBlobs, ok := msg.(*blobtypes.MsgPayForBlobs)
 			if !ok {
 				t.Errorf("expected MsgPayForBlobs, got %T", msg)
@@ -60,7 +56,7 @@ func TestDecodeBlobTx(t *testing.T) {
 }
 
 // getTestdataBlockResponse gets the block response from the testdata directory.
-func getTestdataBlockResponse(t *testing.T) (resp blockchain.BlockResponse) {
+func getTestdataBlockResponse(t *testing.T) (resp blocksync.BlockResponse) {
 	// block_response.json is the JSON response from the API endpoint:
 	// https://api.celestia.pops.one/cosmos/base/tendermint/v1beta1/blocks/408
 	// The response was persisted to block_response.json so that this test

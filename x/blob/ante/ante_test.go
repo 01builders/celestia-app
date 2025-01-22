@@ -1,9 +1,12 @@
 package ante_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -13,8 +16,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const (
@@ -112,7 +113,7 @@ func TestPFBAnteHandler(t *testing.T) {
 	for _, tc := range testCases {
 		for _, currentVersion := range tc.versions {
 			t.Run(fmt.Sprintf("%s v%d", tc.name, currentVersion), func(t *testing.T) {
-				anteHandler := ante.NewMinGasPFBDecorator(mockBlobKeeper{})
+				anteHandler := ante.NewMinGasPFBDecorator(mockBlobKeeper{}, mockConsensusKeeper{appVersion: currentVersion})
 				var gasPerBlobByte uint32
 				if currentVersion == v2.Version {
 					gasPerBlobByte = testGasPerBlobByte
@@ -120,11 +121,7 @@ func TestPFBAnteHandler(t *testing.T) {
 					gasPerBlobByte = appconsts.GasPerBlobByte(currentVersion)
 				}
 
-				ctx := sdk.NewContext(nil, tmproto.Header{
-					Version: version.Consensus{
-						App: currentVersion,
-					},
-				}, true, nil).WithGasMeter(sdk.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
+				ctx := sdk.NewContext(nil, true, log.NewNopLogger()).WithGasMeter(storetypes.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
 
 				ctx.GasMeter().ConsumeGas(tc.gasConsumed, "test")
 				txBuilder := txConfig.NewTxBuilder()
@@ -149,4 +146,13 @@ func (mockBlobKeeper) GasPerBlobByte(_ sdk.Context) uint32 {
 
 func (mockBlobKeeper) GovMaxSquareSize(_ sdk.Context) uint64 {
 	return testGovMaxSquareSize
+}
+
+type mockConsensusKeeper struct {
+	ante.ConsensusKeeper
+	appVersion uint64
+}
+
+func (m mockConsensusKeeper) AppVersion(ctx context.Context) (uint64, error) {
+	return m.appVersion, nil
 }

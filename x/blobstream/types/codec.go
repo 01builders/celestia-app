@@ -1,19 +1,18 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/core/registry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
 
 const URLMsgRegisterEVMAddress = "/celestia.blob.v1.MsgRegisterEVMAddress"
 
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgRegisterEVMAddress{}, URLMsgRegisterEVMAddress, nil)
+func RegisterLegacyAminoCodec(cdc registry.AminoRegistrar) {
+	cdc.RegisterConcrete(&MsgRegisterEVMAddress{}, URLMsgRegisterEVMAddress)
 }
 
-func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgRegisterEVMAddress{},
 	)

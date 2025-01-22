@@ -5,6 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	rand "cosmossdk.io/math/unsafe"
+	v1 "cosmossdk.io/x/gov/types/v1"
+	oldgov "cosmossdk.io/x/gov/types/v1beta1"
+	"cosmossdk.io/x/params/types/proposal"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
@@ -16,15 +21,11 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	oldgov "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestSquareSizeIntegrationTest(t *testing.T) {
@@ -166,8 +167,8 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	msg, err := oldgov.NewMsgSubmitProposal(
 		content,
 		sdk.NewCoins(
-			sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(1000000000))),
-		addr,
+			sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000000000))),
+		addr.String(),
 	)
 	require.NoError(t, err)
 
@@ -190,7 +191,7 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	require.Len(t, gresp.Proposals, 1)
 
 	// create and submit a new vote
-	vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account), gresp.Proposals[0].Id, v1.VoteOption_VOTE_OPTION_YES, "")
+	vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account).String(), gresp.Proposals[0].Id, v1.VoteOption_VOTE_OPTION_YES, "")
 	res, err = txClient.SubmitTx(s.cctx.GoContext(), []sdk.Msg{vote}, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	require.Equal(t, abci.CodeTypeOK, res.Code)

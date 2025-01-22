@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/core/registry"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,22 +11,22 @@ import (
 
 var ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
 
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgPayForBlobs{}, URLMsgPayForBlobs, nil)
+func RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	registrar.RegisterConcrete(&MsgPayForBlobs{}, URLMsgPayForBlobs)
 }
 
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgPayForBlobs{},
 	)
 
 	registry.RegisterInterface(
 		"cosmos.auth.v1beta1.BaseAccount",
-		(*authtypes.AccountI)(nil),
+		(*sdk.AccountI)(nil),
 	)
 
 	registry.RegisterImplementations(
-		(*authtypes.AccountI)(nil),
+		(*sdk.AccountI)(nil),
 		&authtypes.BaseAccount{},
 	)
 

@@ -348,7 +348,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				Signature:        nil,
 			}
 
-			if err := validatorKey.SignVote(state.ChainID, precommitVote); err != nil {
+			if err := validatorKey.SignVote(state.ChainID, precommitVote, false); err != nil {
 				return fmt.Errorf("failed to sign precommit vote (%s): %w", precommitVote.String(), err)
 			}
 

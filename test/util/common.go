@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream"
-
 	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -540,7 +538,10 @@ func NewTestMsgUnDelegateValidator(address sdk.ValAddress, amt cosmosmath.Int) *
 func ExecuteBlobstreamHeights(ctx sdk.Context, bsKeeper keeper.Keeper, beginHeight int64, endHeight int64) sdk.Context {
 	for i := beginHeight; i < endHeight; i++ {
 		ctx = ctx.WithBlockHeight(i)
-		blobstream.EndBlocker(ctx, bsKeeper)
+
+		if err := bsKeeper.EndBlocker(ctx); err != nil {
+			panic(err)
+		}
 	}
 	return ctx
 }
@@ -552,7 +553,9 @@ func ExecuteBlobstreamHeightsWithTime(ctx sdk.Context, bsKeeper keeper.Keeper, b
 	blockTime := ctx.BlockTime()
 	for i := beginHeight; i < endHeight; i++ {
 		ctx = ctx.WithBlockHeight(i).WithBlockHeader(tmproto.Header{Time: blockTime})
-		blobstream.EndBlocker(ctx, bsKeeper)
+		if err := bsKeeper.EndBlocker(ctx); err != nil {
+			panic(err)
+		}
 		blockTime = blockTime.Add(blockInterval)
 	}
 	return ctx

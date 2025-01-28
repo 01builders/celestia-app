@@ -189,7 +189,7 @@ func CalculateMeanGas(ctx context.Context, rpcAddress, msgType string, fromHeigh
 				return average(), count, fmt.Errorf("getting block results (height %d): %w", height, err)
 			}
 			for _, i := range indices {
-				totalGas += results.TxsResults[i].GasUsed
+				totalGas += results.TxResults[i].GasUsed
 				count++
 			}
 		}

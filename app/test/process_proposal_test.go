@@ -9,7 +9,6 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -172,7 +171,7 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = [][]byte{blobTx}
 
 				// Erasure code the data to update the data root so this doesn't fail on an incorrect data root.
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -203,7 +202,7 @@ func TestProcessProposal(t *testing.T) {
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
 				// Update the data hash so that the test doesn't fail due to an incorrect data root.
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     v1.Version,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
@@ -214,7 +213,7 @@ func TestProcessProposal(t *testing.T) {
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
 				// Update the data hash so that the test doesn't fail due to an incorrect data root.
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     v2.Version,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -234,7 +233,7 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append(d.Txs, badSigBlobTx)
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -244,7 +243,7 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append(d.Txs, blobTxWithInvalidNonce)
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -272,7 +271,7 @@ func TestProcessProposal(t *testing.T) {
 				require.NoError(t, err)
 				// replace the hash of the prepare proposal response with the hash of a data
 				// square with a tampered sequence start indicator
-				d.Hash = dah.Hash()
+				d.DataRootHash = dah.Hash()
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -287,7 +286,7 @@ func TestProcessProposal(t *testing.T) {
 				rawTx, _, err := signer.CreatePayForBlobs(accounts[0], []*share.Blob{blob}, user.SetGasLimit(100000), user.SetFee(100000))
 				require.NoError(t, err)
 				d.Txs[0] = rawTx
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
@@ -310,7 +309,7 @@ func TestProcessProposal(t *testing.T) {
 				blobTxBytes, err := tx.MarshalBlobTx(rawTx, blob)
 				require.NoError(t, err)
 				d.Txs[0] = blobTxBytes
-				d.Hash = calculateNewDataHash(t, d.Txs)
+				d.DataRootHash = calculateNewDataHash(t, d.Txs)
 			},
 			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.PROCESS_PROPOSAL_STATUS_REJECT,
@@ -336,28 +335,26 @@ func TestProcessProposal(t *testing.T) {
 			blockTime := time.Now()
 
 			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-				BlockData: tt.input,
-				ChainId:   testutil.ChainID,
-				Height:    height,
-				Time:      blockTime,
+				Txs:    tt.input.Txs,
+				Height: height,
+				Time:   blockTime,
 			})
 			require.NoError(t, err)
-			require.Equal(t, len(tt.input.Txs), len(resp.BlockData.Txs))
-			tt.mutator(resp.BlockData)
+			require.Equal(t, len(tt.input.Txs), len(resp.Txs))
+			blockData := &tmproto.Data{
+				Txs:          resp.Txs,
+				DataRootHash: resp.DataRootHash,
+				SquareSize:   resp.SquareSize,
+			}
+			tt.mutator(blockData)
 
 			res, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
-				BlockData: resp.BlockData,
-				Header: tmproto.Header{
-					Height:   1,
-					DataHash: resp.BlockData.Hash,
-					ChainID:  testutil.ChainID,
-					Version: version.Consensus{
-						App: tt.appVersion,
-					},
-				},
+				Txs:          blockData.Txs,
+				DataRootHash: blockData.DataRootHash,
+				SquareSize:   blockData.SquareSize,
 			})
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, res.Result, fmt.Sprintf("expected %v, got %v", tt.expectedResult, res.Result))
+			assert.Equal(t, tt.expectedResult, res.Status, fmt.Sprintf("expected %v, got %v", tt.expectedResult, res.Status))
 		})
 	}
 }

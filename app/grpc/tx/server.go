@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
@@ -48,10 +48,6 @@ func NewTxServer(clientCtx client.Context, interfaceRegistry codectypes.Interfac
 	}
 }
 
-type txStatus interface {
-	TxStatus(ctx context.Context, txID []byte) (*ctypes.ResultTxStatus, error)
-}
-
 // TxStatus implements the TxServer.TxStatus method proxying to the underlying celestia-core RPC server
 func (s *txServer) TxStatus(ctx context.Context, req *TxStatusRequest) (*TxStatusResponse, error) {
 	if req == nil {
@@ -66,8 +62,8 @@ func (s *txServer) TxStatus(ctx context.Context, req *TxStatusRequest) (*TxStatu
 	if err != nil {
 		return nil, err
 	}
-	// TxStatus is absent in the cometbft rpc client so we use an extension interface to interop with SDK 0.52
-	nodeTxStatus, ok := node.(txStatus)
+
+	nodeTxStatus, ok := node.(rpcclient.SignClient)
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "node does not support tx status")
 	}

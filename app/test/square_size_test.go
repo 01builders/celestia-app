@@ -22,6 +22,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stretchr/testify/require"
@@ -207,8 +208,10 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	latestHeight, err := s.cctx.LatestHeight()
 	require.NoError(t, err)
 
+	networkClient, ok := s.cctx.Client.(rpcclient.NetworkClient)
+	require.True(t, ok)
 	for i := 0; i < 10; i++ {
-		cpresp, err := s.cctx.Client.ConsensusParams(s.cctx.GoContext(), &latestHeight)
+		cpresp, err := networkClient.ConsensusParams(s.cctx.GoContext(), &latestHeight)
 		require.NoError(t, err)
 		if err != nil || cpresp == nil {
 			time.Sleep(time.Second)

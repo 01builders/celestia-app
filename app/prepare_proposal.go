@@ -21,7 +21,7 @@ import (
 // the proposal block and passes it back to tendermint via the BlockData. Panics
 // indicate a developer error and should immediately halt the node for
 // visibility and so they can be quickly resolved.
-func (app *App) PrepareProposal(ctx sdk.Context, req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
+func (app *App) PrepareProposalHandler(ctx sdk.Context, req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	defer telemetry.MeasureSince(time.Now(), "prepare_proposal")
 	// Create a context using a branch of the state.
 

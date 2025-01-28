@@ -19,7 +19,6 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -70,16 +69,13 @@ func TestPrepareProposalPutsPFBsAtEnd(t *testing.T) {
 	blockTime := time.Now()
 
 	resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-		BlockData: &tmproto.Data{
-			Txs: txs,
-		},
-		ChainId: testutil.ChainID,
-		Height:  height,
-		Time:    blockTime,
+		Txs:    txs,
+		Height: height,
+		Time:   blockTime,
 	})
 	require.NoError(t, err)
-	require.Len(t, resp.BlockData.Txs, numBlobTxs+numNormalTxs)
-	for idx, txBytes := range resp.BlockData.Txs {
+	require.Len(t, resp.Txs, numBlobTxs+numNormalTxs)
+	for idx, txBytes := range resp.Txs {
 		_, isBlobTx := coretypes.UnmarshalBlobTx(coretypes.Tx(txBytes))
 		if idx < numNormalTxs {
 			require.False(t, isBlobTx)
@@ -238,10 +234,9 @@ func TestPrepareProposalFiltering(t *testing.T) {
 			blockTime := time.Now()
 
 			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-				BlockData: &tmproto.Data{Txs: tt.txs()},
-				ChainId:   testutil.ChainID,
-				Height:    height,
-				Time:      blockTime,
+				Txs:    tt.txs(),
+				Height: height,
+				Time:   blockTime,
 			})
 			require.NoError(t, err)
 			// check that we have the expected number of transactions
@@ -385,9 +380,8 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-				Txs:     testCase.inputTransactions,
-				ChainId: testApp.ChainID(),
-				Height:  10,
+				Txs:    testCase.inputTransactions,
+				Height: 10,
 			})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expectedTransactions, resp.Txs)

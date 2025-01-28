@@ -12,8 +12,6 @@ import (
 	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
 )
@@ -125,35 +123,31 @@ func TestPrepareProposalConsistency(t *testing.T) {
 					height := testApp.LastBlockHeight() + 1
 
 					resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-						ChainId: testutil.ChainID,
-						Txs:     coretypes.Txs(txs).ToSliceOfBytes(),
-						Time:    blockTime,
-						Height:  height,
+						Txs:    coretypes.Txs(txs).ToSliceOfBytes(),
+						Time:   blockTime,
+						Height: height,
 					})
 					require.NoError(t, err)
 
 					// check that the square size is smaller than or equal to
 					// the specified size
-					require.LessOrEqual(t, resp.BlockData.SquareSize, uint64(size.govMaxSquareSize))
+					require.LessOrEqual(t, resp.SquareSize, uint64(size.govMaxSquareSize))
 
 					res, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
-						Height:    height,
-						BlockData: resp.BlockData,
-						Header: core.Header{
-							DataHash: resp.BlockData.Hash,
-							ChainID:  testutil.ChainID,
-							Version:  version.Consensus{App: appconsts.LatestVersion},
-						},
+						Height:       height,
+						DataRootHash: resp.DataRootHash,
+						SquareSize:   resp.SquareSize,
+						Txs:          resp.Txs,
 					},
 					)
 					require.NoError(t, err)
 
-					require.Equal(t, abci.PROCESS_PROPOSAL_STATUS_ACCEPT, res.Result)
+					require.Equal(t, abci.PROCESS_PROPOSAL_STATUS_ACCEPT, res.Status)
 					// At least all of the send transactions and one blob tx
 					// should make it into the block. This should be expected to
 					// change if PFB transactions are not separated and put into
 					// their own namespace
-					require.GreaterOrEqual(t, len(resp.BlockData.Txs), sendTxCount+1)
+					require.GreaterOrEqual(t, len(resp.Txs), sendTxCount+1)
 				}
 			})
 		}

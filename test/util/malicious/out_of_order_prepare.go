@@ -88,11 +88,8 @@ func (a *App) OutOfOrderPrepareProposal(req *abci.PrepareProposalRequest) (*abci
 	// tendermint doesn't need to use any of the erasure data, as only the
 	// protobuf encoded version of the block data is gossiped.
 	return &abci.PrepareProposalResponse{
-		Txs: txs,
-		// BlockData: &core.Data{
-		// 	Txs:        txs,
-		// 	SquareSize: uint64(dataSquare.Size()),
-		// 	Hash:       dah.Hash(),
-		// },
+		Txs:          txs,
+		SquareSize:   uint64(dataSquare.Size()),
+		DataRootHash: dah.Hash(),
 	}, nil
 }

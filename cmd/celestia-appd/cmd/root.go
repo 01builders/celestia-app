@@ -12,7 +12,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v3/x/blobstream/client"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
-	cmtcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cosmos/cosmos-sdk/client"
 	clientconfig "github.com/cosmos/cosmos-sdk/client/config"
@@ -81,13 +80,9 @@ func NewRootCmd() *cobra.Command {
 			appTemplate := serverconfig.DefaultConfigTemplate
 			appConfig := app.DefaultAppConfig()
 			tmConfig := app.DefaultConsensusConfig()
-			cometConfig := &cmtcfg.Config{}
-			if err := DeepClone(tmConfig, cometConfig); err != nil {
-				return err
-			}
 
 			// Override the default tendermint config and app config for celestia-app
-			err = server.InterceptConfigsPreRunHandler(command, appTemplate, appConfig, cometConfig)
+			err = server.InterceptConfigsPreRunHandler(command, appTemplate, appConfig, tmConfig)
 			if err != nil {
 				return err
 			}

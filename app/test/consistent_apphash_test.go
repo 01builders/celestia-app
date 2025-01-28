@@ -29,7 +29,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/tx"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -430,15 +429,13 @@ func processSdkMessages(signer *user.Signer, sdkMessages []sdk.Msg) ([][]byte, e
 // executeTxs executes a set of transactions and returns the data hash and app hash
 func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, validators []abci.Validator, lastCommitHash []byte) ([]byte, []byte, error) {
 	height := testApp.LastBlockHeight() + 1
-	chainID := testApp.ChainID()
 
 	genesisTime := testutil.GenesisTime
 
 	// Prepare Proposal
 	resPrepareProposal, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-		ChainId: chainID,
-		Txs:     encodedSdkTxs,
-		Height:  height,
+		Txs:    encodedSdkTxs,
+		Height: height,
 		// Dynamically increase time so the validator can be unjailed (1m duration)
 		Time: genesisTime.Add(time.Duration(height) * time.Minute),
 	})
@@ -450,22 +447,16 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 		return nil, nil, fmt.Errorf("PrepareProposal removed transactions. Was %d, now %d", len(encodedSdkTxs), len(resPrepareProposal.Txs))
 	}
 
-	dataHash := resPrepareProposal.Hash
+	dataHash := resPrepareProposal.DataRootHash
 
 	// Process Proposal
 
-	appVersion, err := testApp.AppVersion(testApp.NewContext(false))
-	if err != nil {
-		return nil, nil, fmt.Errorf("AppVersion failed: %w", err)
-	}
-
 	resProcessProposal, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
-		ChainID:   chainID,
-		Version:   version.Consensus{App: appVersion},
-		Time:      genesisTime.Add(time.Duration(height) * time.Minute),
-		Height:    height,
-		DataHash:  resPrepareProposal.BlockData.Hash,
-		BlockData: resPrepareProposal.BlockData,
+		Time:         genesisTime.Add(time.Duration(height) * time.Minute),
+		Height:       height,
+		DataRootHash: dataHash,
+		Txs:          resPrepareProposal.Txs,
+		SquareSize:   resPrepareProposal.SquareSize,
 	},
 	)
 	if err != nil {

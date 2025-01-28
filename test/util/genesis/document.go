@@ -12,11 +12,14 @@ import (
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	coretypes "github.com/cometbft/cometbft/types"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
+
+var AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
 
 // Document will create a valid genesis doc with funded addresses.
 func Document(
@@ -45,7 +48,7 @@ func Document(
 	bankGenState := banktypes.DefaultGenesisState()
 	authGenState.Accounts = append(authGenState.Accounts, sdkAccounts...)
 	bankGenState.Balances = append(bankGenState.Balances, genBals...)
-	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances, AddressCodec)
 	if err != nil {
 		return nil, fmt.Errorf("sanitizing genesis balances: %w", err)
 	}
@@ -57,7 +60,7 @@ func Document(
 	if err := bankGenState.Validate(); err != nil {
 		return nil, err
 	}
-	if err := genutiltypes.ValidateGenesis(genutilGenState, ecfg.TxConfig.TxJSONDecoder()); err != nil {
+	if err := genutiltypes.ValidateGenesis(genutilGenState, ecfg.TxConfig.TxJSONDecoder(), genutiltypes.DefaultMessageValidator); err != nil {
 		return nil, err
 	}
 

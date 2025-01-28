@@ -189,10 +189,11 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // determined using a goal square size.
 func DefaultConsensusParams() *tmproto.ConsensusParams {
 	return &tmproto.ConsensusParams{
-		Block:     DefaultBlockParams(),
-		Evidence:  DefaultEvidenceParams(),
-		Validator: coretypes.DefaultValidatorParams(),
-		Version: &tmproto.VersionParams{
+		Block:    DefaultBlockParams(),
+		Evidence: DefaultEvidenceParams(),
+		Validator: &tmproto.ValidatorParams{
+			PubKeyTypes: coretypes.DefaultValidatorParams().PubKeyTypes,
+		}, Version: &tmproto.VersionParams{
 			App: appconsts.LatestVersion,
 		},
 	}
@@ -200,9 +201,11 @@ func DefaultConsensusParams() *tmproto.ConsensusParams {
 
 func DefaultInitialConsensusParams() *tmproto.ConsensusParams {
 	return &tmproto.ConsensusParams{
-		Block:     DefaultBlockParams(),
-		Evidence:  DefaultEvidenceParams(),
-		Validator: coretypes.DefaultValidatorParams(),
+		Block:    DefaultBlockParams(),
+		Evidence: DefaultEvidenceParams(),
+		Validator: &tmproto.ValidatorParams{
+			PubKeyTypes: coretypes.DefaultValidatorParams().PubKeyTypes,
+		},
 		Version: &tmproto.VersionParams{
 			App: DefaultInitialVersion,
 		},

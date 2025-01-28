@@ -70,12 +70,15 @@ func NewSigner(
 
 // CreateTx forms a transaction from the provided messages and signs it.
 // TxOptions may be optionally used to set the gas limit and fee.
-func (s *Signer) CreateTx(msgs []sdktypes.Msg, opts ...TxOption) ([]byte, error) {
+func (s *Signer) CreateTx(msgs []sdktypes.Msg, opts ...TxOption) ([]byte, authsigning.Tx, error) {
 	tx, _, _, err := s.SignTx(msgs, opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return s.EncodeTx(tx)
+
+	blob, err := s.EncodeTx(tx)
+
+	return blob, tx, err
 }
 
 func (s *Signer) SignTx(msgs []sdktypes.Msg, opts ...TxOption) (authsigning.Tx, string, uint64, error) {

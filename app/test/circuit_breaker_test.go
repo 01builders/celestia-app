@@ -54,12 +54,16 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 	require.NoError(t, err)
 
 	tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
-	res := testApp.DeliverTx(abci.RequestDeliverTx{Tx: tryUpgradeTx})
+	blockResp, err := testApp.FinalizeBlock(&abci.FinalizeBlockRequest{Txs: [][]byte{tryUpgradeTx}})
+	require.NoError(t, err)
+	res := blockResp.TxResults[0]
 	assert.Equal(t, uint32(0x25), res.Code, res.Log)
 	assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
 
 	nestedTx := newNestedTx(t, signer, granterAddress)
-	res = testApp.DeliverTx(abci.RequestDeliverTx{Tx: nestedTx})
+	blockResp, err = testApp.FinalizeBlock(&abci.FinalizeBlockRequest{Txs: [][]byte{nestedTx}})
+	require.NoError(t, err)
+	res = blockResp.TxResults[0]
 	assert.Equal(t, uint32(0x25), res.Code, res.Log)
 	assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
 }

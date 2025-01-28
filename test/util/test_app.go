@@ -71,17 +71,16 @@ func SetupTestAppWithGenesisValSetAndMaxSquareSize(cparams *tmproto.ConsensusPar
 func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *tmproto.ConsensusParams) {
 	// commit genesis changes
 	testApp.Commit()
-	testApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
-		Time:               time.Now(),
-		ChainID:            ChainID,
-		Height:             testApp.LastBlockHeight() + 1,
-		AppHash:            testApp.LastCommitID().Hash,
-		ValidatorsHash:     valSet.Hash(),
-		NextValidatorsHash: valSet.Hash(),
+	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+		ChainID: ChainID,
 		Version: tmversion.Consensus{
 			App: cparams.Version.App,
 		},
-	}})
+		Time:               time.Now(),
+		Height:             testApp.LastBlockHeight() + 1,
+		Hash:               testApp.LastCommitID().Hash,
+		NextValidatorsHash: valSet.Hash(),
+	})
 }
 
 // NewTestApp creates a new app instance with an empty memDB and a no-op logger.
@@ -168,16 +167,15 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 
 	// Commit genesis changes
 	testApp.Commit()
-	testApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
-		ChainID:            ChainID,
-		Height:             testApp.LastBlockHeight() + 1,
-		AppHash:            testApp.LastCommitID().Hash,
-		ValidatorsHash:     genDoc.ValidatorHash(),
-		NextValidatorsHash: genDoc.ValidatorHash(),
+	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+		ChainID: ChainID,
 		Version: tmversion.Consensus{
 			App: cparams.Version.App,
 		},
-	}})
+		Height:             testApp.LastBlockHeight() + 1,
+		Hash:               testApp.LastCommitID().Hash,
+		NextValidatorsHash: genDoc.ValidatorHash(),
+	})
 
 	return gen.Keyring(), gen.Accounts(), nil
 }
@@ -212,29 +210,18 @@ func InitialiseTestAppWithGenesis(testApp *app.App, cparams *tmproto.ConsensusPa
 		panic(err)
 	}
 
-	abciParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
-			// choose some value large enough to not bottleneck the max square
-			// size
-			MaxBytes: int64(appconsts.DefaultUpperBoundMaxBytes),
-			MaxGas:   cparams.Block.MaxGas,
-		},
-		Evidence:  &cparams.Evidence,
-		Validator: &cparams.Validator,
-		Version:   &cparams.Version,
-	}
-
 	_, err = testApp.Info(&abci.InfoRequest{})
 	if err != nil {
 		panic(err)
 	}
 
 	// init chain will set the validator set and initialize the genesis accounts
+	cparams.Block.MaxBytes = int64(appconsts.DefaultUpperBoundMaxBytes)
 	_, err = testApp.InitChain(
 		&abci.InitChainRequest{
 			Time:            GenesisTime,
 			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: abciParams,
+			ConsensusParams: cparams,
 			AppStateBytes:   stateBytes,
 			ChainId:         ChainID,
 		},
@@ -341,7 +328,7 @@ func AddAccount(addr sdk.AccAddress, appState app.GenesisState, cdc codec.Codec)
 
 	bankGenState := banktypes.GetGenesisStateFromAppState(cdc, appState)
 	bankGenState.Balances = append(bankGenState.Balances, balances)
-	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+	bankGenState.Balances, err = banktypes.SanitizeGenesisBalances(bankGenState.Balances, genesis.AddressCodec)
 	if err != nil {
 		return appState, fmt.Errorf("failed to sanitize genesis balances: %w", err)
 	}
@@ -455,7 +442,7 @@ func genesisStateWithValSet(
 	})
 
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = a.AppCodec().MustMarshalJSON(bankGenesis)
 
 	return genesisState

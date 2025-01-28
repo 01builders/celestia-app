@@ -37,7 +37,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
@@ -300,27 +299,6 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	msgWithdrawDelegatorReward := distribution.NewMsgWithdrawDelegatorReward(accountAddresses[0].String(), genValidators[0].GetOperator())
 	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgWithdrawDelegatorReward)
 
-	// NewMsgCreatePeriodicVestingAccount - creates a periodic vesting account
-	newAddress := sdk.AccAddress(ed25519.GenPrivKeyFromSecret([]byte("anotherAddress")).PubKey().Address())
-	vestingPeriod := []vestingtypes.Period{
-		{
-			Length: 3600,
-			Amount: amount,
-		},
-	}
-	msgCreatePeriodicVestingAccount := vestingtypes.NewMsgCreatePeriodicVestingAccount(accountAddresses[3], newAddress, 2, vestingPeriod)
-	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgCreatePeriodicVestingAccount)
-
-	// NewMsgCreatePermanentLockedAccount - creates a permanent locked account
-	newAddress = sdk.AccAddress(ed25519.GenPrivKeyFromSecret([]byte("anotherAddress2")).PubKey().Address())
-	msgCreatePermamentLockedAccount := vestingtypes.NewMsgCreatePermanentLockedAccount(accountAddresses[3], newAddress, amount)
-	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgCreatePermamentLockedAccount)
-
-	// NewMsgCreateVestingAccount - creates a vesting account
-	newAddress = sdk.AccAddress(ed25519.GenPrivKeyFromSecret([]byte("anotherAddress3")).PubKey().Address())
-	msgCreateVestingAccount := vestingtypes.NewMsgCreateVestingAccount(accountAddresses[3], newAddress, amount, 1, 2, false)
-	secondBlockSdkMsgs = append(secondBlockSdkMsgs, msgCreateVestingAccount)
-
 	// ------------ Third Block ------------
 
 	// Txs within the third block are signed by the validator's signer
@@ -336,7 +314,7 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 
 	// NewMsgRegisterEVMAddress - registers an EVM address
 	// This message was removed in v2
-	if testApp.AppVersion() == v1.Version {
+	if v, _ := testApp.AppVersion(testApp.NewContext(false)); v == v1.Version {
 		msgRegisterEVMAddress := blobstreamtypes.NewMsgRegisterEVMAddress(genValidators[1].GetOperator(), gethcommon.HexToAddress("hi"))
 		thirdBlockSdkMsgs = append(thirdBlockSdkMsgs, msgRegisterEVMAddress)
 	}
@@ -428,13 +406,17 @@ func deterministicKeyRing(cdc codec.Codec) (keyring.Keyring, []types.PubKey) {
 func processSdkMessages(signer *user.Signer, sdkMessages []sdk.Msg) ([][]byte, error) {
 	encodedTxs := make([][]byte, 0, len(sdkMessages))
 	for _, msg := range sdkMessages {
-		encodedTx, err := signer.CreateTx([]sdk.Msg{msg}, DefaultTxOpts()...)
+		encodedTx, tx, err := signer.CreateTx([]sdk.Msg{msg}, DefaultTxOpts()...)
 		if err != nil {
 			return nil, err
 		}
 
-		signerAddress := msg.GetSigners()[0]
-		signerAccount := signer.AccountByAddress(signerAddress)
+		signers, err := tx.GetSigners()
+		if err != nil {
+			return nil, err
+		}
+
+		signerAccount := signer.AccountByAddress(signers[0])
 		err = signer.SetSequence(signerAccount.Name(), signerAccount.Sequence()+1)
 		if err != nil {
 			return nil, err
@@ -454,10 +436,8 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 
 	// Prepare Proposal
 	resPrepareProposal, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-		BlockData: &tmproto.Data{
-			Txs: encodedSdkTxs,
-		},
 		ChainId: chainID,
+		Txs:     encodedSdkTxs,
 		Height:  height,
 		// Dynamically increase time so the validator can be unjailed (1m duration)
 		Time: genesisTime.Add(time.Duration(height) * time.Minute),
@@ -466,25 +446,26 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 		return nil, nil, fmt.Errorf("PrepareProposal failed: %w", err)
 	}
 
-	if len(resPrepareProposal.BlockData.Txs) != len(encodedSdkTxs) {
-		return nil, nil, fmt.Errorf("PrepareProposal removed transactions. Was %d, now %d", len(encodedSdkTxs), len(resPrepareProposal.BlockData.Txs))
+	if len(resPrepareProposal.Txs) != len(encodedSdkTxs) {
+		return nil, nil, fmt.Errorf("PrepareProposal removed transactions. Was %d, now %d", len(encodedSdkTxs), len(resPrepareProposal.Txs))
 	}
 
-	dataHash := resPrepareProposal.BlockData.Hash
-
-	header := tmproto.Header{
-		Version:        version.Consensus{App: testApp.AppVersion()},
-		DataHash:       resPrepareProposal.BlockData.Hash,
-		ChainID:        chainID,
-		Time:           genesisTime.Add(time.Duration(height) * time.Minute),
-		Height:         height,
-		LastCommitHash: lastCommitHash,
-	}
+	dataHash := resPrepareProposal.Hash
 
 	// Process Proposal
+
+	appVersion, err := testApp.AppVersion(testApp.NewContext(false))
+	if err != nil {
+		return nil, nil, fmt.Errorf("AppVersion failed: %w", err)
+	}
+
 	resProcessProposal, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
+		ChainID:   chainID,
+		Version:   version.Consensus{App: appVersion},
+		Time:      genesisTime.Add(time.Duration(height) * time.Minute),
+		Height:    height,
+		DataHash:  resPrepareProposal.BlockData.Hash,
 		BlockData: resPrepareProposal.BlockData,
-		Header:    header,
 	},
 	)
 	if err != nil {
@@ -495,56 +476,62 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 		return nil, nil, fmt.Errorf("ProcessProposal failed: %v", resProcessProposal.Status)
 	}
 
-	// Begin block
-	validator3Signed := height == 2 // Validator 3 signs only the first block
-	testApp.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-		LastCommitInfo: abci.LastCommitInfo{
-			Votes: []abci.VoteInfo{
-				// In order to withdraw commission for this validator
-				{
-					Validator:       validators[0],
-					SignedLastBlock: true,
-				},
-				// In order to jail this validator
-				{
-					Validator:       validators[3],
-					SignedLastBlock: validator3Signed,
-				},
-			},
-		},
-	})
-
-	// Deliver SDK Txs
-	for i, tx := range encodedSdkTxs {
-		resp := testApp.DeliverTx(abci.RequestDeliverTx{Tx: tx})
-		if resp.Code != abci.CodeTypeOK {
-			return nil, nil, fmt.Errorf("DeliverTx failed for the message at index %d: %s", i, resp.Log)
+	// process block
+	var validator3Signed = func() tmproto.BlockIDFlag {
+		if height == 2 {
+			return tmproto.BlockIDFlagCommit
 		}
+		return tmproto.BlockIDFlagAbsent
 	}
 
-	// Deliver Blob Txs
+	blobTxs := make([]byte, 0)
 	if len(encodedBlobTx) != 0 {
-		// Deliver Blob Tx
 		blob, isBlobTx, err := tx.UnmarshalBlobTx(encodedBlobTx)
 		if !isBlobTx {
 			return nil, nil, fmt.Errorf("Not a valid BlobTx")
 		}
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("Not a valid BlobTx: %w", err)
 		}
 
-		respDeliverTx := testApp.DeliverTx(abci.RequestDeliverTx{Tx: blob.Tx})
-		if respDeliverTx.Code != uint32(0) {
-			return nil, nil, fmt.Errorf("DeliverTx failed for the BlobTx: %s", respDeliverTx.Log)
+		blobTxs = blob.Tx
+	}
+
+	// Validator 3 signs only the first block
+	resp, err := testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+		Height: height,
+		DecidedLastCommit: abci.CommitInfo{
+			Votes: []abci.VoteInfo{
+				// In order to withdraw commission for this validator
+				{
+					Validator:   validators[0],
+					BlockIdFlag: tmproto.BlockIDFlagCommit,
+				},
+				// In order to jail this validator
+				{
+					Validator:   validators[3],
+					BlockIdFlag: validator3Signed(),
+				},
+			},
+		},
+		Txs: append(encodedSdkTxs, blobTxs),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("FinalizeBlock failed: %w", err)
+	}
+
+	for i, resp := range resp.TxResults {
+		if resp.Code != uint32(0) {
+			return nil, nil, fmt.Errorf("DeliverTx failed for the message at index %d: %s", i, resp.Log)
 		}
 	}
 
-	// EndBlock
-	testApp.EndBlock(abci.RequestEndBlock{Height: header.Height})
-
 	// Commit the state
-	testApp.Commit()
+	_, err = testApp.Commit()
+	if err != nil {
+		return nil, nil, fmt.Errorf("Commit failed: %w", err)
+	}
 
 	// Get the app hash
 	appHash := testApp.LastCommitID().Hash

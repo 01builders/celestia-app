@@ -94,8 +94,7 @@ func NewTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, chainID
 		Coordinator:    coord,
 		ChainID:        chainID,
 		App:            app,
-		CurrentHeader:  header,
-		QueryServer:    app.GetIBCKeeper(),
+		ProposedHeader: header,
 		TxConfig:       txConfig,
 		Codec:          app.AppCodec(),
 		Vals:           valSet,
@@ -224,20 +223,16 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 
 	// commit genesis changes
 	app.Commit()
-	app.BeginBlock(
-		abci.RequestBeginBlock{
-			Header: tmproto.Header{
-				ChainID: chainID,
-				Version: tmversion.Consensus{
-					App: appconsts.LatestVersion,
-				},
-				Height:             app.LastBlockHeight() + 1,
-				AppHash:            app.LastCommitID().Hash,
-				ValidatorsHash:     valSet.Hash(),
-				NextValidatorsHash: valSet.Hash(),
-			},
+
+	app.FinalizeBlock(&abci.FinalizeBlockRequest{
+		ChainID: chainID,
+		Version: tmversion.Consensus{
+			App: appconsts.LatestVersion,
 		},
-	)
+		Height:             app.LastBlockHeight() + 1,
+		Hash:               app.LastCommitID().Hash,
+		NextValidatorsHash: valSet.Hash(),
+	})
 
 	// do not require a network fee for this test
 	subspace := app.GetSubspace(minfee.ModuleName)

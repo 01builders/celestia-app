@@ -142,7 +142,8 @@ func DefaultConsensusParams() *tmproto.ConsensusParams {
 	cparams.Block.TimeIotaMs = 1
 	cparams.Block.MaxBytes = appconsts.DefaultMaxBytes
 	cparams.Version.App = appconsts.LatestVersion
-	return cparams
+	params := cparams.ToProto()
+	return &params
 }
 
 func DefaultTendermintConfig() *tmconfig.Config {
@@ -163,7 +164,7 @@ type AppCreationOptions func(app *app.App)
 
 func WithTimeoutCommit(d time.Duration) AppCreationOptions {
 	return func(app *app.App) {
-		app.SetEndBlocker(wrapEndBlocker(app, d))
+		// TODO: Update the timeout commit in the cometBFT config.
 	}
 }
 
@@ -202,7 +203,6 @@ func CustomAppCreator(minGasPrice string) server.AppCreator {
 			0, // timeout commit
 			baseapp.SetMinGasPrices(minGasPrice),
 		)
-		app.SetEndBlocker(wrapEndBlocker(app, time.Millisecond*0))
 		return app
 	}
 }

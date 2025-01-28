@@ -117,6 +117,7 @@ In the root command, began to reason about and fix genesis commands including De
 - Upgrade to cometbft/cometbft
 - Fix more build issues
 - Remove custom start.go in favor of SDK's
+- Remove upgrade_test.go / export_test.go (v2, v3) as it doesn't make sense from v3 -> v4
 
 ## Problems
 

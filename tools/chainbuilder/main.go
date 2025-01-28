@@ -360,9 +360,9 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			}
 			commit = types.NewCommit(height, 0, blockID, []types.CommitSig{commitSig})
 
-			var lastCommitInfo abci.LastCommitInfo
+			var lastCommitInfo abci.CommitInfo
 			if height > 1 {
-				lastCommitInfo = abci.LastCommitInfo{
+				lastCommitInfo = abci.CommitInfo{
 					Round: 0,
 					Votes: []abci.VoteInfo{
 						{
@@ -370,39 +370,39 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 								Address: validatorAddr,
 								Power:   validatorPower,
 							},
-							SignedLastBlock: true,
+							BlockIdFlag: tmproto.BlockIDFlagCommit,
 						},
 					},
 				}
 			}
 
-			beginBlockResp := simApp.BeginBlock(abci.RequestBeginBlock{
-				Hash:           block.Hash(),
-				Header:         *block.Header.ToProto(),
-				LastCommitInfo: lastCommitInfo,
-			})
-
-			deliverTxResponses := make([]*abci.ResponseDeliverTx, len(block.Data.Txs))
-
+			txs := make([][]byte, len(block.Data.Txs))
 			for idx, tx := range block.Data.Txs {
 				blobTx, isBlobTx := types.UnmarshalBlobTx(tx)
 				if isBlobTx {
 					tx = blobTx.Tx
 				}
-				deliverTxResponse := simApp.DeliverTx(abci.RequestDeliverTx{
-					Tx: tx,
-				})
-				if deliverTxResponse.Code != abci.CodeTypeOK {
-					return fmt.Errorf("failed to deliver tx: %s", deliverTxResponse.Log)
-				}
-				deliverTxResponses[idx] = &deliverTxResponse
+				txs[idx] = tx
 			}
 
-			endBlockResp := simApp.EndBlock(abci.RequestEndBlock{
-				Height: block.Height,
+			resp, err := simApp.FinalizeBlock(&abci.FinalizeBlockRequest{
+				Height:            block.Height,
+				Hash:              block.Hash(),
+				DecidedLastCommit: lastCommitInfo,
+				Txs:               txs,
 			})
 
-			commitResp := simApp.Commit()
+			for _, tx := range resp.TxResults {
+				if tx.Code != abci.CodeTypeOK {
+					return fmt.Errorf("failed to deliver tx: %s", tx.Log)
+				}
+			}
+
+			commitResp, err := simApp.Commit()
+			if err != nil {
+				return fmt.Errorf("failed to commit block: %w", err)
+			}
+
 			state.LastBlockHeight = height
 			state.LastBlockID = blockID
 			state.LastBlockTime = block.Time
@@ -537,7 +537,11 @@ func persistDataRoutine(
 			if !ok {
 				return nil
 			}
-			blockParts := data.block.MakePartSet(types.BlockPartSizeBytes)
+			blockParts, err := data.block.MakePartSet(types.BlockPartSizeBytes)
+			if err != nil {
+				return fmt.Errorf("failed to make block part set: %w", err)
+			}
+
 			blockStore.SaveBlock(data.block, blockParts, data.seenCommit)
 			if blockStore.Height()%100 == 0 {
 				fmt.Println("Reached height", blockStore.Height())

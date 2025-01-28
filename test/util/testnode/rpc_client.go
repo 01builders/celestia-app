@@ -49,7 +49,7 @@ func StartNode(cometNode *node.Node, cctx Context) (Context, func() error, error
 // StartGRPCServer starts the GRPC server using the provided application and
 // config. A GRPC client connection to that server is also added to the client
 // context. The returned function should be used to shutdown the server.
-func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvconfig.Config, cctx Context) (Context, func() error, error) {
+func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvconfig.Config, cctx Context) (*grpc.Server, Context, func() error, error) {
 	emptycleanup := func() error { return nil }
 	// Add the tx service in the gRPC router.
 	app.RegisterTxService(cctx.Context)
@@ -57,18 +57,18 @@ func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvcon
 	// Add the tendermint queries service in the gRPC router.
 	app.RegisterTendermintService(cctx.Context)
 
-	if a, ok := app.(srvtypes.ApplicationQueryService); ok {
-		a.RegisterNodeService(cctx.Context)
+	if a, ok := app.(srvtypes.Application); ok {
+		a.RegisterNodeService(cctx.Context, *appCfg)
 	}
 
 	grpcSrv, err := srvgrpc.NewGRPCServer(cctx.Context, app, appCfg.GRPC)
 	if err != nil {
-		return Context{}, emptycleanup, err
+		return nil, Context{}, emptycleanup, err
 	}
 
 	err = srvgrpc.StartGRPCServer(cctx.goContext, logger, appCfg.GRPC, grpcSrv)
 	if err != nil {
-		return Context{}, emptycleanup, err
+		return nil, Context{}, emptycleanup, err
 	}
 
 	nodeGRPCAddr := strings.Replace(appCfg.GRPC.Address, "0.0.0.0", "localhost", 1)
@@ -80,12 +80,12 @@ func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvcon
 		),
 	)
 	if err != nil {
-		return Context{}, emptycleanup, err
+		return nil, Context{}, emptycleanup, err
 	}
 
 	cctx.Context = cctx.WithGRPCClient(conn)
 
-	return cctx, func() error {
+	return grpcSrv, cctx, func() error {
 		grpcSrv.Stop()
 		return nil
 	}, nil
@@ -104,8 +104,8 @@ func StartAPIServer(app srvtypes.Application, appCfg srvconfig.Config, cctx Cont
 	select {
 	case err := <-errCh:
 		return nil, err
-
-	case <-time.After(srvtypes.ServerStartTime): // assume server started successfully
+	case <-time.After(500 * time.Millisecond): // assume server started successfully
 	}
+
 	return apiSrv, nil
 }

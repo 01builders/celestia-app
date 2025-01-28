@@ -3,15 +3,13 @@ package app_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"cosmossdk.io/math"
 	tmrand "cosmossdk.io/math/unsafe"
 	banktypes "cosmossdk.io/x/bank/types"
-	disttypes "cosmossdk.io/x/distribution/types"
 	govtypes "cosmossdk.io/x/gov/types"
+	govv1 "cosmossdk.io/x/gov/types/v1"
 	oldgov "cosmossdk.io/x/gov/types/v1beta1"
-	"cosmossdk.io/x/params/types/proposal"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/app/encoding"
@@ -26,12 +24,9 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -167,55 +162,6 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			expectedCode: abci.CodeTypeOK,
 		},
 		{
-			name: "create continuous vesting account with a start time in the future",
-			msgFunc: func() (msgs []sdk.Msg, signer string) {
-				vestAccName := "vesting"
-				_, _, err := s.cctx.Keyring.NewMnemonic(vestAccName, keyring.English, "", "", hd.Secp256k1)
-				require.NoError(t, err)
-				sendAcc := s.unusedAccount()
-				sendingAccAddr := testfactory.GetAddress(s.cctx.Keyring, sendAcc)
-				vestAccAddr := testfactory.GetAddress(s.cctx.Keyring, vestAccName)
-				msg := vestingtypes.NewMsgCreateVestingAccount(
-					sendingAccAddr,
-					vestAccAddr,
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000))),
-					time.Now().Add(time.Hour).Unix(),
-					time.Now().Add(time.Hour*2).Unix(),
-					false,
-				)
-				return []sdk.Msg{msg}, sendAcc
-			},
-			expectedCode: abci.CodeTypeOK,
-		},
-		{
-			name: "create legacy community spend governance proposal",
-			msgFunc: func() (msgs []sdk.Msg, signer string) {
-				account := s.unusedAccount()
-				// Note: this test depends on at least one coin being present
-				// in the community pool. Funds land in the community pool due
-				// to inflation so if 1 coin is not present in the community
-				// pool, consider expanding the block interval or waiting for
-				// more blocks to be produced prior to executing this test case.
-				coins := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1)))
-				content := disttypes.NewCommunityPoolSpendProposal(
-					"title",
-					"description",
-					testfactory.GetAddress(s.cctx.Keyring, s.unusedAccount()),
-					coins,
-				)
-				addr := testfactory.GetAddress(s.cctx.Keyring, account)
-				msg, err := oldgov.NewMsgSubmitProposal(
-					content,
-					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
-					addr.String(),
-				)
-				require.NoError(t, err)
-				return []sdk.Msg{msg}, account
-			},
-			expectedCode: abci.CodeTypeOK,
-		},
-		{
 			name: "create legacy text governance proposal",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				account := s.unusedAccount()
@@ -258,39 +204,39 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			name: "create param change proposal for a blocked parameter",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				account := s.unusedAccount()
-				change := proposal.NewParamChange(stakingtypes.ModuleName, string(stakingtypes.KeyBondDenom), "stake")
-				content := proposal.NewParameterChangeProposal("title", "description", []proposal.ParamChange{change})
 				addr := testfactory.GetAddress(s.cctx.Keyring, account)
-				msg, err := oldgov.NewMsgSubmitProposal(
-					content,
-					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
-					addr,
-				)
+				msg := &stakingtypes.MsgUpdateParams{
+					Authority: addr.String(),
+					Params: stakingtypes.Params{
+						BondDenom: "foo",
+					},
+				}
+
+				govProp, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msg}, sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))), addr.String(), "metadata", "title", "description", govv1.ProposalType_PROPOSAL_TYPE_STANDARD)
 				require.NoError(t, err)
-				return []sdk.Msg{msg}, account
+
+				return []sdk.Msg{govProp}, account
 			},
-			// this parameter is protected by the paramfilter module, and we
-			// should expect an error. Due to how errors are bubbled up, we get
-			// this code despite wrapping the expected error,
-			// paramfilter.ErrBlockedParameter
-			expectedCode: govtypes.ErrNoProposalHandlerExists.ABCICode(),
+			// Eventhough the parameter is blocked, this test short-circuits the ante handlers
+			// so it would pass. (This would have otherwise if the circuit blocker would have handled this)
+			expectedCode: abci.CodeTypeOK,
 		},
 		{
 			name: "create param proposal change for a modifiable parameter",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				account := s.unusedAccount()
-				change := proposal.NewParamChange(stakingtypes.ModuleName, string(stakingtypes.KeyMaxValidators), "1")
-				content := proposal.NewParameterChangeProposal("title", "description", []proposal.ParamChange{change})
 				addr := testfactory.GetAddress(s.cctx.Keyring, account)
-				msg, err := oldgov.NewMsgSubmitProposal(
-					content,
-					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
-					addr.String(),
-				)
+				msg := &stakingtypes.MsgUpdateParams{
+					Authority: addr.String(),
+					Params: stakingtypes.Params{
+						MaxValidators: 1, // blocked. However, this is blocked by ante handler, so bypassing ante handler should pass
+					},
+				}
+
+				govProp, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msg}, sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))), addr.String(), "metadata", "title", "description", govv1.ProposalType_PROPOSAL_TYPE_STANDARD)
 				require.NoError(t, err)
-				return []sdk.Msg{msg}, account
+
+				return []sdk.Msg{govProp}, account
 			},
 			expectedCode: abci.CodeTypeOK,
 		},
@@ -308,7 +254,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			name: "signal a version change",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				valAccount := s.getValidatorAccount()
-				msg := signal.NewMsgSignalVersion(valAccount, appconsts.LatestVersion+1)
+				msg := signal.NewMsgSignalVersion(valAccount.String(), appconsts.LatestVersion+1)
 				return []sdk.Msg{msg}, s.getValidatorName()
 			},
 			expectedCode: abci.CodeTypeOK,

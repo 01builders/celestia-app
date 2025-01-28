@@ -129,7 +129,7 @@ func RandBlobTxsWithManualSequence(
 		}
 
 		msg, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), addr.String(), randomizedSize, randomizedBlobCount)
-		transaction, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
+		transaction, _, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
 		require.NoError(t, err)
 		if invalidSignature {
 			builder := cfg.NewTxBuilder()
@@ -221,7 +221,7 @@ func SendTxWithManualSequence(
 	require.NoError(t, err)
 
 	msg := banktypes.NewMsgSend(fromAddr.String(), toAddr.String(), sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(amount))))
-	rawTx, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
+	rawTx, _, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
 	require.NoError(t, err)
 
 	return rawTx

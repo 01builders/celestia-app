@@ -25,12 +25,18 @@ import (
 func (app *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	defer telemetry.MeasureSince(time.Now(), "prepare_proposal")
 	// Create a context using a branch of the state.
+
+	v, err := app.AppVersion(app.NewContext(false))
+	if err != nil {
+		return nil, err
+	}
+
 	sdkCtx := app.NewProposalContext(core.Header{
 		ChainID: req.ChainId,
 		Height:  req.Height,
 		Time:    req.Time,
 		Version: version.Consensus{
-			// App: app.AppVersion(), // how to get this? we need the context to get it.
+			App: v,
 		},
 	})
 	appVersion, err := app.ConsensusKeeper.AppVersion(sdkCtx)
@@ -54,7 +60,7 @@ func (app *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.Prepare
 	)
 
 	// Filter out invalid transactions.
-	txs := FilterTxs(app.Logger(), sdkCtx, handler, app.txConfig, req.BlockData.Txs)
+	txs := FilterTxs(app.Logger(), sdkCtx, handler, app.txConfig, req.Txs)
 
 	// Build the square from the set of valid and prioritised transactions.
 	// The txs returned are the ones used in the square and block.
@@ -114,6 +120,7 @@ func (app *App) PrepareProposal(req *abci.PrepareProposalRequest) (*abci.Prepare
 	// protobuf encoded version of the block data is gossiped. Therefore, the
 	// eds is not returned here.
 	return &abci.PrepareProposalResponse{
+		Txs: txs,
 		BlockData: &core.Data{
 			Txs:        txs,
 			SquareSize: size,

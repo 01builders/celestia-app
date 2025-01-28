@@ -64,7 +64,7 @@ func (app *App) ProcessProposal(req *abci.ProcessProposalRequest) (resp *abci.Pr
 
 	// iterate over all txs and ensure that all blobTxs are valid, PFBs are correctly signed and non
 	// blobTxs have no PFBs present
-	for idx, rawTx := range req.BlockData.Txs {
+	for idx, rawTx := range req.Txs {
 		tx := rawTx
 		blobTx, isBlobTx, err := blobtx.UnmarshalBlobTx(rawTx)
 		if isBlobTx {
@@ -126,7 +126,13 @@ func (app *App) ProcessProposal(req *abci.ProcessProposalRequest) (resp *abci.Pr
 		// - that the sizes match
 		// - that the namespaces match between blob and PFB
 		// - that the share commitment is correct
-		if err := blobtypes.ValidateBlobTx(app.txConfig, blobTx, subtreeRootThreshold, app.AppVersion()); err != nil {
+
+		v, err := app.AppVersion(app.NewContext(false))
+		if err != nil {
+			logInvalidPropBlockError(app.Logger(), req.Header, "failure to get app version", err)
+		}
+
+		if err := blobtypes.ValidateBlobTx(app.txConfig, blobTx, subtreeRootThreshold, v); err != nil {
 			logInvalidPropBlockError(app.Logger(), req.Header, fmt.Sprintf("invalid blob tx %d", idx), err)
 			return reject(), nil
 		}
@@ -147,7 +153,7 @@ func (app *App) ProcessProposal(req *abci.ProcessProposalRequest) (resp *abci.Pr
 	switch appVersion {
 	case v3:
 		var dataSquare squarev2.Square
-		dataSquare, err = squarev2.Construct(req.BlockData.Txs, app.MaxEffectiveSquareSize(sdkCtx), subtreeRootThreshold)
+		dataSquare, err = squarev2.Construct(req.Txs, app.MaxEffectiveSquareSize(sdkCtx), subtreeRootThreshold)
 		dataSquareBytes = sharev2.ToBytes(dataSquare)
 		// Assert that the square size stated by the proposer is correct
 		if uint64(dataSquare.Size()) != req.BlockData.SquareSize {
@@ -156,7 +162,7 @@ func (app *App) ProcessProposal(req *abci.ProcessProposalRequest) (resp *abci.Pr
 		}
 	case v2, v1:
 		var dataSquare square.Square
-		dataSquare, err = square.Construct(req.BlockData.Txs, app.MaxEffectiveSquareSize(sdkCtx), subtreeRootThreshold)
+		dataSquare, err = square.Construct(req.Txs, app.MaxEffectiveSquareSize(sdkCtx), subtreeRootThreshold)
 		dataSquareBytes = shares.ToBytes(dataSquare)
 		// Assert that the square size stated by the proposer is correct
 		if uint64(dataSquare.Size()) != req.BlockData.SquareSize {

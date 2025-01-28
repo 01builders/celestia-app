@@ -1,7 +1,7 @@
-// uncommented after cometbft fork
-// //nolint:staticcheck
-// package main
+//nolint:staticcheck
+package main
 
+// uncommented after cometbft fork
 // import (
 // 	"context"
 // 	"fmt"

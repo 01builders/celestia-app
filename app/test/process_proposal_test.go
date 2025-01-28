@@ -304,7 +304,7 @@ func TestProcessProposal(t *testing.T) {
 				require.NoError(t, err)
 				msg.Signer = addr.String()
 
-				rawTx, err := signer.CreateTx([]sdk.Msg{msg}, user.SetGasLimit(100000), user.SetFee(100000))
+				rawTx, _, err := signer.CreateTx([]sdk.Msg{msg}, user.SetGasLimit(100000), user.SetFee(100000))
 				require.NoError(t, err)
 
 				blobTxBytes, err := tx.MarshalBlobTx(rawTx, blob)
@@ -335,15 +335,17 @@ func TestProcessProposal(t *testing.T) {
 			height := testApp.LastBlockHeight() + 1
 			blockTime := time.Now()
 
-			resp := testApp.PrepareProposal(abci.PrepareProposalRequest{
+			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 				BlockData: tt.input,
 				ChainId:   testutil.ChainID,
 				Height:    height,
 				Time:      blockTime,
 			})
+			require.NoError(t, err)
 			require.Equal(t, len(tt.input.Txs), len(resp.BlockData.Txs))
 			tt.mutator(resp.BlockData)
-			res := testApp.ProcessProposal(abci.ProcessProposalRequest{
+
+			res, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
 				BlockData: resp.BlockData,
 				Header: tmproto.Header{
 					Height:   1,
@@ -354,6 +356,7 @@ func TestProcessProposal(t *testing.T) {
 					},
 				},
 			})
+			require.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, res.Result, fmt.Sprintf("expected %v, got %v", tt.expectedResult, res.Result))
 		})
 	}

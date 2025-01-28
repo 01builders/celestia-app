@@ -11,7 +11,7 @@ import (
 	types0 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	types1 "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v9/modules/core/exported"
-	gomock "github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 // MockIBCModule is a mock of IBCModule interface.

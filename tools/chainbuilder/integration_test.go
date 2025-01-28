@@ -75,9 +75,7 @@ func TestRun(t *testing.T) {
 	nodeKey, err := p2p.LoadNodeKey(tmCfg.NodeKeyFile())
 	require.NoError(t, err)
 
-	prival, err := privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile(), app.ValidatorKeyProvider())
-	require.NoError(t, err)
-
+	prival := privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile())
 	cmtApp := server.NewCometABCIWrapper(app)
 	cometNode, err := node.NewNode(
 		context.TODO(),

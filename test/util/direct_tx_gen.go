@@ -4,10 +4,11 @@ import (
 	"math/rand"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
-
+	apisigning "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
 	banktypes "cosmossdk.io/x/bank/types"
+
 	"github.com/celestiaorg/celestia-app/v3/app"
 	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v3/pkg/user"
@@ -140,7 +141,7 @@ func RandBlobTxsWithManualSequence(
 			err := builder.SetSignatures(signing.SignatureV2{
 				PubKey: acc.PubKey(),
 				Data: &signing.SingleSignatureData{
-					SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+					SignMode:  apisigning.SignMode_SIGN_MODE_DIRECT,
 					Signature: []byte("invalid signature"),
 				},
 				Sequence: acc.Sequence(),

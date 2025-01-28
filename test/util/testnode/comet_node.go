@@ -37,11 +37,7 @@ func NewCometNode(baseDir string, config *UniversalTestingConfig) (*node.Node, s
 		return nil, nil, err
 	}
 
-	prival, err := privval.LoadOrGenFilePV(config.TmConfig.PrivValidatorKeyFile(), config.TmConfig.PrivValidatorStateFile(), app.ValidatorKeyProvider())
-	if err != nil {
-		return nil, nil, err
-	}
-
+	prival := privval.LoadOrGenFilePV(config.TmConfig.PrivValidatorKeyFile(), config.TmConfig.PrivValidatorStateFile())
 	cmtApp := sdkserver.NewCometABCIWrapper(app)
 	cometNode, err := node.NewNode(
 		context.TODO(),

@@ -5,15 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+	apisigning "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	"cosmossdk.io/core/address"
+	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
@@ -266,17 +270,22 @@ func (s *Signer) signTransaction(builder client.TxBuilder) (string, uint64, erro
 }
 
 func (s *Signer) createSignature(builder client.TxBuilder, account *Account, sequence uint64) ([]byte, error) {
-	signMode := signing.SignMode_SIGN_MODE_DIRECT
+	signMode := apisigning.SignMode_SIGN_MODE_DIRECT
 
-	signerData := authsigning.SignerData{
+	anyPk, err := codectypes.NewAnyWithValue(account.PubKey())
+	if err != nil {
+		return nil, err
+	}
+
+	signerData := txsigning.SignerData{
 		Address:       account.address.String(),
 		ChainID:       s.ChainID(),
 		AccountNumber: account.accountNumber,
 		Sequence:      sequence,
-		PubKey:        account.pubKey,
+		PubKey:        &anypb.Any{TypeUrl: anyPk.TypeUrl, Value: anyPk.Value},
 	}
 
-	bytesToSign, err := authsigning.GetSignBytesAdapter(context.Background(), s.enc.SignModeHandler(), signing.SignMode_SIGN_MODE_DIRECT, signerData, builder.GetTx())
+	bytesToSign, err := authsigning.GetSignBytesAdapter(context.Background(), s.enc.SignModeHandler(), signMode, signerData, builder.GetTx())
 	if err != nil {
 		return nil, fmt.Errorf("error getting sign bytes: %w", err)
 	}
@@ -304,7 +313,7 @@ func (s *Signer) txBuilder(msgs []sdktypes.Msg, opts ...TxOption) (client.TxBuil
 func (s *Signer) getSignatureV2(sequence uint64, pubKey cryptotypes.PubKey, signature []byte) signing.SignatureV2 {
 	sigV2 := signing.SignatureV2{
 		Data: &signing.SingleSignatureData{
-			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+			SignMode:  apisigning.SignMode_SIGN_MODE_DIRECT,
 			Signature: signature,
 		},
 		Sequence: sequence,

@@ -20,7 +20,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
@@ -153,16 +152,11 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 	// signature" hack to do that.
 	sigsV2 := make([]signing.SignatureV2, 0, len(privs))
 
-	defaultSignMode, err := authsigning.APISignModeToInternal(clientCtx.TxConfig.SignModeHandler().DefaultMode())
-	if err != nil {
-		return nil, err
-	}
-
 	for i, priv := range privs {
 		sigV2 := signing.SignatureV2{
 			PubKey: priv.PubKey(),
 			Data: &signing.SingleSignatureData{
-				SignMode:  defaultSignMode,
+				SignMode:  clientCtx.TxConfig.SignModeHandler().DefaultMode(),
 				Signature: nil,
 			},
 			Sequence: accSeqs[i],
@@ -183,7 +177,7 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 			AccountNumber: accNums[i],
 			Sequence:      accSeqs[i],
 		}
-		sigV2, err := tx.SignWithPrivKey(clientCtx.CmdContext, defaultSignMode, signerData,
+		sigV2, err := tx.SignWithPrivKey(clientCtx.CmdContext, clientCtx.TxConfig.SignModeHandler().DefaultMode(), signerData,
 			txBuilder, priv, clientCtx.TxConfig, accSeqs[i])
 		if err != nil {
 			return nil, err
@@ -191,8 +185,8 @@ func createTestTx(txBuilder client.TxBuilder, clientCtx client.Context, privs []
 
 		sigsV2 = append(sigsV2, sigV2)
 	}
-	err = txBuilder.SetSignatures(sigsV2...)
-	if err != nil {
+
+	if err := txBuilder.SetSignatures(sigsV2...); err != nil {
 		return nil, err
 	}
 

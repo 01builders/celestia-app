@@ -23,7 +23,7 @@ package main
 // 	manifest *Manifest
 // }
 
-// // NewBenchmarkTest wraps around testnet.New to create a new benchmark test.
+// NewBenchmarkTest wraps around testnet.New to create a new benchmark test.
 // // It may modify genesis consensus parameters based on manifest.
 // func NewBenchmarkTest(logger *log.Logger, name string, manifest *Manifest) (*BenchmarkTest, error) {
 // 	ctx, cancel := context.WithCancel(context.Background())

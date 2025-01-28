@@ -124,29 +124,30 @@ func TestPrepareProposalConsistency(t *testing.T) {
 					blockTime := time.Now()
 					height := testApp.LastBlockHeight() + 1
 
-					resp := testApp.PrepareProposal(abci.PrepareProposalRequest{
-						BlockData: &core.Data{
-							Txs: coretypes.Txs(txs).ToSliceOfBytes(),
-						},
+					resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
 						ChainId: testutil.ChainID,
+						Txs:     coretypes.Txs(txs).ToSliceOfBytes(),
 						Time:    blockTime,
 						Height:  height,
 					})
+					require.NoError(t, err)
 
 					// check that the square size is smaller than or equal to
 					// the specified size
 					require.LessOrEqual(t, resp.BlockData.SquareSize, uint64(size.govMaxSquareSize))
 
-					res := testApp.ProcessProposal(abci.PrepareProposalRequest{
+					res, err := testApp.ProcessProposal(&abci.ProcessProposalRequest{
+						Height:    height,
 						BlockData: resp.BlockData,
 						Header: core.Header{
 							DataHash: resp.BlockData.Hash,
 							ChainID:  testutil.ChainID,
 							Version:  version.Consensus{App: appconsts.LatestVersion},
-							Height:   height,
 						},
 					},
 					)
+					require.NoError(t, err)
+
 					require.Equal(t, abci.PROCESS_PROPOSAL_STATUS_ACCEPT, res.Result)
 					// At least all of the send transactions and one blob tx
 					// should make it into the block. This should be expected to

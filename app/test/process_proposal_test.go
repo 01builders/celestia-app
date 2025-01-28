@@ -100,7 +100,7 @@ func TestProcessProposal(t *testing.T) {
 		input          *tmproto.Data
 		mutator        func(*tmproto.Data)
 		appVersion     uint64
-		expectedResult abci.ProcessProposalResponse_Result
+		expectedResult abci.ProcessProposalStatus
 	}
 
 	tests := []test{

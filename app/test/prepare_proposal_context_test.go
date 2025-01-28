@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: rewrite the test using another message
+
 // TestTimeInPrepareProposalContext checks for an edge case where the block time
 // needs to be included in the sdk.Context that is being used in the
 // antehandlers. If a time is not included in the context, then the second

@@ -245,10 +245,10 @@ func TestPrepareProposalFiltering(t *testing.T) {
 			})
 			require.NoError(t, err)
 			// check that we have the expected number of transactions
-			require.Equal(t, len(tt.txs())-len(tt.prunedTxs), len(resp.BlockData.Txs))
+			require.Equal(t, len(tt.txs())-len(tt.prunedTxs), len(resp.Txs))
 			// check that the expected txs were removed
 			for _, ptx := range tt.prunedTxs {
-				require.NotContains(t, resp.BlockData.Txs, ptx)
+				require.NotContains(t, resp.Txs, ptx)
 			}
 		})
 	}
@@ -309,7 +309,7 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 			msgs = append(msgs, msg)
 			blobs = append(blobs, blob)
 		}
-		txBytes, err := signers[accountIndex].CreateTx(msgs, user.SetGasLimit(2549760000), user.SetFee(10000))
+		txBytes, _, err := signers[accountIndex].CreateTx(msgs, user.SetGasLimit(2549760000), user.SetFee(10000))
 		require.NoError(t, err)
 		blobTx, err := blobtx.MarshalBlobTx(txBytes, blobs...)
 		require.NoError(t, err)
@@ -325,7 +325,7 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 			testnode.RandomAddress().String(),
 			sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10)),
 		)
-		rawTx, err := signers[accountIndex].CreateTx([]sdk.Msg{msg}, user.SetGasLimit(1000000), user.SetFee(10))
+		rawTx, _, err := signers[accountIndex].CreateTx([]sdk.Msg{msg}, user.SetGasLimit(1000000), user.SetFee(10))
 		require.NoError(t, err)
 		msgSendTxs = append(msgSendTxs, rawTx)
 		accountIndex++
@@ -385,14 +385,12 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			resp, err := testApp.PrepareProposal(&abci.PrepareProposalRequest{
-				BlockData: &tmproto.Data{
-					Txs: testCase.inputTransactions,
-				},
+				Txs:     testCase.inputTransactions,
 				ChainId: testApp.ChainID(),
 				Height:  10,
 			})
 			require.NoError(t, err)
-			assert.Equal(t, testCase.expectedTransactions, resp.BlockData.Txs)
+			assert.Equal(t, testCase.expectedTransactions, resp.Txs)
 		})
 	}
 }

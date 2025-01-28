@@ -542,6 +542,8 @@ func New(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	app.SetPrepareProposal(app.PrepareProposalHandler)
+	app.SetProcessProposal(app.ProcessProposalHandler)
 
 	app.SetAnteHandler(ante.NewAnteHandler(
 		app.AuthKeeper,

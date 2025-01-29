@@ -232,8 +232,8 @@ cosmossdk.io/x/consensus v0.2.0-rc.1 h1:6Df5E4lR7ggmOxZsm953ZR+gA6PwZzU0vpG9dmZt
 cosmossdk.io/x/consensus v0.2.0-rc.1/go.mod h1:yNedASosEfhimal3ARqRa78EPRHBuy63zDdT1ByOgIA=
 cosmossdk.io/x/distribution v0.2.0-rc.1 h1:NYpoKYJvddGILNwoI77YCyQdJh0SZJ0WIQkt6K0xppg=
 cosmossdk.io/x/distribution v0.2.0-rc.1/go.mod h1:abU+C+63c1kWigvpvkG5tRtdpksUqqM+j7aH+8eSIWI=
-cosmossdk.io/x/epochs v0.0.0-20241218110910-47409028a73d h1:EkjwLMsu4nD8c1lfMY7BHdgcrtB0fAI7W7CnwSeHwf4=
-cosmossdk.io/x/epochs v0.0.0-20241218110910-47409028a73d/go.mod h1:F8AIIsAqDpWONRkIk6kOOtcTQ8rk/zsLCyaU34LacB8=
+cosmossdk.io/x/epochs v0.2.0-rc.1 h1:d0mMtXEq8DDYGP/Bc326zuqyiQ4uA4anrs0jQS6USW8=
+cosmossdk.io/x/epochs v0.2.0-rc.1/go.mod h1:QIC9awVWH3LBrZBnG+M06Kd7YqazVAfuu8iyLk9ueoA=
 cosmossdk.io/x/evidence v0.2.0-rc.1 h1:bsgbWKhlmFnidwHIPxRV91F4+dvAnaOzRbUYhKcP7lw=
 cosmossdk.io/x/evidence v0.2.0-rc.1/go.mod h1:Bn7X8lJnO6ywyn5Vn5aZGTHL9vtuOLyPtJX4xxFDTls=
 cosmossdk.io/x/feegrant v0.2.0-rc.1 h1:EDHA7y6PIW8ZK+OePqMH1xUa9OL9dU1UtPaYZ4yutKs=
@@ -420,8 +420,8 @@ github.com/cosmos/gogoproto v1.7.0 h1:79USr0oyXAbxg3rspGh/m4SWNyoz/GLaAh0QlCe2fr
 github.com/cosmos/gogoproto v1.7.0/go.mod h1:yWChEv5IUEYURQasfyBW5ffkMHR/90hiHgbNgrtp4j0=
 github.com/cosmos/iavl v1.3.5 h1:wTDFbaa/L0FVUrwTlzMnjN3fphtKgWxgcZmTc45MZuA=
 github.com/cosmos/iavl v1.3.5/go.mod h1:T6SfBcyhulVIY2G/ZtAtQm/QiJvsuhIos52V4dWYk88=
-github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e h1:UAQBWNBJX0xpYTAASRyfnHauirzolV4HOMcuw7+jsE0=
-github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e/go.mod h1:HV7ayWFwnwAheY4a/u3ZnBKZJfQGb+sJt+iD5eHVH6Q=
+github.com/cosmos/ibc-go/v9 v9.0.0-20250129091813-3e0a689b9cca h1:h5sZpO55BDswkdQ09k5bXnbiW3amr1zWeaMYhD9XPiQ=
+github.com/cosmos/ibc-go/v9 v9.0.0-20250129091813-3e0a689b9cca/go.mod h1:G95N43a3/JJ969+6VKoTu6akcNtyC26oJ8q5QGec0Qc=
 github.com/cosmos/ics23/go v0.11.0 h1:jk5skjT0TqX5e5QJbEnwXIS2yI2vnmLOgpQPeM5RtnU=
 github.com/cosmos/ics23/go v0.11.0/go.mod h1:A8OjxPE67hHST4Icw94hOxxFEJMBG031xIGF/JHNIY0=
 github.com/cosmos/ledger-cosmos-go v0.14.0 h1:WfCHricT3rPbkPSVKRH+L4fQGKYHuGOK9Edpel8TYpE=

@@ -71,10 +71,10 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.1.13 // indirect
 	cloud.google.com/go/storage v1.43.0 // indirect
-	cosmossdk.io/client/v2 v2.0.0-beta.6 // indirect
+	cosmossdk.io/client/v2 v2.10.0-beta.1 // indirect
 	cosmossdk.io/depinject v1.1.0 // indirect
 	cosmossdk.io/schema v1.0.0 // indirect
-	cosmossdk.io/x/epochs v0.0.0-20241218110910-47409028a73d // indirect
+	cosmossdk.io/x/epochs v0.2.0-rc.1 // indirect
 	cosmossdk.io/x/group v0.2.0-rc.1 // indirect
 	cosmossdk.io/x/mint v0.2.0-rc.1 // indirect
 	cosmossdk.io/x/nft v0.0.0-00010101000000-000000000000 // indirect
@@ -322,7 +322,7 @@ replace (
 	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250129180651-bb2668ad489d
 	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250129180651-bb2668ad489d
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.2
-	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e
+	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250129091813-3e0a689b9cca
 
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

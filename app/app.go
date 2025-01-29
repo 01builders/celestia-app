@@ -390,6 +390,7 @@ func New(
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
+		signingCtx.AddressCodec(),
 		envFactory.make(ibcexported.ModuleName, ibcexported.StoreKey),
 		app.GetSubspace(ibcexported.ModuleName),
 		app.UpgradeKeeper,
@@ -445,6 +446,7 @@ func New(
 	// IBC Fee Module keeper
 	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
 		appCodec,
+		signingCtx.AddressCodec(),
 		envFactory.make(ibcfeetypes.ModuleName, ibcfeetypes.StoreKey),
 		app.IBCKeeper.ChannelKeeper, // may be replaced with IBC middleware
 		app.IBCKeeper.ChannelKeeper,
@@ -453,6 +455,7 @@ func New(
 	)
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
+		signingCtx.AddressCodec(),
 		envFactory.make(ibctransfertypes.ModuleName, ibctransfertypes.StoreKey),
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCFeeKeeper,

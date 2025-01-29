@@ -261,10 +261,10 @@ cosmossdk.io/x/upgrade v0.2.0-rc.1/go.mod h1:xt0idx/1eRsn5C9/YHubGBE5j5goZTgaKu1
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
-github.com/01builders/cometbft v0.0.0-20250128140037-af3995e24ae7 h1:glgfNxCvHJjANsntr1/E35r3UKbS1K8/wh/5DoKIx58=
-github.com/01builders/cometbft v0.0.0-20250128140037-af3995e24ae7/go.mod h1:lVx8GjtsbYRa5VjH77LqLrAmi86gS9HdxnvNDi0jrqU=
-github.com/01builders/cometbft/api v0.0.0-20250128140037-af3995e24ae7 h1:qcs7L88eb5kMLFZgLwJDcuXkXv0Ugr1n59xSGUn6Mu4=
-github.com/01builders/cometbft/api v0.0.0-20250128140037-af3995e24ae7/go.mod h1:NDFKiBBD8HJC6QQLAoUI99YhsiRZtg2+FJWfk6A6m6o=
+github.com/01builders/cometbft v0.0.0-20250129110338-7315aa4520a6 h1:nz7rsg/3ixnH2fbNIuabKZe9wzhR9l4pyJ2brbVj3Ww=
+github.com/01builders/cometbft v0.0.0-20250129110338-7315aa4520a6/go.mod h1:OyZLvlyXxwnSODu+2j8Ql8iUMJ6IZ69X5ExcgNKuK/M=
+github.com/01builders/cometbft/api v0.0.0-20250129110338-7315aa4520a6 h1:VxhppxucHkNtXcjJbAzBPwasVk/2oCur4ZP9PoeFGjw=
+github.com/01builders/cometbft/api v0.0.0-20250129110338-7315aa4520a6/go.mod h1:NDFKiBBD8HJC6QQLAoUI99YhsiRZtg2+FJWfk6A6m6o=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN7oaIRCjzsZ2dE+yG5k+rsdt3qcwykqK6HVGcKwsw4=
 github.com/99designs/keyring v1.2.2 h1:pZd3neh/EmUzWONb35LxQfvuY7kiSXAq3HQd97+XBn0=

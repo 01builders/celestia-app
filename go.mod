@@ -36,6 +36,7 @@ require (
 	github.com/celestiaorg/nmt v0.23.0
 	github.com/celestiaorg/rsmt2d v0.14.0
 	github.com/cometbft/cometbft v1.0.0
+	github.com/cometbft/cometbft-db v1.0.1
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -108,7 +109,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.2 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/cometbft/cometbft-db v1.0.1 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/containerd/continuity v0.4.2 // indirect
@@ -324,8 +324,8 @@ replace (
 	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
-	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250128140037-af3995e24ae7
-	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250128140037-af3995e24ae7
+	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250129110338-7315aa4520a6
+	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250129110338-7315aa4520a6
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.2
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e
 

@@ -76,9 +76,9 @@ func (suite *TokenFilterTestSuite) TestHandleOutboundTransfer() {
 	suite.Require().NoError(err) // relay committed
 
 	// check that the token exists on chain B
-	voucherDenomTrace := types.ParseDenomTrace(types.GetPrefixedDenom(packet.GetDestPort(), packet.GetDestChannel(), sdk.DefaultBondDenom))
-	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
-	coinSentFromAToB := types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, amount)
+	voucherDenom := types.NewDenom(sdk.DefaultBondDenom, types.NewHop(packet.GetDestPort(), packet.GetDestChannel()))
+	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenom.IBCDenom())
+	coinSentFromAToB := sdk.NewCoins(sdk.NewCoin(types.NewDenom(sdk.DefaultBondDenom, types.NewHop(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID)).IBCDenom(), amount))
 	suite.Require().Equal(coinSentFromAToB, balance)
 
 	// check that the account on celestiaChain has "amount" less tokens than before
@@ -127,9 +127,9 @@ func (suite *TokenFilterTestSuite) TestHandleInboundTransfer() {
 	suite.Require().NoError(err) // relay committed
 
 	// check that the token does not exist on chain A (was rejected)
-	voucherDenomTrace := types.ParseDenomTrace(types.GetPrefixedDenom(packet.GetDestPort(), packet.GetDestChannel(), sdk.DefaultBondDenom))
-	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
-	emptyCoin := sdk.NewInt64Coin(voucherDenomTrace.IBCDenom(), 0)
+	voucherDenom := types.NewDenom(sdk.DefaultBondDenom, types.NewHop(packet.GetDestPort(), packet.GetDestChannel()))
+	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenom.IBCDenom())
+	emptyCoin := sdk.NewInt64Coin(voucherDenom.IBCDenom(), 0)
 	suite.Require().Equal(emptyCoin, balance)
 }
 

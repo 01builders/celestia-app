@@ -43,8 +43,8 @@ func NewTransferPath(celestiaChain, otherChain *ibctesting.TestChain) *ibctestin
 	path := ibctesting.NewPath(celestiaChain, otherChain)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
-	path.EndpointA.ChannelConfig.Version = types.Version
-	path.EndpointB.ChannelConfig.Version = types.Version
+	path.EndpointA.ChannelConfig.Version = types.V1 //TODO: should it be types.V2?
+	path.EndpointB.ChannelConfig.Version = types.V1
 
 	return path
 }

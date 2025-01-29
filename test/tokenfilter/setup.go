@@ -223,9 +223,6 @@ func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs 
 	app.Commit()
 
 	app.FinalizeBlock(&abci.FinalizeBlockRequest{
-		Version: tmversion.Consensus{
-			App: appconsts.LatestVersion,
-		},
 		Height:             app.LastBlockHeight() + 1,
 		Hash:               app.LastCommitID().Hash,
 		NextValidatorsHash: valSet.Hash(),

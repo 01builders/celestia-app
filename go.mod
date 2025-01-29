@@ -327,10 +327,7 @@ replace (
 	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250128140037-af3995e24ae7
 	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250128140037-af3995e24ae7
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.2
-
-	// ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990, this a v10 pre-release with a v9 module path
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e
-	// ibc-apps @ d8473b7e9e39b5d35cd1024920c0878aec8775e6
-	// github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9 =>  github.com/01builders/ibc-apps/middleware/packet-forward-middleware/v9 v9.0.0-20250107215950-d8473b7e9e39
+
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

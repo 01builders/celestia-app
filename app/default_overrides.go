@@ -216,9 +216,8 @@ func DefaultInitialConsensusParams() *tmproto.ConsensusParams {
 // using a goal square size.
 func DefaultBlockParams() *tmproto.BlockParams {
 	return &tmproto.BlockParams{
-		MaxBytes:   appconsts.DefaultMaxBytes,
-		MaxGas:     -1,
-		TimeIotaMs: 1, // 1ms
+		MaxBytes: appconsts.DefaultMaxBytes,
+		MaxGas:   -1,
 	}
 }
 

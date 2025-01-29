@@ -1,7 +1,6 @@
 package testnode
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmconfig "github.com/cometbft/cometbft/config"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -67,26 +65,6 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 	cctx, _, _ := NewNetwork(t, cfg)
 	s.cctx = cctx
-}
-
-func (s *IntegrationTestSuite) Test_verifyTimeIotaMs() {
-	require := s.Require()
-	err := s.cctx.WaitForNextBlock()
-	require.NoError(err)
-
-	var params *coretypes.ResultConsensusParams
-	// this query can be flaky with fast block times, so we repeat it multiple
-	// times in attempt to decrease flakiness
-	for i := 0; i < 100; i++ {
-		params, err = s.cctx.Client.ConsensusParams(context.Background(), nil)
-		if err == nil && params != nil {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	require.NoError(err)
-	require.NotNil(params)
-	require.Equal(int64(1), params.ConsensusParams.Block.TimeIotaMs)
 }
 
 func (s *IntegrationTestSuite) TestPostData() {

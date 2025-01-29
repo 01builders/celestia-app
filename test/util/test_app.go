@@ -23,7 +23,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -72,9 +71,6 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *
 	// commit genesis changes
 	testApp.Commit()
 	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
-		Version: tmversion.Consensus{
-			App: cparams.Version.App,
-		},
 		Time:               time.Now(),
 		Height:             testApp.LastBlockHeight() + 1,
 		Hash:               testApp.LastCommitID().Hash,
@@ -167,9 +163,6 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 	// Commit genesis changes
 	testApp.Commit()
 	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
-		Version: tmversion.Consensus{
-			App: cparams.Version.App,
-		},
 		Height:             testApp.LastBlockHeight() + 1,
 		Hash:               testApp.LastCommitID().Hash,
 		NextValidatorsHash: genDoc.ValidatorHash(),

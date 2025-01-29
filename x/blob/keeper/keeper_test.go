@@ -81,7 +81,7 @@ func CreateKeeper(t *testing.T, version uint64) (*keeper.Keeper, store.CommitMul
 	ctx := sdk.NewContext(cms, false, log.NewNopLogger())
 
 	paramsSubspace := paramtypes.NewSubspace(cdc,
-		testutil.MakeTestCodec(),
+		testutil.MakeAminoCodec(),
 		keys[paramtypes.StoreKey],
 		tStoreKey,
 		types.ModuleName,

@@ -12,21 +12,27 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/x/accounts"
 	"cosmossdk.io/x/bank"
 	bankkeeper "cosmossdk.io/x/bank/keeper"
 	banktypes "cosmossdk.io/x/bank/types"
+	consensuskeeper "cosmossdk.io/x/consensus/keeper"
+	consensustypes "cosmossdk.io/x/consensus/types"
 	"cosmossdk.io/x/distribution"
 	distrkeeper "cosmossdk.io/x/distribution/keeper"
 	distrtypes "cosmossdk.io/x/distribution/types"
 	"cosmossdk.io/x/params"
 	paramskeeper "cosmossdk.io/x/params/keeper"
 	paramstypes "cosmossdk.io/x/params/types"
+	pooltypes "cosmossdk.io/x/protocolpool/types"
 	slashingkeeper "cosmossdk.io/x/slashing/keeper"
 	slashingtypes "cosmossdk.io/x/slashing/types"
 	"cosmossdk.io/x/staking"
 	stakingkeeper "cosmossdk.io/x/staking/keeper"
 	stakingtypes "cosmossdk.io/x/staking/types"
+	txdecode "cosmossdk.io/x/tx/decode"
 	"github.com/celestiaorg/celestia-app/v3/app"
+	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	blobsteamkeeper "github.com/celestiaorg/celestia-app/v3/x/blobstream/keeper"
 	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
@@ -39,6 +45,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	ccrypto "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -167,13 +174,13 @@ func initEVMAddrs(count int) []gethcommon.Address {
 // TestInput stores the various keepers required to test Blobstream
 type TestInput struct {
 	BlobstreamKeeper keeper.Keeper
-	AccountKeeper    authkeeper.AccountKeeper
+	AuthKeeper       authkeeper.AccountKeeper
 	StakingKeeper    *stakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
 	DistKeeper       distrkeeper.Keeper
 	BankKeeper       bankkeeper.BaseKeeper
 	Context          sdk.Context
-	Marshaler        codec.Codec
+	Codec            codec.Codec
 	LegacyAmino      *codec.LegacyAmino
 }
 
@@ -184,24 +191,30 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	// Initialize store keys
 	keyBlobstream := storetypes.NewKVStoreKey(blobstreamtypes.StoreKey)
 	keyAuth := storetypes.NewKVStoreKey(authtypes.StoreKey)
+	keyAccount := storetypes.NewKVStoreKey(accounts.StoreKey)
 	keyStaking := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
 	keyBank := storetypes.NewKVStoreKey(banktypes.StoreKey)
 	keyDistribution := storetypes.NewKVStoreKey(distrtypes.StoreKey)
 	keyParams := storetypes.NewKVStoreKey(paramstypes.StoreKey)
 	tkeyParams := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
 	keySlashing := storetypes.NewKVStoreKey(slashingtypes.StoreKey)
+	keyConsensus := storetypes.NewKVStoreKey(consensustypes.StoreKey)
+	keyPool := storetypes.NewKVStoreKey(pooltypes.StoreKey)
 
 	// Initialize memory database and mount stores on it
 	db := coretesting.NewMemDB()
 	ms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(keyBlobstream, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyAuth, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyAccount, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyStaking, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyBank, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyDistribution, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(tkeyParams, storetypes.StoreTypeTransient, db)
 	ms.MountStoreWithDB(keySlashing, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyConsensus, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyPool, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	require.NoError(t, err)
 
@@ -230,18 +243,15 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		EvidenceHash:       []byte{},
 		ProposerAddress:    []byte{},
 	}
-	ctx := sdk.NewContext(ms, false, log.NewTestLogger(t))
+	ctx := sdk.NewContext(ms, false, log.NewTestLogger(t)).WithBlockHeader(header)
 
-	cdc := MakeTestCodec()
-	marshaler := MakeTestMarshaler()
+	aminoCdc := MakeAminoCodec()
+	cdc := MakeCodec()
+	cometService := runtime.NewContextAwareCometInfoService()
+	authority := authtypes.NewModuleAddress("gov")
 
-	paramsKeeper := paramskeeper.NewKeeper(marshaler, cdc, keyParams, tkeyParams)
-	paramsKeeper.Subspace(authtypes.ModuleName)
-	paramsKeeper.Subspace(banktypes.ModuleName)
-	paramsKeeper.Subspace(stakingtypes.ModuleName)
-	paramsKeeper.Subspace(distrtypes.ModuleName)
+	paramsKeeper := paramskeeper.NewKeeper(cdc, aminoCdc, keyParams, tkeyParams)
 	paramsKeeper.Subspace(blobstreamtypes.DefaultParamspace)
-	paramsKeeper.Subspace(slashingtypes.ModuleName)
 
 	// this is also used to initialize module accounts for all the map keys
 	moduleAccountPermissions := map[string][]string{
@@ -252,13 +262,32 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		blobstreamtypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
 	}
 
-	accountKeeper := authkeeper.NewAccountKeeper(
-		marshaler,
-		keyAuth, // target store
-		getSubspace(paramsKeeper, authtypes.ModuleName),
+	signingCtx := cdc.InterfaceRegistry().SigningContext()
+	txDecoder, err := txdecode.NewDecoder(txdecode.Options{
+		SigningContext: signingCtx,
+		ProtoCodec:     cdc,
+	})
+
+	accountKeeper, err := accounts.NewKeeper(
+		cdc,
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyAccount), ctx.Logger()),
+		genesis.AddressCodec,
+		cdc.InterfaceRegistry(),
+		txDecoder,
+	)
+	if err != nil {
+		t.Fatalf("failed to create account keeper: %v", err)
+	}
+
+	authKeeper := authkeeper.NewAccountKeeper(
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyAuth), ctx.Logger()),
+		cdc,
 		authtypes.ProtoBaseAccount, // prototype
+		accountKeeper,
 		moduleAccountPermissions,
+		genesis.AddressCodec,
 		app.Bech32PrefixAccAddr,
+		authority.String(),
 	)
 
 	blockedAddr := make(map[string]bool, len(moduleAccountPermissions))
@@ -266,11 +295,11 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		blockedAddr[authtypes.NewModuleAddress(acc).String()] = true
 	}
 	bankKeeper := bankkeeper.NewBaseKeeper(
-		marshaler,
-		keyBank,
-		accountKeeper,
-		getSubspace(paramsKeeper, banktypes.ModuleName),
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyBank), ctx.Logger()),
+		cdc,
+		authKeeper,
 		blockedAddr,
+		authority.String(),
 	)
 	bankKeeper.SetParams(
 		ctx,
@@ -280,10 +309,34 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		},
 	)
 
-	stakingKeeper := stakingkeeper.NewKeeper(marshaler, keyStaking, accountKeeper, bankKeeper, getSubspace(paramsKeeper, stakingtypes.ModuleName))
+	consensusKeeper := consensuskeeper.NewKeeper(
+		cdc,
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyConsensus), ctx.Logger()),
+		authority.String(),
+	)
+	stakingKeeper := stakingkeeper.NewKeeper(
+		cdc,
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyStaking), ctx.Logger()),
+		authKeeper,
+		bankKeeper,
+		consensusKeeper,
+		authority.String(),
+		signingCtx.ValidatorAddressCodec(),
+		signingCtx.AddressCodec(),
+		cometService,
+	)
 	stakingKeeper.Params.Set(ctx, TestingStakeParams)
 
-	distKeeper := distrkeeper.NewKeeper(marshaler, keyDistribution, getSubspace(paramsKeeper, distrtypes.ModuleName), accountKeeper, bankKeeper, stakingKeeper, authtypes.FeeCollectorName)
+	distKeeper := distrkeeper.NewKeeper(
+		cdc,
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyDistribution), ctx.Logger()),
+		authKeeper,
+		bankKeeper,
+		stakingKeeper,
+		cometService,
+		authtypes.FeeCollectorName,
+		authority.String(),
+	)
 	distKeeper.Params.Set(ctx, distrtypes.DefaultParams())
 	distKeeper.FeePool.Set(ctx, distrtypes.InitialFeePool())
 
@@ -304,21 +357,28 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 			err = bankKeeper.SendCoinsFromModuleToModule(ctx, blobstreamtypes.ModuleName, moduleAccount.Name, amt)
 			require.NoError(t, err)
 		}
-		accountKeeper.SetModuleAccount(ctx, moduleAccount)
+		authKeeper.SetModuleAccount(ctx, moduleAccount)
 	}
 
 	stakeAddr := authtypes.NewModuleAddress(stakingtypes.BondedPoolName)
-	moduleAcct := accountKeeper.GetAccount(ctx, stakeAddr)
+	moduleAcct := authKeeper.GetAccount(ctx, stakeAddr)
 	require.NotNil(t, moduleAcct)
 
 	slashingKeeper := slashingkeeper.NewKeeper(
-		marshaler,
-		keySlashing,
-		&stakingKeeper,
-		getSubspace(paramsKeeper, slashingtypes.ModuleName),
+		runtime.NewEnvironment(runtime.NewKVStoreService(keySlashing), ctx.Logger()),
+		cdc,
+		aminoCdc,
+		stakingKeeper,
+		authority.String(),
 	)
 
-	blobstreamKeeper := keeper.NewKeeper(marshaler, keyBlobstream, getSubspace(paramsKeeper, blobstreamtypes.DefaultParamspace), &stakingKeeper)
+	blobstreamKeeper := keeper.NewKeeper(
+		runtime.NewEnvironment(runtime.NewKVStoreService(keyBlobstream), ctx.Logger()),
+		cdc,
+		getSubspace(paramsKeeper, blobstreamtypes.DefaultParamspace),
+		stakingKeeper,
+		consensusKeeper,
+	)
 	blobstreamKeeper.SetParams(ctx, *blobstreamtypes.DefaultGenesis().Params)
 
 	stakingKeeper.SetHooks(
@@ -331,14 +391,14 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 
 	return TestInput{
 		BlobstreamKeeper: *blobstreamKeeper,
-		AccountKeeper:    accountKeeper,
+		AuthKeeper:       authKeeper,
 		BankKeeper:       bankKeeper,
 		StakingKeeper:    stakingKeeper,
 		SlashingKeeper:   slashingKeeper,
 		DistKeeper:       distKeeper,
 		Context:          ctx,
-		Marshaler:        marshaler,
-		LegacyAmino:      cdc,
+		Codec:            cdc,
+		LegacyAmino:      aminoCdc,
 	}
 }
 
@@ -350,8 +410,8 @@ func CreateTestEnv(t *testing.T) TestInput {
 	return input
 }
 
-// MakeTestCodec creates a legacy amino codec for testing
-func MakeTestCodec() *codec.LegacyAmino {
+// MakeAminoCodec creates a legacy amino codec for testing
+func MakeAminoCodec() *codec.LegacyAmino {
 	cdc := codec.NewLegacyAmino()
 	auth.AppModule{}.RegisterLegacyAminoCodec(cdc)
 	bank.AppModule{}.RegisterLegacyAminoCodec(cdc)
@@ -370,8 +430,8 @@ func getSubspace(k paramskeeper.Keeper, moduleName string) paramstypes.Subspace 
 	return subspace
 }
 
-// MakeTestMarshaler creates a proto codec for use in testing
-func MakeTestMarshaler() codec.Codec {
+// MakeCodec creates a proto codec for use in testing
+func MakeCodec() codec.Codec {
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	std.RegisterInterfaces(interfaceRegistry)
 	ModuleBasics.RegisterInterfaces(interfaceRegistry)
@@ -412,7 +472,7 @@ func CreateValidator(
 	stakingAmount cosmosmath.Int,
 ) {
 	// Initialize the account for the key
-	acc := input.AccountKeeper.NewAccount(
+	acc := input.AuthKeeper.NewAccount(
 		input.Context,
 		authtypes.NewBaseAccount(accAddr, accPubKey, accountNumber, 0),
 	)
@@ -423,7 +483,7 @@ func CreateValidator(
 	require.NoError(t, err)
 
 	// Set the account in state
-	input.AccountKeeper.SetAccount(input.Context, acc)
+	input.AuthKeeper.SetAccount(input.Context, acc)
 
 	// Create a validator for that account using some tokens in the account
 	// and the staking handler
@@ -487,7 +547,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 		accAddr := sdk.AccAddress(valPubKey.Address())
 
 		// Initialize the account for the key
-		acc := input.AccountKeeper.NewAccount(
+		acc := input.AuthKeeper.NewAccount(
 			input.Context,
 			authtypes.NewBaseAccount(accAddr, valPubKey, uint64(i), 0),
 		)
@@ -498,7 +558,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 		require.NoError(t, input.BankKeeper.SendCoinsFromModuleToAccount(input.Context, blobstreamtypes.ModuleName, accAddr, weightCoins))
 
 		// Set the account in state
-		input.AccountKeeper.SetAccount(input.Context, acc)
+		input.AuthKeeper.SetAccount(input.Context, acc)
 
 		// Create a validator for that account using some of the tokens in the account
 		// and the staking handler

@@ -7,9 +7,9 @@ import (
 
 	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	coretypes "github.com/cometbft/cometbft/types"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"

@@ -7,7 +7,7 @@ import (
 	"cosmossdk.io/math"
 	distributiontypes "cosmossdk.io/x/distribution/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	tmcfg "github.com/cometbft/cometbft/config"
 	"github.com/cosmos/cosmos-sdk/types"
 	icagenesistypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/genesis/types"

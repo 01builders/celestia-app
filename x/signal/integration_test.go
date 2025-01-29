@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"cosmossdk.io/log"
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/x/signal/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/x/params/types/proposal"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"

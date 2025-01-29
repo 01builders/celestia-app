@@ -4,7 +4,7 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
 
-	"github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	"github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

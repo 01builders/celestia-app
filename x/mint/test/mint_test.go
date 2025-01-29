@@ -8,9 +8,9 @@ import (
 
 	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	minttypes "github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	"github.com/stretchr/testify/suite"

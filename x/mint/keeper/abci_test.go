@@ -7,9 +7,9 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
-	minttypes "github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/test/util"
+	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"

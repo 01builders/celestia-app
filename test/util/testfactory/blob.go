@@ -6,7 +6,7 @@ import (
 	"math/rand"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/go-square/v2/share"
 )
 

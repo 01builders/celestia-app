@@ -6,7 +6,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	paramkeeper "cosmossdk.io/x/params/keeper"
 	paramtypes "cosmossdk.io/x/params/types"
-	"github.com/celestiaorg/celestia-app/v3/x/minfee"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/testutil"

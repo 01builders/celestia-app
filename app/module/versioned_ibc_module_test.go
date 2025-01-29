@@ -3,8 +3,8 @@ package module_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app/module"
-	mocks "github.com/celestiaorg/celestia-app/v3/app/module/mocks"
+	"github.com/celestiaorg/celestia-app/v4/app/module"
+	mocks "github.com/celestiaorg/celestia-app/v4/app/module/mocks"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	"github.com/stretchr/testify/assert"

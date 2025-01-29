@@ -8,7 +8,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	"github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

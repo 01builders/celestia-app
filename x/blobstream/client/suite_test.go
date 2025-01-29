@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/stretchr/testify/suite"
 )
 

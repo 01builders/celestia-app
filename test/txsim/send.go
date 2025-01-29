@@ -5,7 +5,7 @@ import (
 	"math/rand"
 
 	bank "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/grpc"
 )

@@ -9,7 +9,7 @@ import (
 	"cosmossdk.io/math"
 	cosmosmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	"github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

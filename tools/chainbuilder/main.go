@@ -11,6 +11,7 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
+	cometdbm "github.com/cometbft/cometbft-b"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	smproto "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -25,14 +26,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/da"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/da"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
 var defaultNamespace share.Namespace
@@ -173,14 +174,14 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 	validatorKey := privval.LoadFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile())
 	validatorAddr := validatorKey.Key.Address
 
-	blockDB, err := dbm.NewDB("blockstore", dbm.GoLevelDBBackend, tmCfg.DBDir())
+	blockDB, err := cometdbm.NewDB("blockstore", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create block database: %w", err)
 	}
 
 	blockStore := store.NewBlockStore(blockDB)
 
-	stateDB, err := dbm.NewDB("state", dbm.GoLevelDBBackend, tmCfg.DBDir())
+	stateDB, err := cometdbm.NewDB("state", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create state database: %w", err)
 	}

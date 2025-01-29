@@ -8,7 +8,7 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/snapshots"
 	"cosmossdk.io/store/types"
-	"github.com/celestiaorg/celestia-app/v3/server"
+	"github.com/celestiaorg/celestia-app/v4/server"
 	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/crypto"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"

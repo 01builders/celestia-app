@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"

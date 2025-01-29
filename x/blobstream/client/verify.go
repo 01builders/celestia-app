@@ -14,8 +14,8 @@ import (
 
 	"cosmossdk.io/log"
 	wrapper "github.com/celestiaorg/blobstream-contracts/v3/wrappers/Blobstream.sol"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/ethereum/go-ethereum/ethclient"

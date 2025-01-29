@@ -1,9 +1,9 @@
 package malicious
 
 import (
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/ante"
-	"github.com/celestiaorg/celestia-app/v3/pkg/da"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/ante"
+	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	core "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -48,7 +48,7 @@ func (a *App) OutOfOrderPrepareProposal(req *abci.PrepareProposalRequest) (*abci
 		a.IBCKeeper,
 		a.ParamsKeeper,
 		a.MsgGateKeeper,
-		app.BlockedParamsGovernance(),
+		a.BlockedParamsGovernance(),
 	)
 
 	txs := app.FilterTxs(a.Logger(), sdkCtx, handler, a.GetTxConfig(), req.Txs)

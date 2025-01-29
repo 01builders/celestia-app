@@ -5,18 +5,18 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 	"github.com/stretchr/testify/require"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 )
 

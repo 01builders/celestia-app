@@ -3,7 +3,7 @@ COMMIT := $(shell git rev-parse --short HEAD)
 DOCKER := $(shell which docker)
 PROJECTNAME=$(shell basename "$(PWD)")
 HTTPS_GIT := https://github.com/celestiaorg/celestia-app.git
-PACKAGE_NAME          := github.com/celestiaorg/celestia-app/v3
+PACKAGE_NAME          := github.com/celestiaorg/celestia-app/v4
 # Before upgrading the GOLANG_CROSS_VERSION, please verify that a Docker image exists with the new tag.
 # See https://github.com/goreleaser/goreleaser-cross/pkgs/container/goreleaser-cross
 GOLANG_CROSS_VERSION  ?= v1.23.1
@@ -15,7 +15,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=celestia-app \
 		  -X github.com/cosmos/cosmos-sdk/version.AppName=celestia-appd \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-		  -X github.com/celestiaorg/celestia-app/v3/pkg/appconsts.OverrideSquareSizeUpperBoundStr=$(OVERRIDE_MAX_SQUARE_SIZE)
+		  -X github.com/celestiaorg/celestia-app/v4/pkg/appconsts.OverrideSquareSizeUpperBoundStr=$(OVERRIDE_MAX_SQUARE_SIZE)
 
 BUILD_FLAGS := -tags "ledger" -ldflags '$(ldflags)'
 

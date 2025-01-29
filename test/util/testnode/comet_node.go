@@ -14,7 +14,7 @@ import (
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 
-	"github.com/celestiaorg/celestia-app/v3/server"
+	"github.com/celestiaorg/celestia-app/v4/server"
 )
 
 // NewCometNode creates a ready to use comet node that operates a single

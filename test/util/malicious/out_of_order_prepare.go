@@ -25,9 +25,8 @@ func (a *App) OutOfOrderPrepareProposal(req *abci.PrepareProposalRequest) (*abci
 	}
 
 	sdkCtx := a.NewProposalContext(core.Header{
-		ChainID: req.ChainId,
-		Height:  req.Height,
-		Time:    req.Time,
+		Height: req.Height,
+		Time:   req.Time,
 		Version: version.Consensus{
 			App: appVersion,
 		},

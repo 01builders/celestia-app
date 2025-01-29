@@ -72,7 +72,6 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *
 	// commit genesis changes
 	testApp.Commit()
 	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
-		ChainID: ChainID,
 		Version: tmversion.Consensus{
 			App: cparams.Version.App,
 		},
@@ -168,7 +167,6 @@ func SetupDeterministicGenesisState(testApp *app.App, pubKeys []cryptotypes.PubK
 	// Commit genesis changes
 	testApp.Commit()
 	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
-		ChainID: ChainID,
 		Version: tmversion.Consensus{
 			App: cparams.Version.App,
 		},

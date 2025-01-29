@@ -56,9 +56,11 @@ func WithPrometheus(prometheus bool) Option {
 	}
 }
 
+// WithMempool sets the mempool type to the given value.
+// Possible values are "flood", "nop", "cat".
 func WithMempool(mempool string) Option {
 	return func(cfg *config.Config) {
-		cfg.Mempool.Version = mempool
+		cfg.Mempool.Type = mempool
 	}
 }
 

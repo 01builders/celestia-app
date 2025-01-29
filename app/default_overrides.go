@@ -228,7 +228,11 @@ func DefaultEvidenceParams() *tmproto.EvidenceParams {
 	evdParams := coretypes.DefaultEvidenceParams()
 	evdParams.MaxAgeDuration = appconsts.DefaultUnbondingTime
 	evdParams.MaxAgeNumBlocks = int64(appconsts.DefaultUnbondingTime.Seconds())/int64(appconsts.GoalBlockTime.Seconds()) + 1
-	return &evdParams
+	return &tmproto.EvidenceParams{
+		MaxAgeNumBlocks: evdParams.MaxAgeNumBlocks,
+		MaxAgeDuration:  evdParams.MaxAgeDuration,
+		MaxBytes:        evdParams.MaxBytes,
+	}
 }
 
 func DefaultConsensusConfig() *tmcfg.Config {
@@ -241,7 +245,7 @@ func DefaultConsensusConfig() *tmcfg.Config {
 	cfg.Mempool.TTLDuration = 75 * time.Second
 	cfg.Mempool.MaxTxBytes = 7_897_088
 	cfg.Mempool.MaxTxsBytes = 39_485_440
-	cfg.Mempool.Version = "v1" // prioritized mempool
+	cfg.Mempool.Type = "flood" // prioritized mempool
 
 	cfg.Consensus.TimeoutPropose = appconsts.GetTimeoutPropose(appconsts.LatestVersion)
 	cfg.Consensus.TimeoutCommit = appconsts.GetTimeoutCommit(appconsts.LatestVersion)

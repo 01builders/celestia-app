@@ -115,7 +115,7 @@ func (suite *TokenFilterTestSuite) TestHandleInboundTransfer() {
 	coinToSendToA := sdk.NewCoin(sdk.DefaultBondDenom, amount)
 
 	// send from otherChain to celestiaChain
-	msg := types.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, coinToSendToA, suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
+	msg := types.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.NewCoins(coinToSendToA), suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "", types.NewForwarding(false))
 	res, err := suite.otherChain.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
 

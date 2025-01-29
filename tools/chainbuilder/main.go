@@ -11,9 +11,8 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
-	cometdbm "github.com/cometbft/cometbft-b"
+	cometdbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	smproto "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -174,14 +173,14 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 	validatorKey := privval.LoadFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile())
 	validatorAddr := validatorKey.Key.Address
 
-	blockDB, err := cometdbm.NewDB("blockstore", dbm.GoLevelDBBackend, tmCfg.DBDir())
+	blockDB, err := cometdbm.NewDB("blockstore", cometdbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create block database: %w", err)
 	}
 
 	blockStore := store.NewBlockStore(blockDB)
 
-	stateDB, err := cometdbm.NewDB("state", dbm.GoLevelDBBackend, tmCfg.DBDir())
+	stateDB, err := cometdbm.NewDB("state", cometdbm.GoLevelDBBackend, tmCfg.DBDir())
 	if err != nil {
 		return fmt.Errorf("failed to create state database: %w", err)
 	}
@@ -237,11 +236,11 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		}
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
-		csParams := types.TM2PB.ConsensusParams(genDoc.ConsensusParams)
+		csParams := genDoc.ConsensusParams.ToProto()
 		res, err := simApp.InitChain(&abci.InitChainRequest{
 			ChainId:         genDoc.ChainID,
 			Time:            genDoc.GenesisTime,
-			ConsensusParams: csParams,
+			ConsensusParams: &csParams,
 			Validators:      nextVals,
 			AppStateBytes:   genDoc.AppState,
 			InitialHeight:   genDoc.InitialHeight,
@@ -300,7 +299,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		errCh     = make(chan error, 2)
 		dataCh    = make(chan *tmproto.Data, 100)
 		persistCh = make(chan persistData, 100)
-		commit    = types.NewCommit(0, 0, types.BlockID{}, nil)
+		commit    = &types.Commit{}
 	)
 	if lastHeight > 0 {
 		commit = blockStore.LoadSeenCommit(lastHeight)
@@ -333,7 +332,12 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			if err != nil {
 				return fmt.Errorf("failed to convert data from protobuf: %w", err)
 			}
-			block, blockParts := state.MakeBlock(height, data, commit, nil, validatorAddr)
+			block := state.MakeBlock(height, data, commit, nil, validatorAddr)
+			blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+			if err != nil {
+				return fmt.Errorf("failed to make block part set: %w", err)
+			}
+
 			blockID := types.BlockID{
 				Hash:          block.Hash(),
 				PartSetHeader: blockParts.Header(),
@@ -359,7 +363,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				Timestamp:        currentTime,
 				Signature:        precommitVote.Signature,
 			}
-			commit = types.NewCommit(height, 0, blockID, []types.CommitSig{commitSig})
+			commit = &types.Commit{BlockID: blockID, Signatures: []types.CommitSig{commitSig}}
 
 			var lastCommitInfo abci.CommitInfo
 			if height > 1 {
@@ -399,7 +403,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				}
 			}
 
-			commitResp, err := simApp.Commit()
+			_, err = simApp.Commit()
 			if err != nil {
 				return fmt.Errorf("failed to commit block: %w", err)
 			}
@@ -410,12 +414,8 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			state.LastValidators = state.Validators
 			state.Validators = state.NextValidators
 			state.NextValidators = state.NextValidators.CopyIncrementProposerPriority(1)
-			state.AppHash = commitResp.Data
-			state.LastResultsHash = sm.ABCIResponsesResultsHash(&smproto.ABCIResponses{
-				DeliverTxs: deliverTxResponses,
-				BeginBlock: &beginBlockResp,
-				EndBlock:   &endBlockResp,
-			})
+			state.AppHash = resp.AppHash
+			state.LastResultsHash = sm.TxResultsHash(resp.TxResults)
 			currentTime = currentTime.Add(cfg.BlockInterval)
 			persistCh <- persistData{
 				state: state.Copy(),
@@ -507,9 +507,9 @@ func generateSquareRoutine(
 
 		select {
 		case dataCh <- &tmproto.Data{
-			Txs:        txs,
-			Hash:       dah.Hash(),
-			SquareSize: uint64(dataSquare.Size()),
+			Txs:          txs,
+			DataRootHash: dah.Hash(),
+			SquareSize:   uint64(dataSquare.Size()),
 		}:
 		case <-ctx.Done():
 			return ctx.Err()

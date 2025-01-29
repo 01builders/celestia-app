@@ -1016,7 +1016,7 @@ func (app *App) NewProposalContext(header cmtproto.Header) sdk.Context {
 			AppHash: header.AppHash,
 			Hash:    header.ConsensusHash,
 			Time:    header.Time,
-			ChainID: header.ChainID,
+			ChainID: app.ChainID(),
 		})
 	ctx = ctx.WithConsensusParams(app.GetConsensusParams(ctx))
 

@@ -2,11 +2,14 @@ package app_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math"
 	rand "cosmossdk.io/math/unsafe"
+	consensustypes "cosmossdk.io/x/consensus/types"
+	govv1 "cosmossdk.io/x/gov/types/v1"
 	v1 "cosmossdk.io/x/gov/types/v1"
 	oldgov "cosmossdk.io/x/gov/types/v1beta1"
 	"cosmossdk.io/x/params/types/proposal"
@@ -17,7 +20,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/test/txsim"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
-	"github.com/celestiaorg/celestia-app/v4/test/util/sdkutil"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
@@ -25,6 +27,7 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -153,30 +156,50 @@ func (s *SquareSizeIntegrationTest) TestSquareSizeUpperBound() {
 // parameters are not set as expected.
 func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize, maxBytes int) {
 	account := "validator"
+	addr := testfactory.GetAddress(s.cctx.Keyring, account)
 
-	// create and submit a new param change proposal for both params
-	change1 := sdkutil.GovMaxSquareSizeParamChange(squareSize)
-	change2 := sdkutil.MaxBlockBytesParamChange(s.ecfg.Codec, maxBytes)
+	// TOOD: refactor to use message once blob is updated to host its own params
+	squareSizeChanges := proposal.NewParamChange(
+		blobtypes.ModuleName,
+		string(blobtypes.KeyGovMaxSquareSize),
+		fmt.Sprintf("\"%d\"", squareSize),
+	)
 
 	content := proposal.NewParameterChangeProposal(
 		"title",
 		"description",
-		[]proposal.ParamChange{change1, change2},
+		[]proposal.ParamChange{squareSizeChanges},
 	)
-	addr := testfactory.GetAddress(s.cctx.Keyring, account)
 
-	msg, err := oldgov.NewMsgSubmitProposal(
+	submitParamsMsgv1beta1, err := oldgov.NewMsgSubmitProposal(
 		content,
 		sdk.NewCoins(
 			sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000000000))),
 		addr.String(),
+	)
+
+	blockParams := app.DefaultBlockParams()
+	blockParams.MaxBytes = int64(maxBytes)
+	consensusProposal := &consensustypes.MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress("gov").String(),
+		Block:     app.DefaultBlockParams(),
+	}
+
+	submitParamsMsgv1, err := govv1.NewMsgSubmitProposal(
+		[]sdk.Msg{consensusProposal},
+		sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, math.NewInt(1000000000))),
+		addr.String(),
+		"metadata",
+		"title",
+		"summary",
+		govv1.ProposalType_PROPOSAL_TYPE_STANDARD,
 	)
 	require.NoError(t, err)
 
 	txClient, err := user.SetupTxClient(s.cctx.GoContext(), s.cctx.Keyring, s.cctx.GRPCClient, s.ecfg)
 	require.NoError(t, err)
 
-	res, err := txClient.SubmitTx(s.cctx.GoContext(), []sdk.Msg{msg}, blobfactory.DefaultTxOpts()...)
+	res, err := txClient.SubmitTx(s.cctx.GoContext(), []sdk.Msg{submitParamsMsgv1beta1, submitParamsMsgv1}, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	serviceClient := sdktx.NewServiceClient(s.cctx.GRPCClient)
 	getTxResp, err := serviceClient.GetTx(s.cctx.GoContext(), &sdktx.GetTxRequest{Hash: res.TxHash})
@@ -189,11 +212,15 @@ func (s *SquareSizeIntegrationTest) setBlockSizeParams(t *testing.T, squareSize,
 	gqc := v1.NewQueryClient(s.cctx.GRPCClient)
 	gresp, err := gqc.Proposals(s.cctx.GoContext(), &v1.QueryProposalsRequest{ProposalStatus: v1.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD})
 	require.NoError(t, err)
-	require.Len(t, gresp.Proposals, 1)
+	require.Len(t, gresp.Proposals, 2)
 
 	// create and submit a new vote
-	vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account).String(), gresp.Proposals[0].Id, v1.VoteOption_VOTE_OPTION_YES, "")
-	res, err = txClient.SubmitTx(s.cctx.GoContext(), []sdk.Msg{vote}, blobfactory.DefaultTxOpts()...)
+	var votes []sdk.Msg
+	for _, p := range gresp.Proposals {
+		vote := v1.NewMsgVote(testfactory.GetAddress(s.cctx.Keyring, account).String(), p.Id, v1.VoteOption_VOTE_OPTION_YES, "")
+		votes = append(votes, vote)
+	}
+	res, err = txClient.SubmitTx(s.cctx.GoContext(), votes, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	require.Equal(t, abci.CodeTypeOK, res.Code)
 

@@ -240,15 +240,15 @@ func DefaultConsensusConfig() *tmcfg.Config {
 	cfg.RPC.TimeoutBroadcastTxCommit = 50 * time.Second
 	cfg.RPC.MaxBodyBytes = int64(8388608) // 8 MiB
 
-	cfg.Mempool.TTLNumBlocks = 12
-	cfg.Mempool.TTLDuration = 75 * time.Second
+	// TODO: check if priority mempool needed
+	// cfg.Mempool.TTLNumBlocks = 12
+	// cfg.Mempool.TTLDuration = 75 * time.Second
 	cfg.Mempool.MaxTxBytes = 7_897_088
 	cfg.Mempool.MaxTxsBytes = 39_485_440
-	cfg.Mempool.Type = "flood" // prioritized mempool
+	cfg.Mempool.Type = "flood" // flood mempool
 
 	cfg.Consensus.TimeoutPropose = appconsts.GetTimeoutPropose(appconsts.LatestVersion)
 	cfg.Consensus.TimeoutCommit = appconsts.GetTimeoutCommit(appconsts.LatestVersion)
-	cfg.Consensus.SkipTimeoutCommit = false
 
 	cfg.TxIndex.Indexer = "null"
 	cfg.Storage.DiscardABCIResponses = true

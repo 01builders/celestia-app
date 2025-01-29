@@ -127,6 +127,7 @@ In the root command, began to reason about and fix genesis commands including De
 - `packet-forward-middleware` depends on ibc-go.  the latest version available of PFM is v8, which uses `github.com/cosmos/cosmos-sdk/*` import paths.  therefore a PFM v9 which depends on cosmos-sdk @ 0.52 is needed.
 - PFM depends on [github.com/cosmos/ibc-go/module/capability](https://github.com/cosmos/ibc-go/blob/v9.0.2/modules/capability/go.mod), from `testing/simapp`. which depends on SDK 0.50.  This module is absent in the `ibc-go @ decc8ec9ae8eeda9cf3791d45d3005a6e929a990` tree. PFM needs to be refactored to work without capability. It is unclear from IBC documentation what is the future of this module. PFM tests have been removed.
 - Because TimeIotaMs has been deleted the mint integration test need to be reworked
+- Priority mempool doesn't exist anymore, change eviction test to reflect this
 
 ## Upstream
 

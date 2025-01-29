@@ -319,8 +319,8 @@ replace (
 	cosmossdk.io/x/slashing => cosmossdk.io/x/slashing v0.2.0-rc.1
 	cosmossdk.io/x/staking => cosmossdk.io/x/staking v0.2.0-rc.1
 	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.2.0-rc.1
-	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250129164157-ece12b6dada9
-	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250129164157-ece12b6dada9
+	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250129180651-bb2668ad489d
+	github.com/cometbft/cometbft/api => github.com/01builders/cometbft/api v0.0.0-20250129180651-bb2668ad489d
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.52.0-rc.2
 	github.com/cosmos/ibc-go/v9 => github.com/cosmos/ibc-go/v9 v9.0.0-20250105144616-decc8ec9ae8e
 

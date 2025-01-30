@@ -78,7 +78,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 		// todo: uncomment once we're sure this isn't consensus breaking
 		// sdkCtx = sdkCtx.WithTxBytes(tx)
 
-		sdkTx, err := app.txConfig.TxDecoder()(tx)
+		sdkTx, err := app.encodingConfig.TxConfig.TxDecoder()(tx)
 		// Set the tx bytes in the context for app version v3 and greater
 		if appVersion >= 3 {
 			ctx = ctx.WithTxBytes(tx)
@@ -132,7 +132,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 			logInvalidPropBlockError(app.Logger(), blockHeader, "failure to get app version", err)
 		}
 
-		if err := blobtypes.ValidateBlobTx(app.txConfig, blobTx, subtreeRootThreshold, v); err != nil {
+		if err := blobtypes.ValidateBlobTx(app.encodingConfig.TxConfig, blobTx, subtreeRootThreshold, v); err != nil {
 			logInvalidPropBlockError(app.Logger(), blockHeader, fmt.Sprintf("invalid blob tx %d", idx), err)
 			return reject(), nil
 		}

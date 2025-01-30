@@ -46,7 +46,7 @@ func (app *App) PrepareProposalHandler(ctx sdk.Context, req *abci.PrepareProposa
 	)
 
 	// Filter out invalid transactions.
-	txs := FilterTxs(app.Logger(), ctx, handler, app.txConfig, req.Txs)
+	txs := FilterTxs(app.Logger(), ctx, handler, app.encodingConfig.TxConfig, req.Txs)
 
 	// Build the square from the set of valid and prioritised transactions.
 	// The txs returned are the ones used in the square and block.

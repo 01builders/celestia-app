@@ -39,7 +39,7 @@ func (app *App) CheckTxV1(req *abci.CheckTxRequest) (*abci.CheckTxResponse, erro
 
 	if !isBlob {
 		// reject transactions that can't be decoded
-		sdkTx, err := app.txConfig.TxDecoder()(tx)
+		sdkTx, err := app.encodingConfig.TxConfig.TxDecoder()(tx)
 		if err != nil {
 			return responseCheckTxWithEvents(err, 0, 0, []abci.Event{}, false), err
 		}
@@ -57,7 +57,7 @@ func (app *App) CheckTxV1(req *abci.CheckTxRequest) (*abci.CheckTxResponse, erro
 	switch req.Type {
 	// new transactions must be checked in their entirety
 	case abci.CHECK_TX_TYPE_CHECK:
-		err = blobtypes.ValidateBlobTx(app.txConfig, btx, appconsts.SubtreeRootThreshold(appVersion), appVersion)
+		err = blobtypes.ValidateBlobTx(app.encodingConfig.TxConfig, btx, appconsts.SubtreeRootThreshold(appVersion), appVersion)
 		if err != nil {
 			return responseCheckTxWithEvents(err, 0, 0, []abci.Event{}, false), err
 		}

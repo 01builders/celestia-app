@@ -10,6 +10,7 @@ import (
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v4/app"
+	celestiaserver "github.com/celestiaorg/celestia-app/v4/server"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v4/x/blobstream/client"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -21,7 +22,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
@@ -46,17 +46,23 @@ func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0, 0)
+	encodingConfig := tempApp.GetEncodingConfig()
 
 	initClientContext := client.Context{}.
-		WithCodec(tempApp.AppCodec()).
-		WithInterfaceRegistry(tempApp.InterfaceRegistry()).
+		WithCodec(encodingConfig.Codec).
+		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(tempApp.GetTxConfig()).
-		WithLegacyAmino(tempApp.LegacyAmino()).
+		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithBroadcastMode(flags.BroadcastSync).
 		WithHomeDir(app.DefaultNodeHome).
-		WithViper(app.EnvPrefix)
+		WithViper(app.EnvPrefix).
+		WithAddressCodec(encodingConfig.AddressCodec).
+		WithValidatorAddressCodec(encodingConfig.ValidatorAddressCodec).
+		WithConsensusAddressCodec(encodingConfig.ConsensusAddressCodec).
+		WithAddressPrefix(encodingConfig.AddressPrefix).
+		WithValidatorPrefix(encodingConfig.ValidatorPrefix)
 
 	rootCommand := &cobra.Command{
 		Use: "celestia-appd",
@@ -129,11 +135,11 @@ func initRootCommand(rootCommand *cobra.Command, app *app.App) {
 		txCommand(app.ModuleManager),
 		keys.Commands(),
 		blobstreamclient.VerifyCmd(),
-		snapshot.Cmd(newCmdApplication),
+		snapshot.Cmd(NewAppServer),
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	server.AddCommands(rootCommand, newCmdApplication, server.StartCmdOptions[servertypes.Application]{
+	server.AddCommands(rootCommand, NewAppServer, server.StartCmdOptions[celestiaserver.Application]{
 		AddFlags: addStartFlags,
 	})
 

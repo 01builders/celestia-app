@@ -73,7 +73,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -140,10 +139,7 @@ var (
 type App struct {
 	*baseapp.BaseApp
 
-	legacyAmino       *codec.LegacyAmino
-	appCodec          codec.Codec
-	interfaceRegistry types.InterfaceRegistry
-	txConfig          client.TxConfig
+	encodingConfig encoding.Config
 
 	// keys to access the substores
 	keyVersions map[uint64][]string
@@ -572,9 +568,7 @@ func New(
 		panic(err)
 	}
 
-	app.appCodec = encodingConfig.Codec
-	app.interfaceRegistry = encodingConfig.InterfaceRegistry
-	app.txConfig = encodingConfig.TxConfig
+	app.encodingConfig = encodingConfig
 
 	return app
 }
@@ -814,28 +808,17 @@ func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return app.txConfig
+	return app.encodingConfig.TxConfig
 }
 
-// LegacyAmino returns SimApp's amino codec.
-//
-// NOTE: This is solely to be used for testing purposes as it may be desirable
-// for modules to register their own custom testing types.
-func (app *App) LegacyAmino() *codec.LegacyAmino {
-	return app.legacyAmino
-}
-
-// AppCodec returns the app's appCodec.
-//
-// NOTE: This is solely to be used for testing purposes as it may be desirable
-// for modules to register their own custom testing types.
+// AppCodec implements the TestingApp interface.
 func (app *App) AppCodec() codec.Codec {
-	return app.appCodec
+	return app.encodingConfig.Codec
 }
 
-// InterfaceRegistry returns the app's InterfaceRegistry
-func (app *App) InterfaceRegistry() types.InterfaceRegistry {
-	return app.interfaceRegistry
+// GetEncodingConfig returns the app encoding config.
+func (app *App) GetEncodingConfig() encoding.Config {
+	return app.encodingConfig
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
@@ -883,8 +866,8 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 
 // RegisterTxService implements the Application.RegisterTxService method.
 func (app *App) RegisterTxService(clientCtx client.Context) {
-	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
-	celestiatx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
+	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.encodingConfig.InterfaceRegistry)
+	celestiatx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.encodingConfig.InterfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
@@ -892,7 +875,7 @@ func (app *App) RegisterTendermintService(clientCtx client.Context) {
 	cmtservice.RegisterTendermintService(
 		clientCtx,
 		app.BaseApp.GRPCQueryRouter(),
-		app.interfaceRegistry,
+		app.encodingConfig.InterfaceRegistry,
 		func(ctx context.Context, req *abci.QueryRequest) (*abci.QueryResponse, error) {
 			return app.BaseApp.Query(ctx, req)
 		},

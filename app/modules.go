@@ -82,7 +82,7 @@ func (app *App) setupModuleManager(
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      feegrantmodule.NewAppModule(encodingConfig.Codec, app.FeeGrantKeeper, app.interfaceRegistry),
+			Module:      feegrantmodule.NewAppModule(encodingConfig.Codec, app.FeeGrantKeeper, encodingConfig.InterfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -95,7 +95,7 @@ func (app *App) setupModuleManager(
 		},
 		{
 			Module: slashing.NewAppModule(encodingConfig.Codec, app.SlashingKeeper, app.AuthKeeper,
-				app.BankKeeper, app.StakingKeeper, app.interfaceRegistry, cometService),
+				app.BankKeeper, app.StakingKeeper, encodingConfig.InterfaceRegistry, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -111,7 +111,7 @@ func (app *App) setupModuleManager(
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      authzmodule.NewAppModule(encodingConfig.Codec, app.AuthzKeeper, app.interfaceRegistry),
+			Module:      authzmodule.NewAppModule(encodingConfig.Codec, app.AuthzKeeper, encodingConfig.InterfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{

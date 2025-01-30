@@ -399,8 +399,15 @@ func genesisStateWithValSet(
 			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 
+		addrCodec := a.AppCodec().InterfaceRegistry().SigningContext().AddressCodec()
+		valCodec := a.AppCodec().InterfaceRegistry().SigningContext().ValidatorAddressCodec()
+		delegatorAddr, err := addrCodec.BytesToString(genAccs[0].GetAddress())
+		if err != nil {
+			panic(err)
+		}
+		valAddr, err := valCodec.BytesToString(val.Address)
+		delegations = append(delegations, stakingtypes.NewDelegation(delegatorAddr, valAddr, math.LegacyOneDec()))
 	}
 	// set validators and delegations
 	params := stakingtypes.DefaultParams()

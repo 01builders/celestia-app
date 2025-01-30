@@ -757,7 +757,9 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.
 		return nil, err
 	}
 	versionMap := app.ModuleManager.GetVersionMap()
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, versionMap)
+	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, versionMap); err != nil {
+		return nil, err
+	}
 	return app.ModuleManager.InitGenesis(ctx, genesisState)
 }
 

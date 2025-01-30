@@ -96,11 +96,13 @@ func TestInitChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			application := app.New(logger, db, traceStore, upgradeHeight, timeoutCommit)
+			application := app.New(logger, db, traceStore, upgradeHeight, timeoutCommit, baseapp.SetChainID(genesis.ChainID))
 			if tc.wantPanic {
-				assert.Panics(t, func() { application.InitChain(&tc.request) })
+				_, err = application.InitChain(&tc.request)
+				assert.Error(t, err)
 			} else {
-				assert.NotPanics(t, func() { application.InitChain(&tc.request) })
+				_, err = application.InitChain(&tc.request)
+				assert.NoError(t, err)
 			}
 		})
 	}

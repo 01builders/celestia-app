@@ -67,68 +67,68 @@ func (app *App) setupModuleManager(
 	app.ModuleManager, err = module.NewManager([]module.VersionedModule{
 		{
 			Module:      genutil.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.StakingKeeper, app, encodingConfig.TxConfig, genutiltypes.DefaultMessageValidator),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      auth.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      vesting.NewAppModule(app.AuthKeeper, app.BankKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      bank.NewAppModule(encodingConfig.Codec, app.BankKeeper, app.AuthKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      feegrantmodule.NewAppModule(encodingConfig.Codec, app.FeeGrantKeeper, encodingConfig.InterfaceRegistry),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      gov.NewAppModule(encodingConfig.Codec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      mint.NewAppModule(encodingConfig.Codec, app.MintKeeper, app.AuthKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module: slashing.NewAppModule(encodingConfig.Codec, app.SlashingKeeper, app.AuthKeeper,
 				app.BankKeeper, app.StakingKeeper, encodingConfig.InterfaceRegistry, cometService),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      distr.NewAppModule(encodingConfig.Codec, app.DistrKeeper, app.StakingKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      staking.NewAppModule(encodingConfig.Codec, app.StakingKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      evidence.NewAppModule(encodingConfig.Codec, app.EvidenceKeeper, cometService),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      authzmodule.NewAppModule(encodingConfig.Codec, app.AuthzKeeper, encodingConfig.InterfaceRegistry),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      ibc.NewAppModule(encodingConfig.Codec, app.IBCKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      params.NewAppModule(app.ParamsKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      transfer.NewAppModule(encodingConfig.Codec, app.TransferKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      blob.NewAppModule(encodingConfig.Codec, app.BlobKeeper),
-			FromVersion: v1, ToVersion: v3,
+			FromVersion: v1, ToVersion: v4,
 		},
 		{
 			Module:      blobstream.NewAppModule(encodingConfig.Codec, app.BlobstreamKeeper),
@@ -136,11 +136,11 @@ func (app *App) setupModuleManager(
 		},
 		{
 			Module:      signal.NewAppModule(app.SignalKeeper),
-			FromVersion: v2, ToVersion: v3,
+			FromVersion: v2, ToVersion: v4,
 		},
 		{
 			Module:      minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
-			FromVersion: v2, ToVersion: v3,
+			FromVersion: v2, ToVersion: v4,
 		},
 		// {
 		// 	Module:      packetforward.NewAppModule(app.PacketForwardKeeper),
@@ -148,7 +148,7 @@ func (app *App) setupModuleManager(
 		// },
 		{
 			Module:      ica.NewAppModule(encodingConfig.Codec, &app.ICAControllerKeeper, &app.ICAHostKeeper),
-			FromVersion: v2, ToVersion: v3,
+			FromVersion: v2, ToVersion: v4,
 		},
 	})
 	return err
@@ -242,23 +242,7 @@ func (app *App) setModuleOrder() {
 }
 
 func allStoreKeys() []string {
-	return []string{
-		authtypes.StoreKey, authzkeeper.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
-		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		pooltypes.StoreKey,
-		evidencetypes.StoreKey,
-		blobstreamtypes.StoreKey,
-		ibctransfertypes.StoreKey,
-		ibcexported.StoreKey,
-		// packetforwardtypes.StoreKey,
-		icahosttypes.StoreKey,
-		ibcfeetypes.StoreKey,
-		signaltypes.StoreKey,
-		blobtypes.StoreKey,
-		consensustypes.StoreKey,
-		accounts.StoreKey,
-	}
+	return versionedStoreKeys()[DefaultInitialVersion]
 }
 
 // versionedStoreKeys returns the store keys for each app version.
@@ -318,6 +302,31 @@ func versionedStoreKeys() map[uint64][]string {
 			slashingtypes.StoreKey,
 			stakingtypes.StoreKey,
 			upgradetypes.StoreKey,
+		},
+		v4: {
+			authtypes.StoreKey,
+			authzkeeper.StoreKey,
+			banktypes.StoreKey,
+			stakingtypes.StoreKey,
+			minttypes.StoreKey,
+			distrtypes.StoreKey,
+			slashingtypes.StoreKey,
+			govtypes.StoreKey,
+			paramstypes.StoreKey,
+			upgradetypes.StoreKey,
+			feegrant.StoreKey,
+			pooltypes.StoreKey, // added in v4
+			evidencetypes.StoreKey,
+			blobstreamtypes.StoreKey,
+			ibctransfertypes.StoreKey,
+			ibcexported.StoreKey,
+			// packetforwardtypes.StoreKey,
+			icahosttypes.StoreKey,
+			ibcfeetypes.StoreKey,
+			signaltypes.StoreKey,
+			blobtypes.StoreKey,
+			consensustypes.StoreKey, // added in v4
+			accounts.StoreKey,       // added in v4
 		},
 	}
 }

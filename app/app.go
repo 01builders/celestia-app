@@ -55,6 +55,7 @@ import (
 	appv1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	appv2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	appv3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	celestiaserver "github.com/celestiaorg/celestia-app/v4/server"
 	blobkeeper "github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
@@ -124,7 +125,8 @@ const (
 	v1                    = appv1.Version
 	v2                    = appv2.Version
 	v3                    = appv3.Version
-	DefaultInitialVersion = v1
+	v4                    = appv4.Version
+	DefaultInitialVersion = v4
 )
 
 var (
@@ -530,7 +532,7 @@ func New(
 	app.MsgServiceRouter().SetCircuit(app.MsgGateKeeper)
 
 	// Initialize the KV stores for the base modules (e.g. params). The base modules will be included in every app version.
-	app.MountKVStores(app.baseKeys())
+	app.MountKVStores(app.keys) // TODO: this was using previously baseKeys, but we want to start from a v4 app
 	app.MountTransientStores(tkeys)
 
 	app.SetInitChainer(app.InitChainer)

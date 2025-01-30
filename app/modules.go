@@ -51,6 +51,7 @@ import (
 	// "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward"
 	// packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v9/packetforward/types"
 	ica "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts"
+	icacontrollertypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/controller/types"
 	icahosttypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v9/modules/apps/27-interchain-accounts/types"
 	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
@@ -325,8 +326,9 @@ func versionedStoreKeys() map[uint64][]string {
 			ibcfeetypes.StoreKey,
 			signaltypes.StoreKey,
 			blobtypes.StoreKey,
-			consensustypes.StoreKey, // added in v4
-			accounts.StoreKey,       // added in v4
+			consensustypes.StoreKey,     // added in v4
+			accounts.StoreKey,           // added in v4
+			icacontrollertypes.StoreKey, // added in v4
 		},
 	}
 }

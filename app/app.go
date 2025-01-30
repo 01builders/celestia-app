@@ -856,10 +856,10 @@ func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 // API server.
 func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
+	// Register new cometbft routes from grpc-gateway.
+	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-	// Register new tendermint queries routes from grpc-gateway.
-	app.RegisterTendermintService(clientCtx)
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	app.ModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)

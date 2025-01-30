@@ -108,13 +108,15 @@ func NewRootCmd() *cobra.Command {
 // initRootCommand performs a bunch of side-effects on the root command.
 func initRootCommand(rootCommand *cobra.Command, app *app.App) {
 	var genesisModule genutil.AppModule
-	if gm, err := app.ModuleManager.Module(genutiltypes.ModuleName); err == nil {
+	if gm, err := app.ModuleManager.Module(genutiltypes.ModuleName); err != nil {
+		panic(fmt.Errorf("failed to get genesis module: %w", err))
+	} else {
 		genesisModule = gm.(genutil.AppModule)
 	}
 
-	genesisCmd := genutilcli.Commands(genesisModule, app.ModuleManager, appExporter)
 	rootCommand.AddCommand(
-		genesisCmd,
+		genutilcli.InitCmd(app.ModuleManager),
+		genutilcli.Commands(genesisModule, app.ModuleManager, appExporter),
 		tmcli.NewCompletionCmd(rootCommand, true),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),

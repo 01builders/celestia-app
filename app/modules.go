@@ -9,7 +9,6 @@ import (
 	ibcfeetypes "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/types"
 
 	"cosmossdk.io/core/comet"
-	"github.com/cosmos/cosmos-sdk/client"
 
 	"cosmossdk.io/x/authz"
 	authzkeeper "cosmossdk.io/x/authz/keeper"
@@ -31,6 +30,7 @@ import (
 	"cosmossdk.io/x/staking"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/app/module"
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
@@ -60,17 +60,17 @@ import (
 )
 
 func (app *App) setupModuleManager(
-	txConfig client.TxConfig,
+	encodingConfig encoding.Config,
 	cometService comet.Service,
 ) error {
 	var err error
 	app.ModuleManager, err = module.NewManager([]module.VersionedModule{
 		{
-			Module:      genutil.NewAppModule(app.appCodec, app.AuthKeeper, app.StakingKeeper, app, txConfig, genutiltypes.DefaultMessageValidator),
+			Module:      genutil.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.StakingKeeper, app, encodingConfig.TxConfig, genutiltypes.DefaultMessageValidator),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      auth.NewAppModule(app.appCodec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
+			Module:      auth.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -78,48 +78,44 @@ func (app *App) setupModuleManager(
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      bank.NewAppModule(app.appCodec, app.BankKeeper, app.AuthKeeper),
-			FromVersion: v1, ToVersion: v3,
-		},
-		// {
-		// 	Module:      capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
-		// 	FromVersion: v1, ToVersion: v3,
-		// },
-		{
-			Module:      feegrantmodule.NewAppModule(app.appCodec, app.FeeGrantKeeper, app.interfaceRegistry),
+			Module:      bank.NewAppModule(encodingConfig.Codec, app.BankKeeper, app.AuthKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
+			Module:      feegrantmodule.NewAppModule(encodingConfig.Codec, app.FeeGrantKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      mint.NewAppModule(app.appCodec, app.MintKeeper, app.AuthKeeper),
+			Module:      gov.NewAppModule(encodingConfig.Codec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module: slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AuthKeeper,
+			Module:      mint.NewAppModule(encodingConfig.Codec, app.MintKeeper, app.AuthKeeper),
+			FromVersion: v1, ToVersion: v3,
+		},
+		{
+			Module: slashing.NewAppModule(encodingConfig.Codec, app.SlashingKeeper, app.AuthKeeper,
 				app.BankKeeper, app.StakingKeeper, app.interfaceRegistry, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      distr.NewAppModule(app.appCodec, app.DistrKeeper, app.StakingKeeper),
+			Module:      distr.NewAppModule(encodingConfig.Codec, app.DistrKeeper, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      staking.NewAppModule(app.appCodec, app.StakingKeeper),
+			Module:      staking.NewAppModule(encodingConfig.Codec, app.StakingKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      evidence.NewAppModule(app.appCodec, app.EvidenceKeeper, cometService),
+			Module:      evidence.NewAppModule(encodingConfig.Codec, app.EvidenceKeeper, cometService),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.interfaceRegistry),
+			Module:      authzmodule.NewAppModule(encodingConfig.Codec, app.AuthzKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      ibc.NewAppModule(app.appCodec, app.IBCKeeper),
+			Module:      ibc.NewAppModule(encodingConfig.Codec, app.IBCKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
@@ -127,15 +123,15 @@ func (app *App) setupModuleManager(
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      transfer.NewAppModule(app.appCodec, app.TransferKeeper),
+			Module:      transfer.NewAppModule(encodingConfig.Codec, app.TransferKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      blob.NewAppModule(app.appCodec, app.BlobKeeper),
+			Module:      blob.NewAppModule(encodingConfig.Codec, app.BlobKeeper),
 			FromVersion: v1, ToVersion: v3,
 		},
 		{
-			Module:      blobstream.NewAppModule(app.appCodec, app.BlobstreamKeeper),
+			Module:      blobstream.NewAppModule(encodingConfig.Codec, app.BlobstreamKeeper),
 			FromVersion: v1, ToVersion: v1,
 		},
 		{
@@ -143,7 +139,7 @@ func (app *App) setupModuleManager(
 			FromVersion: v2, ToVersion: v3,
 		},
 		{
-			Module:      minfee.NewAppModule(app.appCodec, app.ParamsKeeper),
+			Module:      minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
 		// {
@@ -151,7 +147,7 @@ func (app *App) setupModuleManager(
 		// 	FromVersion: v2, ToVersion: v3,
 		// },
 		{
-			Module:      ica.NewAppModule(nil, &app.ICAControllerKeeper, &app.ICAHostKeeper),
+			Module:      ica.NewAppModule(encodingConfig.Codec, &app.ICAControllerKeeper, &app.ICAHostKeeper),
 			FromVersion: v2, ToVersion: v3,
 		},
 	})

@@ -219,12 +219,6 @@ func New(
 	if err != nil {
 		panic(fmt.Errorf("failed to create tx decoder: %w", err))
 	}
-	txConfig := authtx.NewTxConfig(
-		encodingConfig.Codec,
-		signingCtx.AddressCodec(),
-		signingCtx.ValidatorAddressCodec(),
-		authtx.DefaultSignModes,
-	)
 	govModuleAddr, err := signingCtx.AddressCodec().BytesToString(authtypes.NewModuleAddress(govtypes.ModuleName))
 	if err != nil {
 		panic(fmt.Errorf("failed to create gov authority: %w", err))
@@ -278,8 +272,12 @@ func New(
 		accountstd.AddAccount(lockup.PERMANENT_LOCKING_ACCOUNT, lockup.NewPermanentLockingAccount),
 		accountstd.AddAccount("multisig", multisig.NewAccount),
 		// PRODUCTION: add
-		baseaccount.NewAccount("base", txConfig.SignModeHandler(), baseaccount.WithSecp256K1PubKey()),
+		baseaccount.NewAccount("base", encodingConfig.TxConfig.SignModeHandler(), baseaccount.WithSecp256K1PubKey()),
 	)
+	if err != nil {
+		panic(fmt.Errorf("failed to create accounts keeper: %w", err))
+	}
+
 	app.AuthKeeper = authkeeper.NewAccountKeeper(
 		envFactory.make(authtypes.ModuleName, authtypes.StoreKey),
 		encodingConfig.Codec,
@@ -438,12 +436,6 @@ func New(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	app.GovKeeper.SetLegacyRouter(govRouter)
 
-	app.GovKeeper = app.GovKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register the governance hooks
-		),
-	)
-
 	// IBC Fee Module keeper
 	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
 		encodingConfig.Codec,
@@ -518,7 +510,7 @@ func New(
 	// we prefer to be more strict in what arguments the modules expect.
 
 	// NOTE: Modules can't be modified or else must be passed by reference to the module manager
-	err = app.setupModuleManager(txConfig, cometService)
+	err = app.setupModuleManager(encodingConfig, cometService)
 	if err != nil {
 		panic(err)
 	}

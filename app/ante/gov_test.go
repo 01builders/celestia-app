@@ -20,9 +20,9 @@ import (
 
 func TestGovDecorator(t *testing.T) {
 	blockedParams := map[string][]string{
-		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      []string{"send_enabled"},
-		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   []string{"params.bond_denom", "params.unbonding_time"},
-		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): []string{"validator"},
+		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      {"send_enabled"},
+		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   {"params.bond_denom", "params.unbonding_time"},
+		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): {"validator"},
 	}
 
 	decorator := ante.NewGovProposalDecorator(blockedParams)

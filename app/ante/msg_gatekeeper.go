@@ -19,11 +19,13 @@ type MsgVersioningGateKeeper struct {
 	// acceptedMsgs is a map from appVersion -> msgTypeURL -> struct{}.
 	// If a msgTypeURL is present in the map it should be accepted for that appVersion.
 	acceptedMsgs    map[uint64]map[string]struct{}
+	allowAll        bool // allow all messages if true
 	consensusKeeper ConsensusKeeper
 }
 
 func NewMsgVersioningGateKeeper(acceptedList map[uint64]map[string]struct{}, consensusKeeper ConsensusKeeper) *MsgVersioningGateKeeper {
 	return &MsgVersioningGateKeeper{
+		allowAll:        len(acceptedList) == 0,
 		acceptedMsgs:    acceptedList,
 		consensusKeeper: consensusKeeper,
 	}
@@ -36,13 +38,15 @@ func (mgk MsgVersioningGateKeeper) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		return ctx, err
 	}
 
-	acceptedMsgs, exists := mgk.acceptedMsgs[appVersion]
-	if !exists {
-		return ctx, sdkerrors.ErrNotSupported.Wrapf("app version %d is not supported", appVersion)
-	}
+	if !mgk.allowAll {
+		acceptedMsgs, exists := mgk.acceptedMsgs[appVersion]
+		if !exists {
+			return ctx, sdkerrors.ErrNotSupported.Wrapf("app version %d is not supported", appVersion)
+		}
 
-	if err := mgk.hasInvalidMsg(ctx, acceptedMsgs, tx.GetMsgs(), appVersion); err != nil {
-		return ctx, err
+		if err := mgk.hasInvalidMsg(ctx, acceptedMsgs, tx.GetMsgs(), appVersion); err != nil {
+			return ctx, err
+		}
 	}
 
 	return next(ctx, tx, simulate)
@@ -72,6 +76,10 @@ func (mgk MsgVersioningGateKeeper) hasInvalidMsg(ctx sdk.Context, acceptedMsgs m
 }
 
 func (mgk MsgVersioningGateKeeper) IsAllowed(ctx context.Context, msgName string) (bool, error) {
+	if mgk.allowAll {
+		return true, nil
+	}
+
 	appVersion, err := mgk.consensusKeeper.AppVersion(ctx)
 	if err != nil {
 		return false, sdkerrors.ErrLogic.Wrap("failed to get app version")
@@ -85,5 +93,6 @@ func (mgk MsgVersioningGateKeeper) IsAllowed(ctx context.Context, msgName string
 	if !exists {
 		return false, nil
 	}
+
 	return true, nil
 }

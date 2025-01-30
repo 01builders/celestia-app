@@ -15,8 +15,6 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
-	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
@@ -476,7 +474,5 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 
 	_, err = testApp.Commit()
 	require.NoError(t, err)
-	supportedVersions := []uint64{v1.Version, v2.Version}
-	require.Equal(t, supportedVersions, testApp.SupportedVersions())
 	return testApp, kr
 }

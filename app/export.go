@@ -40,7 +40,7 @@ func (app *App) ExportAppStateAndValidators(forZeroHeight bool, jailAllowedAddrs
 		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
 	}
 
-	genState, err := app.ModuleManager.ExportGenesis(ctx, app.encodingConfig.Codec, appVersion)
+	genState, err := app.ModuleManager.ExportGenesis(ctx)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}

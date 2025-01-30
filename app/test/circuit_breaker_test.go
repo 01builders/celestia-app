@@ -33,7 +33,7 @@ var expiration = time.Now().Add(time.Hour)
 // message that contains a MsgTryUpgrade if the MsgTryUpgrade is not supported
 // in the current version.
 func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to update the app version easily
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	config := encoding.MakeConfig()
 	testApp, keyRing := util.SetupTestAppWithGenesisValSet(app.DefaultInitialConsensusParams(), granter, grantee)
 
 	signer, err := user.NewSigner(keyRing, config.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 1, 0))

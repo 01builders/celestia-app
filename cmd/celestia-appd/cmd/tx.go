@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/module"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/spf13/cobra"
 )
 
-func txCommand() *cobra.Command {
+func txCommand(moduleManager *module.Manager) *cobra.Command {
 	command := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -28,7 +28,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-	app.ModuleBasics.AddTxCommands(command)
+	moduleManager.AddTxCommands(command)
 	command.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return command

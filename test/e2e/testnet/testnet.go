@@ -152,7 +152,7 @@ func (t *Testnet) CreateTxClient(
 	defer os.RemoveAll(tmpDir)
 	txsimKeyringDir := filepath.Join(tmpDir, name)
 
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...).Codec
+	config := encoding.MakeConfig().Codec
 	txsimKeyring, err := keyring.New(app.Name, keyring.BackendTest, txsimKeyringDir, nil, config)
 	if err != nil {
 		return fmt.Errorf("failed to create keyring: %w", err)
@@ -236,7 +236,7 @@ func (t *Testnet) StartTxClients(ctx context.Context) error {
 // is persisted in the given txsimKeyringDir.
 // If txsimKeyringDir is an empty string, an in-memory keyring is created.
 func (t *Testnet) CreateAccount(name string, tokens int64, txsimKeyringDir string) (keyring.Keyring, error) {
-	cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...).Codec
+	cdc := encoding.MakeConfig().Codec
 	var kr keyring.Keyring
 	var err error
 	// if no keyring directory is specified, create an in-memory keyring

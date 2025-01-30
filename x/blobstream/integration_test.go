@@ -44,7 +44,7 @@ func (s *BlobstreamIntegrationSuite) SetupSuite() {
 		WithFundedAccounts(s.accounts...).
 		WithConsensusParams(app.DefaultInitialConsensusParams())
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
-	s.ecfg = encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	s.ecfg = encoding.MakeConfig()
 	s.cctx = cctx
 
 	require.NoError(t, s.cctx.WaitForBlocks(10))

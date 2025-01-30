@@ -50,7 +50,7 @@ type SquareSizeIntegrationTest struct {
 func (s *SquareSizeIntegrationTest) SetupSuite() {
 	t := s.T()
 	t.Log("setting up square size integration test")
-	s.ecfg = encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	s.ecfg = encoding.MakeConfig()
 
 	cfg := testnode.DefaultConfig().
 		WithModifiers(genesis.ImmediateProposals(s.ecfg.Codec)).
@@ -111,7 +111,7 @@ func (s *SquareSizeIntegrationTest) TestSquareSizeUpperBound() {
 			ctx,
 			s.grpcAddr,
 			s.cctx.Keyring,
-			encoding.MakeConfig(app.ModuleEncodingRegisters...),
+			encoding.MakeConfig(),
 			txsim.DefaultOptions().
 				WithSeed(rand.Int63()).
 				WithPollTime(time.Second).

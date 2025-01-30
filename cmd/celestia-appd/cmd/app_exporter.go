@@ -6,7 +6,6 @@ import (
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
@@ -20,8 +19,7 @@ func appExporter(
 	appOptions servertypes.AppOptions,
 	_ []string,
 ) (servertypes.ExportedApp, error) {
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	application := app.New(logger, db, traceStore, uint(1), config, 0, 0)
+	application := app.New(logger, db, traceStore, 0, 0)
 	if height != -1 {
 		if err := application.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err

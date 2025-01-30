@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	coretesting "cosmossdk.io/core/testing"
+	"cosmossdk.io/log"
 	"cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
@@ -19,6 +21,7 @@ import (
 // Genesis manages the creation of the genesis state of a network. It is meant
 // to be used as the first step to any test that requires a network.
 type Genesis struct {
+	// ecfg is the encoding configuration of the app.
 	ecfg encoding.Config
 	// ConsensusParams are the consensus parameters of the network.
 	ConsensusParams *tmproto.ConsensusParams
@@ -61,7 +64,7 @@ func (g *Genesis) Validators() []Validator {
 
 // NewDefaultGenesis creates a new default genesis with no accounts or validators.
 func NewDefaultGenesis() *Genesis {
-	ecfg := encoding.MakeConfig(app.ModuleBasics)
+	ecfg := encoding.MakeConfig()
 	g := &Genesis{
 		ecfg:            ecfg,
 		ConsensusParams: app.DefaultConsensusParams(),
@@ -207,7 +210,10 @@ func (g *Genesis) Export() (*coretypes.GenesisDoc, error) {
 		gentxs = append(gentxs, json.RawMessage(bz))
 	}
 
+	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0, 0)
+
 	return Document(
+		tempApp.ModuleManager.DefaultGenesis(),
 		g.ecfg,
 		g.ConsensusParams,
 		g.ChainID,

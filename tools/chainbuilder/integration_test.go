@@ -10,7 +10,6 @@ import (
 	"cosmossdk.io/log"
 	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	tmconfig "github.com/cometbft/cometbft/config"
@@ -59,14 +58,10 @@ func TestRun(t *testing.T) {
 	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
 	require.NoError(t, err)
 
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
-
 	app := app.New(
 		log.NewNopLogger(),
 		appDB,
 		nil,
-		0,
-		encCfg,
 		0, // upgrade height v2
 		0, // timeout commit
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),

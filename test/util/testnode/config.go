@@ -9,7 +9,6 @@ import (
 	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/server"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
@@ -169,15 +168,12 @@ func WithTimeoutCommit(d time.Duration) AppCreationOptions {
 
 func DefaultAppCreator(opts ...AppCreationOptions) server.AppCreator {
 	return func(log.Logger, corestore.KVStoreWithBatch, io.Writer, srvtypes.AppOptions) server.Application {
-		encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 		app := app.New(
 			log.NewNopLogger(),
 			coretesting.NewMemDB(),
 			nil, // trace store
-			0,   // invCheckPerid
-			encodingConfig,
-			0, // v2 upgrade height
-			0, // timeout commit
+			0,   // v2 upgrade height
+			0,   // timeout commit
 			baseapp.SetMinGasPrices(fmt.Sprintf("%v%v", appconsts.DefaultMinGasPrice, app.BondDenom)),
 		)
 
@@ -191,15 +187,12 @@ func DefaultAppCreator(opts ...AppCreationOptions) server.AppCreator {
 
 func CustomAppCreator(minGasPrice string) server.AppCreator {
 	return func(log.Logger, corestore.KVStoreWithBatch, io.Writer, srvtypes.AppOptions) server.Application {
-		encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 		app := app.New(
 			log.NewNopLogger(),
 			coretesting.NewMemDB(),
 			nil, // trace store
-			0,   // invCheckPerid
-			encodingConfig,
-			0, // v2 upgrade height
-			0, // timeout commit
+			0,   // v2 upgrade height
+			0,   // timeout commit
 			baseapp.SetMinGasPrices(minGasPrice),
 		)
 		return app

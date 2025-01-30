@@ -8,7 +8,6 @@ import (
 	consensustypes "cosmossdk.io/x/consensus/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	stakingtypes "cosmossdk.io/x/staking/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
@@ -36,7 +35,7 @@ func TestGovDecorator(t *testing.T) {
 		testnode.RandomAddress().String(),
 		coins,
 	)
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 
 	msgProposal, err := govtypes.NewMsgSubmitProposal(
 		[]types.Msg{msgSend}, coins, accounts[0], "", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)

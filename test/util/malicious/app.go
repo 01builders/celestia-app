@@ -6,7 +6,6 @@ import (
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -51,12 +50,10 @@ func New(
 	logger log.Logger,
 	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
-	invCheckPeriod uint,
-	encodingConfig encoding.Config,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-	goodApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, 0, 0, baseAppOptions...)
+	goodApp := app.New(logger, db, traceStore, 0, 0, baseAppOptions...)
 	badApp := &App{App: goodApp}
 
 	// set the malicious prepare proposal handler if it is set in the app options

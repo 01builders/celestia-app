@@ -53,7 +53,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 
 	s.cctx = cctx
-	s.ecfg = encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	s.ecfg = encoding.MakeConfig()
 
 	require.NoError(t, cctx.WaitForNextBlock())
 

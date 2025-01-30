@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/tx"
@@ -67,7 +66,7 @@ func getTestdataBlockResponse(t *testing.T) (resp blocksync.BlockResponse) {
 		t.Fatalf("reading json file: %v", err)
 	}
 
-	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encodingConfig := encoding.MakeConfig()
 	if err = encodingConfig.Codec.UnmarshalJSON(fileContents, &resp); err != nil {
 		t.Fatalf("error unmarshal JSON block response: %v", err)
 	}
@@ -86,7 +85,7 @@ func getTxBytes(txBytes []byte) []byte {
 }
 
 func decodeTx(txBytes []byte) (types.Tx, error) {
-	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encodingConfig := encoding.MakeConfig()
 	decoder := encodingConfig.TxConfig.TxDecoder()
 	tx, err := decoder(txBytes)
 	if err != nil {

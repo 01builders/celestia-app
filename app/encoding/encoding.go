@@ -1,8 +1,6 @@
 package encoding
 
 import (
-	"cosmossdk.io/core/appmodule"
-	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	txdecode "cosmossdk.io/x/tx/decode"
 	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,11 +13,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-type ModuleRegister interface {
-	appmodule.HasAminoCodec
-	appmodulev2.HasRegisterInterfaces
-}
-
 // Config specifies the concrete encoding types to use for a given app.
 // This is provided for compatibility between protobuf and amino implementations.
 type Config struct {
@@ -30,7 +23,7 @@ type Config struct {
 }
 
 // MakeConfig returns an encoding config for the app.
-func MakeConfig(moduleRegisters ...ModuleRegister) Config {
+func MakeConfig() Config {
 	interfaceRegistry, _ := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -45,12 +38,6 @@ func MakeConfig(moduleRegisters ...ModuleRegister) Config {
 	// amino.
 	std.RegisterInterfaces(interfaceRegistry)
 	std.RegisterLegacyAminoCodec(amino)
-
-	// Register types from the moduleRegisters on interfaceRegistry and amino.
-	for _, moduleRegister := range moduleRegisters {
-		moduleRegister.RegisterInterfaces(interfaceRegistry)
-		moduleRegister.RegisterLegacyAminoCodec(amino)
-	}
 
 	protoCodec := codec.NewProtoCodec(interfaceRegistry)
 	dec, err := txdecode.NewDecoder(txdecode.Options{

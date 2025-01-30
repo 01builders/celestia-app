@@ -9,7 +9,6 @@ import (
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	celestiaserver "github.com/celestiaorg/celestia-app/v4/server"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -43,8 +42,6 @@ func NewAppServer(
 		logger,
 		db,
 		traceStore,
-		cast.ToUint(appOptions.Get(server.FlagInvCheckPeriod)),
-		encoding.MakeConfig(app.ModuleEncodingRegisters...),
 		cast.ToInt64(appOptions.Get(UpgradeHeightFlag)),
 		cast.ToDuration(appOptions.Get(TimeoutCommitFlag)),
 		baseapp.SetPruning(pruningOpts),

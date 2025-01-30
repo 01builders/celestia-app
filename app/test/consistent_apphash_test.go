@@ -98,7 +98,7 @@ func TestConsistentAppHash(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			testApp := testutil.NewTestApp()
-			enc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+			enc := encoding.MakeConfig()
 			// Create deterministic keys
 			kr, pubKeys := deterministicKeyRing(enc.Codec)
 			consensusParams := app.DefaultConsensusParams()

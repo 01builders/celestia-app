@@ -7,7 +7,6 @@ import (
 
 	"cosmossdk.io/math"
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -23,6 +22,7 @@ var AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountA
 
 // Document will create a valid genesis doc with funded addresses.
 func Document(
+	defaultGenesis map[string]json.RawMessage,
 	ecfg encoding.Config,
 	params *tmproto.ConsensusParams,
 	chainID string,
@@ -64,7 +64,7 @@ func Document(
 		return nil, err
 	}
 
-	state := app.ModuleBasics.DefaultGenesis()
+	state := defaultGenesis
 	state[authtypes.ModuleName] = ecfg.Codec.MustMarshalJSON(authGenState)
 	state[banktypes.ModuleName] = ecfg.Codec.MustMarshalJSON(bankGenState)
 	state[genutiltypes.ModuleName] = ecfg.Codec.MustMarshalJSON(genutilGenState)

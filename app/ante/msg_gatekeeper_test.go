@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/x/authz"
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -80,7 +79,7 @@ func TestMsgGateKeeperAnteHandler(t *testing.T) {
 				},
 				2: {},
 			}, mockConsensusKeeper{appVersion: tc.version})
-			cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+			cdc := encoding.MakeConfig()
 			anteHandler := sdk.ChainAnteDecorators(msgGateKeeper)
 
 			ctx := sdk.NewContext(nil, false, nil)

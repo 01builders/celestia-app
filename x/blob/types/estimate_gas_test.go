@@ -21,7 +21,7 @@ import (
 )
 
 func TestPFBGasEstimation(t *testing.T) {
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 	rand := tmrand.NewRand()
 
 	testCases := []struct {
@@ -73,7 +73,7 @@ func FuzzPFBGasEstimation(f *testing.F) {
 		maxBlobSize = 418
 		seed        = int64(9001)
 	)
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 	f.Add(numBlobs, maxBlobSize, seed)
 	f.Fuzz(func(t *testing.T, numBlobs, maxBlobSize int, seed int64) {
 		if numBlobs <= 0 || maxBlobSize <= 0 {

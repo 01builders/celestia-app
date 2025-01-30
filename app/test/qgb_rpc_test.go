@@ -18,7 +18,7 @@ func TestBlobstreamRPCQueries(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping blobstream integration test in short mode.")
 	}
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	ecfg := encoding.MakeConfig()
 	cfg := testnode.DefaultConfig().
 		WithModifiers(genesis.SetDataCommitmentWindow(ecfg.Codec, 100)).
 		WithConsensusParams(app.DefaultInitialConsensusParams())

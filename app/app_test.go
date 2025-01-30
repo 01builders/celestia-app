@@ -12,7 +12,6 @@ import (
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
@@ -28,11 +27,9 @@ func TestNew(t *testing.T) {
 	logger := log.NewNopLogger()
 	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
-	invCheckPeriod := uint(1)
-	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(0)
 	timeoutCommit := time.Second
-	got := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
+	got := app.New(logger, db, traceStore, upgradeHeight, timeoutCommit)
 
 	t.Run("initializes ICAHostKeeper", func(t *testing.T) {
 		assert.NotNil(t, got.ICAHostKeeper)
@@ -60,11 +57,9 @@ func TestInitChain(t *testing.T) {
 	logger := log.NewNopLogger()
 	db := coretesting.NewMemDB()
 	traceStore := &NoopWriter{}
-	invCheckPeriod := uint(1)
-	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(0)
 	timeoutCommit := time.Second
-	testApp := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
+	testApp := app.New(logger, db, traceStore, upgradeHeight, timeoutCommit)
 	genesisState, _, _ := util.GenesisStateWithSingleValidator(testApp, "account")
 	appStateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
@@ -101,7 +96,7 @@ func TestInitChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			application := app.New(logger, db, traceStore, invCheckPeriod, encodingConfig, upgradeHeight, timeoutCommit)
+			application := app.New(logger, db, traceStore, upgradeHeight, timeoutCommit)
 			if tc.wantPanic {
 				assert.Panics(t, func() { application.InitChain(&tc.request) })
 			} else {
@@ -161,7 +156,6 @@ func TestOfferSnapshot(t *testing.T) {
 
 func createTestApp(t *testing.T) *app.App {
 	db := coretesting.NewMemDB()
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	upgradeHeight := int64(3)
 	timeoutCommit := time.Second
 	snapshotDir := filepath.Join(t.TempDir(), "data", "snapshots")
@@ -178,7 +172,7 @@ func createTestApp(t *testing.T) *app.App {
 	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
 	require.NoError(t, err)
 	baseAppOption := baseapp.SetSnapshot(snapshotStore, snapshottypes.NewSnapshotOptions(10, 10))
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, config, upgradeHeight, timeoutCommit, baseAppOption)
+	testApp := app.New(log.NewNopLogger(), db, nil, upgradeHeight, timeoutCommit, baseAppOption)
 	require.NoError(t, err)
 	response, err := testApp.Info(&abci.InfoRequest{})
 	require.NoError(t, err)

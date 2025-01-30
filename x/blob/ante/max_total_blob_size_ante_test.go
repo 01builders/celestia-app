@@ -3,7 +3,6 @@ package ante_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
@@ -121,7 +120,7 @@ func TestMaxTotalBlobSizeDecorator(t *testing.T) {
 		},
 	}
 
-	txConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...).TxConfig
+	txConfig := encoding.MakeConfig().TxConfig
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			txBuilder := txConfig.NewTxBuilder()

@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/store"
 	metrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/app/module"
 	"github.com/celestiaorg/celestia-app/v4/x/signal"
@@ -29,7 +28,7 @@ func TestConfigurator(t *testing.T) {
 		mockServer := mock.NewMockServer(mockCtrl)
 		mockServer.EXPECT().RegisterService(gomock.Any(), gomock.Any()).Times(2).Return()
 
-		config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+		config := encoding.MakeConfig()
 		configurator := module.NewConfigurator(config.Codec, mockServer, mockServer)
 		storeKey := storetypes.NewKVStoreKey(signaltypes.StoreKey)
 
@@ -86,7 +85,7 @@ func TestConfigurator(t *testing.T) {
 		require.NotNil(t, manager)
 
 		mockServer := mock.NewMockServer(mockCtrl)
-		config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+		config := encoding.MakeConfig()
 
 		isCalled := false
 		configurator := module.NewConfigurator(config.Codec, mockServer, mockServer)

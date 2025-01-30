@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
@@ -130,7 +129,7 @@ func TestBlobShareDecorator(t *testing.T) {
 		},
 	}
 
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	ecfg := encoding.MakeConfig()
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

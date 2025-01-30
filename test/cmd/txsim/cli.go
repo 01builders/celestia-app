@@ -69,7 +69,7 @@ well funded account that can act as the master account. The command runs until a
 			var (
 				keys keyring.Keyring
 				err  error
-				cdc  = encoding.MakeConfig(app.ModuleEncodingRegisters...).Codec
+				cdc  = encoding.MakeConfig().Codec
 			)
 
 			// setup the keyring
@@ -177,7 +177,7 @@ well funded account that can act as the master account. The command runs until a
 				opts.SuppressLogs()
 			}
 
-			encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+			encCfg := encoding.MakeConfig()
 			err = txsim.Run(
 				cmd.Context(),
 				grpcEndpoint,

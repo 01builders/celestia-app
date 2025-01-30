@@ -8,7 +8,6 @@ import (
 	"time"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
@@ -38,7 +37,7 @@ type Context struct {
 }
 
 func NewContext(goContext context.Context, keyring keyring.Keyring, tmConfig *tmconfig.Config, chainID, apiAddress string) Context {
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	config := encoding.MakeConfig()
 	clientContext := client.Context{}.
 		WithKeyring(keyring).
 		WithHomeDir(tmConfig.RootDir).

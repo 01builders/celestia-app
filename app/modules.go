@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"cosmossdk.io/x/accounts"
+	consensustypes "cosmossdk.io/x/consensus/types"
 	pooltypes "cosmossdk.io/x/protocolpool/types"
 	ibcfeetypes "github.com/cosmos/ibc-go/v9/modules/apps/29-fee/types"
 
@@ -29,7 +31,6 @@ import (
 	"cosmossdk.io/x/staking"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/app/module"
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
@@ -40,7 +41,6 @@ import (
 	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	"github.com/celestiaorg/celestia-app/v4/x/signal"
 	signaltypes "github.com/celestiaorg/celestia-app/v4/x/signal/types"
-	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
@@ -59,46 +59,12 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 )
 
-var (
-	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
-	// non-dependant module elements, such as codec registration
-	// and genesis verification.
-	ModuleBasics = sdkmodule.NewManager(
-		auth.AppModule{},
-		genutil.AppModule{},
-		bankModule{},
-		stakingModule{},
-		mintModule{},
-		distributionModule{},
-		newGovModule(),
-		params.AppModule{},
-		slashingModule{},
-		authzmodule.AppModule{},
-		feegrantmodule.AppModule{},
-		ibcModule{},
-		evidence.AppModule{},
-		transfer.AppModule{},
-		vesting.AppModule{},
-		blob.AppModule{},
-		blobstream.AppModule{},
-		signal.AppModule{},
-		minfee.AppModule{},
-		// packetforward.AppModuleBasic{},
-		icaModule{},
-	)
-
-	// ModuleEncodingRegisters keeps track of all the module methods needed to
-	// register interfaces and specific type to encoding config
-	ModuleEncodingRegisters = extractRegisters(ModuleBasics)
-)
-
 func (app *App) setupModuleManager(
 	txConfig client.TxConfig,
 	cometService comet.Service,
-	skipGenesisInvariants bool,
 ) error {
 	var err error
-	app.manager, err = module.NewManager([]module.VersionedModule{
+	app.ModuleManager, err = module.NewManager([]module.VersionedModule{
 		{
 			Module:      genutil.NewAppModule(app.appCodec, app.AuthKeeper, app.StakingKeeper, app, txConfig, genutiltypes.DefaultMessageValidator),
 			FromVersion: v1, ToVersion: v3,
@@ -123,10 +89,6 @@ func (app *App) setupModuleManager(
 			Module:      feegrantmodule.NewAppModule(app.appCodec, app.FeeGrantKeeper, app.interfaceRegistry),
 			FromVersion: v1, ToVersion: v3,
 		},
-		// {
-		// 	Module:      crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
-		// 	FromVersion: v1, ToVersion: v3,
-		// },
 		{
 			Module:      gov.NewAppModule(app.appCodec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
 			FromVersion: v1, ToVersion: v3,
@@ -201,7 +163,7 @@ func (app *App) setModuleOrder() {
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
-	app.manager.SetOrderBeginBlockers(
+	app.ModuleManager.SetOrderBeginBlockers(
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -226,7 +188,7 @@ func (app *App) setModuleOrder() {
 		// packetforwardtypes.ModuleName,
 	)
 
-	app.manager.SetOrderEndBlockers(
+	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		minttypes.ModuleName,
@@ -256,7 +218,7 @@ func (app *App) setModuleOrder() {
 	// properly initialized with tokens from genesis accounts.
 	// NOTE: The minfee module must occur before genutil so DeliverTx can
 	// successfully pass the fee checking logic
-	app.manager.SetOrderInitGenesis(
+	app.ModuleManager.SetOrderInitGenesis(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -298,6 +260,8 @@ func allStoreKeys() []string {
 		ibcfeetypes.StoreKey,
 		signaltypes.StoreKey,
 		blobtypes.StoreKey,
+		consensustypes.StoreKey,
+		accounts.StoreKey,
 	}
 }
 
@@ -388,15 +352,4 @@ func (app *App) assertAllKeysArePresent() {
 			panic(fmt.Sprintf("app version %d is supported by the module manager but has no keys", appVersion))
 		}
 	}
-}
-
-// extractRegisters returns the encoding module registers from the basic
-// manager.
-func extractRegisters(manager *sdkmodule.Manager) (modules []encoding.ModuleRegister) {
-	for _, m := range manager.Modules {
-		if r, ok := m.(encoding.ModuleRegister); ok {
-			modules = append(modules, r)
-		}
-	}
-	return modules
 }

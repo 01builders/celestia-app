@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	apperrors "github.com/celestiaorg/celestia-app/v4/app/errors"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
@@ -51,7 +50,7 @@ func (s *BigBlobSuite) SetupSuite() {
 
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	s.cctx = cctx
-	s.ecfg = encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	s.ecfg = encoding.MakeConfig()
 
 	require.NoError(t, cctx.WaitForNextBlock())
 }

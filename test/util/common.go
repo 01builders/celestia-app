@@ -8,7 +8,6 @@ import (
 	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	cosmosmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -32,6 +31,7 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	txdecode "cosmossdk.io/x/tx/decode"
 	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v4/x/blobstream/keeper"
 	blobsteamkeeper "github.com/celestiaorg/celestia-app/v4/x/blobstream/keeper"
@@ -40,13 +40,11 @@ import (
 	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	tmed "github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	ccodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	ccrypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -56,8 +54,6 @@ import (
 )
 
 var (
-	// ModuleBasics is a mock module basic manager for testing
-	ModuleBasics = app.ModuleBasics
 	// TestingStakeParams is a set of staking params for testing
 	TestingStakeParams = stakingtypes.Params{
 		UnbondingTime:     100,
@@ -246,7 +242,7 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	ctx := sdk.NewContext(ms, false, log.NewTestLogger(t)).WithBlockHeader(header)
 
 	aminoCdc := MakeAminoCodec()
-	cdc := MakeCodec()
+	cdc := encoding.MakeConfig().Codec
 	cometService := runtime.NewContextAwareCometInfoService()
 	authority := authtypes.NewModuleAddress("gov")
 
@@ -430,15 +426,6 @@ func getSubspace(k paramskeeper.Keeper, moduleName string) paramstypes.Subspace 
 	return subspace
 }
 
-// MakeCodec creates a proto codec for use in testing
-func MakeCodec() codec.Codec {
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	std.RegisterInterfaces(interfaceRegistry)
-	ModuleBasics.RegisterInterfaces(interfaceRegistry)
-	blobstreamtypes.RegisterInterfaces(interfaceRegistry)
-	return codec.NewProtoCodec(interfaceRegistry)
-}
-
 // SetupFiveValChain does all the initialization for a 5 Validator chain using the keys here
 func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 	t.Helper()
@@ -469,7 +456,7 @@ func CreateValidator(
 	accountNumber uint64,
 	valAddr sdk.ValAddress,
 	consPubKey ccrypto.PubKey,
-	stakingAmount cosmosmath.Int,
+	stakingAmount math.Int,
 ) {
 	// Initialize the account for the key
 	acc := input.AuthKeeper.NewAccount(
@@ -507,7 +494,7 @@ func RegisterEVMAddress(
 func NewTestMsgCreateValidator(
 	address sdk.ValAddress,
 	pubKey ccrypto.PubKey,
-	amt cosmosmath.Int,
+	amt math.Int,
 ) *stakingtypes.MsgCreateValidator {
 	commission := stakingtypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec())
 	out, err := stakingtypes.NewMsgCreateValidator(
@@ -587,7 +574,7 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 	return input, input.Context
 }
 
-func NewTestMsgUnDelegateValidator(address sdk.ValAddress, amt cosmosmath.Int) *stakingtypes.MsgUndelegate {
+func NewTestMsgUnDelegateValidator(address sdk.ValAddress, amt math.Int) *stakingtypes.MsgUndelegate {
 	msg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(address).String(), address.String(), sdk.NewCoin("stake", amt))
 	return msg
 }

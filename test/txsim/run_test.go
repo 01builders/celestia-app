@@ -33,7 +33,7 @@ func TestTxSimulator(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping TestTxSimulator in short mode.")
 	}
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 	testCases := []struct {
 		name        string
 		sequences   []txsim.Sequence
@@ -185,7 +185,7 @@ func TestTxSimUpgrade(t *testing.T) {
 		cctx.GoContext(),
 		grpcAddr,
 		cctx.Keyring,
-		encoding.MakeConfig(app.ModuleEncodingRegisters...),
+		encoding.MakeConfig(),
 		opts,
 		sequences...,
 	)

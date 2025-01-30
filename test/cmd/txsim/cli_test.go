@@ -60,7 +60,7 @@ func setup(t testing.TB) (keyring.Keyring, string, string) {
 	}
 	t.Helper()
 
-	cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...).Codec
+	cdc := encoding.MakeConfig().Codec
 
 	// set the consensus params to allow for the max square size
 	cparams := testnode.DefaultConsensusParams()

@@ -125,7 +125,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 	startTime := time.Now().Add(-1 * cfg.BlockInterval * time.Duration(cfg.NumBlocks)).UTC()
 	currentTime := startTime
 
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := encoding.MakeConfig()
 	tmCfg := app.DefaultConsensusConfig()
 	var (
 		gen *genesis.Genesis
@@ -198,8 +198,6 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		log.NewNopLogger(),
 		appDB,
 		nil,
-		0,
-		encCfg,
 		0, // upgrade height v2
 		0, // timeout commit
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),

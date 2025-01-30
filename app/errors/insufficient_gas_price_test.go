@@ -34,7 +34,7 @@ func TestInsufficientMinGasPriceIntegration(t *testing.T) {
 	require.NoError(t, err)
 	ctx := testApp.NewContext(true).WithMinGasPrices(minGasPrice)
 	addr := testfactory.GetAddress(kr, account)
-	enc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	enc := encoding.MakeConfig()
 	acc := testutil.DirectQueryAccount(testApp, addr)
 	signer, err := user.NewSigner(kr, enc.TxConfig, testutil.ChainID, appconsts.LatestVersion, user.NewAccount(account, acc.GetAccountNumber(), acc.GetSequence()))
 	require.NoError(t, err)

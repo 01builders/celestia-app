@@ -337,7 +337,7 @@ func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash string, e
 }
 
 func setupTxClient(t *testing.T, ttlDuration time.Duration) (encoding.Config, *user.TxClient, testnode.Context) {
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 	defaultTmConfig := testnode.DefaultTendermintConfig()
 	// defaultTmConfig.Mempool.TTLDuration = ttlDuration // TODO: check priority mempool needed
 	testnodeConfig := testnode.DefaultConfig().

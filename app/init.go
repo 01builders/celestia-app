@@ -1,9 +1,12 @@
 package app
 
 import (
-	"os"
-	"path/filepath"
+	clienthelpers "cosmossdk.io/client/v2/helpers"
 )
+
+// EnvPrefix is the environment variable prefix for celestia-appd.
+// Environment variables that Cobra reads must be prefixed with this value.
+const EnvPrefix = "CELESTIA"
 
 // Name is the name of the application.
 const Name = "celestia-app"
@@ -21,22 +24,10 @@ const celestiaHome = "CELESTIA_HOME"
 var DefaultNodeHome string
 
 func init() {
-	userHome, err := os.UserHomeDir()
+	var err error
+	clienthelpers.EnvPrefix = EnvPrefix
+	DefaultNodeHome, err = clienthelpers.GetNodeHomeDirectory(appDirectory)
 	if err != nil {
 		panic(err)
 	}
-	celestiaHome := os.Getenv(celestiaHome)
-	DefaultNodeHome = getDefaultNodeHome(userHome, celestiaHome)
-}
-
-// getDefaultNodeHome computes the default node home directory based on the
-// provided userHome and celestiaHome. If celestiaHome is provided, it takes
-// precedence and constructs the path by appending the application directory.
-// Otherwise, it falls back to using the userHome with the application directory
-// appended.
-func getDefaultNodeHome(userHome string, celestiaHome string) string {
-	if celestiaHome != "" {
-		return filepath.Join(celestiaHome, appDirectory)
-	}
-	return filepath.Join(userHome, appDirectory)
 }

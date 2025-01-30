@@ -6,10 +6,10 @@ import (
 
 	kitlog "github.com/go-kit/log"
 
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	blobstreamclient "github.com/celestiaorg/celestia-app/v4/x/blobstream/client"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -30,10 +30,6 @@ import (
 )
 
 const (
-	// EnvPrefix is the environment variable prefix for celestia-appd.
-	// Environment variables that Cobra reads must be prefixed with this value.
-	EnvPrefix = "CELESTIA"
-
 	// FlagLogToFile specifies whether to log to file or not.
 	FlagLogToFile = "log-to-file"
 
@@ -47,17 +43,20 @@ const (
 
 // NewRootCmd creates a new root command for celestia-appd.
 func NewRootCmd() *cobra.Command {
-	encodingConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
+	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
+	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0, 0)
+
 	initClientContext := client.Context{}.
-		WithCodec(encodingConfig.Codec).
-		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
-		WithTxConfig(encodingConfig.TxConfig).
-		WithLegacyAmino(encodingConfig.Amino).
+		WithCodec(tempApp.AppCodec()).
+		WithInterfaceRegistry(tempApp.InterfaceRegistry()).
+		WithTxConfig(tempApp.GetTxConfig()).
+		WithLegacyAmino(tempApp.LegacyAmino()).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithBroadcastMode(flags.BroadcastSync).
 		WithHomeDir(app.DefaultNodeHome).
-		WithViper(EnvPrefix)
+		WithViper(app.EnvPrefix)
 
 	rootCommand := &cobra.Command{
 		Use: "celestia-appd",
@@ -101,15 +100,19 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	rootCommand.PersistentFlags().String(FlagLogToFile, "", "Write logs directly to a file. If empty, logs are written to stderr")
-	initRootCommand(rootCommand, encodingConfig)
+	initRootCommand(rootCommand, tempApp)
 
 	return rootCommand
 }
 
 // initRootCommand performs a bunch of side-effects on the root command.
-func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config) {
-	genesisModule := app.ModuleBasics.Modules[genutiltypes.ModuleName].(genutil.AppModule)
-	genesisCmd := genutilcli.Commands(genesisModule, app.ModuleBasics, appExporter)
+func initRootCommand(rootCommand *cobra.Command, app *app.App) {
+	var genesisModule genutil.AppModule
+	if gm, err := app.ModuleManager.Module(genutiltypes.ModuleName); err == nil {
+		genesisModule = gm.(genutil.AppModule)
+	}
+
+	genesisCmd := genutilcli.Commands(genesisModule, app.ModuleManager, appExporter)
 	rootCommand.AddCommand(
 		genesisCmd,
 		tmcli.NewCompletionCmd(rootCommand, true),
@@ -120,8 +123,8 @@ func initRootCommand(rootCommand *cobra.Command, encodingConfig encoding.Config)
 		downloadGenesisCommand(),
 		addrConversionCmd(),
 		server.StatusCommand(),
-		queryCommand(),
-		txCommand(),
+		queryCommand(app.ModuleManager),
+		txCommand(app.ModuleManager),
 		keys.Commands(),
 		blobstreamclient.VerifyCmd(),
 		snapshot.Cmd(newCmdApplication),

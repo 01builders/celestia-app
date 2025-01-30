@@ -14,7 +14,6 @@ import (
 	slashingtypes "cosmossdk.io/x/slashing/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
@@ -57,17 +56,17 @@ func init() {
 // of the app from first genesis account. A no-op logger is set in app.
 func SetupTestAppWithGenesisValSet(cparams *tmproto.ConsensusParams, genAccounts ...string) (*app.App, keyring.Keyring) {
 	testApp, valSet, kr := NewTestAppWithGenesisSet(cparams, genAccounts...)
-	initialiseTestApp(testApp, valSet, cparams)
+	initialiseTestApp(testApp, valSet)
 	return testApp, kr
 }
 
 func SetupTestAppWithGenesisValSetAndMaxSquareSize(cparams *tmproto.ConsensusParams, maxSquareSize int, genAccounts ...string) (*app.App, keyring.Keyring) {
 	testApp, valSet, kr := NewTestAppWithGenesisSetAndMaxSquareSize(cparams, maxSquareSize, genAccounts...)
-	initialiseTestApp(testApp, valSet, cparams)
+	initialiseTestApp(testApp, valSet)
 	return testApp, kr
 }
 
-func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet, cparams *tmproto.ConsensusParams) {
+func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet) {
 	// commit genesis changes
 	testApp.Commit()
 	testApp.FinalizeBlock(&abci.FinalizeBlockRequest{
@@ -83,12 +82,8 @@ func NewTestApp() *app.App {
 	// var anteOpt = func(bapp *baseapp.BaseApp) { bapp.SetAnteHandler(nil) }
 	db := dbm.NewMemDB()
 
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-
 	return app.New(
 		TestAppLogger, db, nil,
-		0,
-		encCfg,
 		0,
 		0,
 	)
@@ -361,7 +356,7 @@ func GenesisStateWithSingleValidator(testApp *app.App, genAccounts ...string) (a
 	accs = append(accs, fundedAuthAccs...)
 	balances = append(balances, fundedBankAccs...)
 
-	genesisState := NewDefaultGenesisState()
+	genesisState := testApp.ModuleManager.DefaultGenesis()
 	genesisState = genesisStateWithValSet(testApp, genesisState, valSet, accs, balances...)
 
 	return genesisState, valSet, kr
@@ -439,18 +434,12 @@ func genesisStateWithValSet(
 	return genesisState
 }
 
-// NewDefaultGenesisState generates the default state for the application.
-func NewDefaultGenesisState() app.GenesisState {
-	return app.ModuleBasics.DefaultGenesis()
-}
-
 func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, keyring.Keyring) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
 	chainID := "test_chain"
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	testApp := app.New(log.NewNopLogger(), db, nil, 0, encCfg, upgradeHeight, 0)
+	testApp := app.New(log.NewNopLogger(), db, nil, upgradeHeight, 0)
 	genesisState, _, kr := GenesisStateWithSingleValidator(testApp, "account")
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)

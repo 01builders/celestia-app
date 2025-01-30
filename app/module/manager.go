@@ -10,10 +10,15 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/genesis"
+	"cosmossdk.io/core/registry"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -166,6 +171,39 @@ func (m *Manager) RegisterServices(cfg Configurator) error {
 
 func (m *Manager) getAppVersionsForModule(moduleName string, moduleVersion uint64) (uint64, uint64) {
 	return m.uniqueModuleVersions[moduleName][moduleVersion][0], m.uniqueModuleVersions[moduleName][moduleVersion][1]
+}
+
+// DefaultGenesis provides default genesis information for all modules
+func (m *Manager) DefaultGenesis() map[string]json.RawMessage {
+	genesisData := make(map[string]json.RawMessage)
+	for _, b := range m.allModules {
+		if mod, ok := b.(sdkmodule.HasGenesisBasics); ok {
+			genesisData[b.Name()] = mod.DefaultGenesis()
+		} else if mod, ok := b.(appmodule.HasGenesis); ok {
+			genesisData[b.Name()] = mod.DefaultGenesis()
+		} else {
+			genesisData[b.Name()] = []byte("{}")
+		}
+	}
+
+	return genesisData
+}
+
+// ValidateGenesis performs genesis state validation for all modules
+func (m *Manager) ValidateGenesis(genesisData map[string]json.RawMessage) error {
+	for _, b := range m.allModules {
+		if mod, ok := b.(sdkmodule.HasGenesisBasics); ok {
+			if err := mod.ValidateGenesis(genesisData[b.Name()]); err != nil {
+				return err
+			}
+		} else if mod, ok := b.(appmodule.HasGenesis); ok {
+			if err := mod.ValidateGenesis(genesisData[b.Name()]); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // InitGenesis performs init genesis functionality for modules. Exactly one
@@ -517,4 +555,78 @@ func moduleConsensusVersion(mod sdkmodule.AppModule) (uint64, error) {
 		return 0, fmt.Errorf("module %s does not implement HasConsensusVersion", mod.Name())
 	}
 	return cv.ConsensusVersion(), nil
+}
+
+// RegisterGRPCGatewayRoutes registers all module rest routes
+func (m *Manager) RegisterGRPCGatewayRoutes(clientCtx client.Context, rtr *runtime.ServeMux) {
+	for _, b := range m.allModules {
+		if mod, ok := b.(sdkmodule.HasGRPCGateway); ok {
+			mod.RegisterGRPCGatewayRoutes(clientCtx, rtr)
+		}
+	}
+}
+
+// AddTxCommands adds all tx commands to the rootTxCmd.
+func (m *Manager) AddTxCommands(rootTxCmd *cobra.Command) {
+	for _, b := range m.allModules {
+		if mod, ok := b.(interface {
+			GetTxCmd() *cobra.Command
+		}); ok {
+			if cmd := mod.GetTxCmd(); cmd != nil {
+				rootTxCmd.AddCommand(cmd)
+			}
+		}
+	}
+}
+
+// AddQueryCommands adds all query commands to the rootQueryCmd.
+func (m *Manager) AddQueryCommands(rootQueryCmd *cobra.Command) {
+	for _, b := range m.allModules {
+		if mod, ok := b.(interface {
+			GetQueryCmd() *cobra.Command
+		}); ok {
+			if cmd := mod.GetQueryCmd(); cmd != nil {
+				rootQueryCmd.AddCommand(cmd)
+			}
+		}
+	}
+}
+
+// Module returns a module by name
+func (m *Manager) Module(name string) (sdkmodule.AppModule, error) {
+	for _, module := range m.allModules {
+		if module.Name() == name {
+			return module, nil
+		}
+	}
+
+	return nil, fmt.Errorf("module %s not found", name)
+}
+
+// RegisterLegacyAminoCodec registers all module codecs
+func (m *Manager) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	for _, b := range m.allModules {
+		if _, ok := b.(interface{ RegisterLegacyAminoCodec(*codec.LegacyAmino) }); ok {
+			panic(fmt.Sprintf("%s uses a deprecated amino registration api, implement HasAminoCodec instead if necessary", b.Name()))
+		}
+
+		if mod, ok := b.(sdkmodule.HasAminoCodec); ok {
+			mod.RegisterLegacyAminoCodec(registrar)
+		}
+	}
+}
+
+// RegisterInterfaces registers all module interface types
+func (m *Manager) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	for _, b := range m.allModules {
+		if _, ok := b.(interface {
+			RegisterInterfaces(codectypes.InterfaceRegistry)
+		}); ok {
+			panic(fmt.Sprintf("%s uses a deprecated interface registration api, implement appmodule.HasRegisterInterfaces instead", b.Name()))
+		}
+
+		if mod, ok := b.(appmodule.HasRegisterInterfaces); ok {
+			mod.RegisterInterfaces(registrar)
+		}
+	}
 }

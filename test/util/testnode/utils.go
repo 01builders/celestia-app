@@ -10,7 +10,6 @@ import (
 	"cosmossdk.io/math"
 	tmrand "cosmossdk.io/math/unsafe"
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
@@ -45,7 +44,7 @@ func QueryWithoutProof(clientCtx client.Context, hashHexStr string) (*rpctypes.R
 }
 
 func NewKeyring(accounts ...string) (keyring.Keyring, []sdk.AccAddress) {
-	cdc := encoding.MakeConfig(app.ModuleEncodingRegisters...).Codec
+	cdc := encoding.MakeConfig().Codec
 	kb := keyring.NewInMemory(cdc)
 
 	addresses := make([]sdk.AccAddress, len(accounts))

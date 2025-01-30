@@ -7,7 +7,6 @@ import (
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
@@ -24,7 +23,7 @@ const (
 )
 
 func TestPFBAnteHandler(t *testing.T) {
-	txConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...).TxConfig
+	txConfig := encoding.MakeConfig().TxConfig
 	testCases := []struct {
 		name        string
 		pfb         *blob.MsgPayForBlobs

@@ -32,7 +32,7 @@ func TestTimeInPrepareProposalContext(t *testing.T) {
 	vestAccName := "vesting"
 	cfg := testnode.DefaultConfig().WithFundedAccounts(sendAccName)
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
-	ecfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	ecfg := encoding.MakeConfig()
 
 	type test struct {
 		name    string

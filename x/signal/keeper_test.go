@@ -11,7 +11,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	stakingtypes "cosmossdk.io/x/staking/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
@@ -66,7 +65,7 @@ func TestGetVotingPowerThreshold(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+			config := encoding.MakeConfig()
 			stakingKeeper := newMockStakingKeeper(tc.validators)
 			k := signal.NewKeeper(runtime.NewEnvironment(nil, log.NewNopLogger()), config.Codec, stakingKeeper, &mockConsenusKeeper{})
 			got := k.GetVotingPowerThreshold(sdk.Context{})
@@ -474,7 +473,7 @@ func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper, *mockC
 
 	mockConsenusKeeper := &mockConsenusKeeper{version: 1}
 
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	config := encoding.MakeConfig()
 	upgradeKeeper := signal.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[types.StoreKey]), log.NewNopLogger()), config.Codec, mockStakingKeeper, mockConsenusKeeper)
 	return upgradeKeeper, mockCtx, mockStakingKeeper, mockConsenusKeeper
 }

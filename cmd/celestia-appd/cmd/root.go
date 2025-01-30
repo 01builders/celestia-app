@@ -108,6 +108,16 @@ func NewRootCmd() *cobra.Command {
 	rootCommand.PersistentFlags().String(FlagLogToFile, "", "Write logs directly to a file. If empty, logs are written to stderr")
 	initRootCommand(rootCommand, tempApp)
 
+	autoCliOpts := tempApp.AutoCliOpts()
+	autoCliOpts.AddressCodec = initClientContext.AddressCodec
+	autoCliOpts.ValidatorAddressCodec = initClientContext.ValidatorAddressCodec
+	autoCliOpts.ConsensusAddressCodec = initClientContext.ConsensusAddressCodec
+	autoCliOpts.Cdc = initClientContext.Codec
+
+	if err := autoCliOpts.EnhanceRootCommand(rootCommand); err != nil {
+		panic(fmt.Errorf("failed to enhance root command: %w", err))
+	}
+
 	return rootCommand
 }
 

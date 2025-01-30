@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"cosmossdk.io/client/v2/autocli"
 	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 	coreheader "cosmossdk.io/core/header"
 	corestore "cosmossdk.io/core/store"
@@ -84,6 +85,7 @@ import (
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -963,7 +965,14 @@ func (app *App) BlockedParamsGovernance() map[string][]string {
 		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   {"params.bond_denom", "params.unbonding_time"},
 		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): {"validator"},
 	}
+}
 
+// AutoCliOpts returns the autocli options for the app.
+func (app *App) AutoCliOpts() autocli.AppOptions {
+	return autocli.AppOptions{
+		Modules:       app.ModuleManager.Modules,
+		ModuleOptions: runtimeservices.ExtractAutoCLIOptions(app.ModuleManager.Modules),
+	}
 }
 
 // NewProposalContext returns a context with a branched version of the state

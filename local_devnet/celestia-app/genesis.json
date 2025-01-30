@@ -421,7 +421,7 @@
                 ]
             },
             "version": {
-                "app": "2"
+                "app": "4"
             },
             "synchrony": {
                 "precision": "505000000",

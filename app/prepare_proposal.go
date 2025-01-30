@@ -56,7 +56,7 @@ func (app *App) PrepareProposalHandler(ctx sdk.Context, req *abci.PrepareProposa
 	)
 
 	switch appVersion {
-	case v3:
+	case v4, v3:
 		var dataSquare squarev2.Square
 		dataSquare, txs, err = squarev2.Build(txs,
 			app.MaxEffectiveSquareSize(ctx),

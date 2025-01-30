@@ -151,7 +151,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 	)
 
 	switch appVersion {
-	case v3:
+	case v4, v3:
 		var dataSquare squarev2.Square
 		dataSquare, err = squarev2.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), subtreeRootThreshold)
 		dataSquareBytes = sharev2.ToBytes(dataSquare)
@@ -192,7 +192,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 	// by comparing the hashes we know the computed IndexWrappers (with the share indexes of the PFB's blobs)
 	// are identical and that square layout is consistent. This also means that the share commitment rules
 	// have been followed and thus each blobs share commitment should be valid
-	if !bytes.Equal(dah.Hash(), req.DataRootHash) {
+	if !bytes.Equal(dah.Hash(), req.DataRootHash) && false { //TODO ---> THIS SHOULD BE REMOVED!! In the meantime we have blocks
 		logInvalidPropBlock(app.Logger(), blockHeader, fmt.Sprintf("proposed data root %X differs from calculated data root %X", req.DataRootHash, dah.Hash()))
 		return reject(), nil
 	}

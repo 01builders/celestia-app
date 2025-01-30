@@ -11,6 +11,7 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/genesis"
 	"cosmossdk.io/core/registry"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdkmodule "github.com/cosmos/cosmos-sdk/types/module"
@@ -407,9 +408,9 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg Configurator, fromVersion, t
 func (m *Manager) BeginBlock(ctx sdk.Context) (sdk.BeginBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 
-	modules := m.versionedModules[ctx.BlockHeader().Version.App] // TODO: get from consensus params
+	modules := m.versionedModules[appv4.Version] // TODO: kill versioned modules
 	if modules == nil {
-		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App)) // TODO: get from consensus params
+		panic(fmt.Sprintf("no modules for version %d", appv4.Version)) // TODO: kill versioned modules
 	}
 	for _, moduleName := range m.OrderBeginBlockers {
 		module, ok := modules[moduleName].(appmodule.HasBeginBlocker)
@@ -430,9 +431,9 @@ func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 	var validatorUpdates []sdkmodule.ValidatorUpdate
 
-	modules := m.versionedModules[ctx.BlockHeader().Version.App] // TODO: get from consensus params
+	modules := m.versionedModules[appv4.Version] // TODO: kill versioned modules
 	if modules == nil {
-		panic(fmt.Sprintf("no modules for version %d", ctx.BlockHeader().Version.App)) // TODO: get from consensus params
+		panic(fmt.Sprintf("no modules for version %d", appv4.Version)) // TODO: kill versioned modules
 	}
 	for _, moduleName := range m.OrderEndBlockers {
 		if module, ok := modules[moduleName].(appmodule.HasEndBlocker); ok {

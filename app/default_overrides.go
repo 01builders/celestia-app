@@ -178,9 +178,9 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	day := time.Hour * 24
 	oneWeek := day * 7
 
-	genState.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, math.NewInt(10_000_000_000))) // 10,000 TIA
-	genState.DepositParams.MaxDepositPeriod = &oneWeek
-	genState.VotingParams.VotingPeriod = &oneWeek
+	genState.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(BondDenom, math.NewInt(10_000_000_000))) // 10,000 TIA
+	genState.Params.MaxDepositPeriod = &oneWeek
+	genState.Params.VotingPeriod = &oneWeek
 
 	return cdc.MustMarshalJSON(genState)
 }

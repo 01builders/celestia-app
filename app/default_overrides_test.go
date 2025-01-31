@@ -21,8 +21,8 @@ func Test_newGovModule(t *testing.T) {
 	day := time.Hour * 24
 	oneWeek := day * 7
 
-	govModule := newGovModule()
-	raw := govModule.DefaultGenesis(encCfg.Codec)
+	gm := newGovModule()
+	raw := gm.DefaultGenesis(encCfg.Codec)
 	govGenesisState := govtypes.GenesisState{}
 
 	encCfg.Codec.MustUnmarshalJSON(raw, &govGenesisState)
@@ -32,9 +32,9 @@ func Test_newGovModule(t *testing.T) {
 		Amount: math.NewInt(10_000_000_000),
 	}}
 
-	assert.Equal(t, want, govGenesisState.DepositParams.MinDeposit)
-	assert.Equal(t, oneWeek, *govGenesisState.DepositParams.MaxDepositPeriod)
-	assert.Equal(t, oneWeek, *govGenesisState.VotingParams.VotingPeriod)
+	assert.Equal(t, want, govGenesisState.Params.MinDeposit)
+	assert.Equal(t, oneWeek, *govGenesisState.Params.MaxDepositPeriod)
+	assert.Equal(t, oneWeek, *govGenesisState.Params.VotingPeriod)
 }
 
 // TestDefaultGenesis verifies that the distribution module's genesis state has

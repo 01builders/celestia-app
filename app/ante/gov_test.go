@@ -11,7 +11,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/cosmos/cosmos-sdk/types"
 	gogoproto "github.com/cosmos/gogoproto/proto"
@@ -27,21 +26,23 @@ func TestGovDecorator(t *testing.T) {
 
 	decorator := ante.NewGovProposalDecorator(blockedParams)
 	anteHandler := types.ChainAnteDecorators(decorator)
-	accounts := testfactory.GenerateAccounts(1)
+	accountStr := testnode.RandomAddress().String()
 	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))
 
-	msgSend := banktypes.NewMsgSend(
-		testnode.RandomAddress().String(),
-		testnode.RandomAddress().String(),
-		coins,
-	)
 	encCfg := encoding.MakeConfig()
+	banktypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	addrCodec := encCfg.InterfaceRegistry.SigningContext().AddressCodec()
+	from, err := addrCodec.BytesToString(testnode.RandomAddress().Bytes())
+	require.NoError(t, err)
+	to, err := addrCodec.BytesToString(testnode.RandomAddress().Bytes())
+	require.NoError(t, err)
+	msgSend := banktypes.NewMsgSend(from, to, coins)
 
 	msgProposal, err := govtypes.NewMsgSubmitProposal(
-		[]types.Msg{msgSend}, coins, accounts[0], "", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
+		[]types.Msg{msgSend}, coins, accountStr, "", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
 	require.NoError(t, err)
 	msgEmptyProposal, err := govtypes.NewMsgSubmitProposal(
-		[]types.Msg{}, coins, accounts[0], "do nothing", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
+		[]types.Msg{}, coins, accountStr, "do nothing", "", "", govtypes.ProposalType_PROPOSAL_TYPE_EXPEDITED)
 	require.NoError(t, err)
 
 	testCases := []struct {

@@ -79,6 +79,7 @@ func TestDefaultConsensusConfig(t *testing.T) {
 			RootDir:               tmcfg.DefaultMempoolConfig().RootDir,
 			Size:                  tmcfg.DefaultMempoolConfig().Size,
 			WalPath:               tmcfg.DefaultMempoolConfig().WalPath,
+			RecheckTimeout:        1_000_000_000,
 
 			// Overrides
 			MaxTxBytes:  7_897_088,

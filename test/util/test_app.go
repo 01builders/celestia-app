@@ -407,6 +407,9 @@ func genesisStateWithValSet(
 			panic(err)
 		}
 		valAddr, err := valCodec.BytesToString(val.Address)
+		if err != nil {
+			panic(err)
+		}
 		delegations = append(delegations, stakingtypes.NewDelegation(delegatorAddr, valAddr, math.LegacyOneDec()))
 	}
 	// set validators and delegations

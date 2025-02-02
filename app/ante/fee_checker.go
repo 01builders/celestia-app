@@ -62,7 +62,8 @@ func ValidateTxFee(ctx context.Context, tx transaction.Tx, paramKeeper params.Ke
 		return nil, 0, errors.Wrap(sdkerror.ErrLogic, "failed to get app version")
 	}
 
-	if appVersion > v1.Version {
+	// sdkCtx.BlockHeight() > 0 is used to avoid errors when running tests which initialize genesis from v4
+	if appVersion > v1.Version && sdkCtx.BlockHeight() > 0 {
 		subspace, exists := paramKeeper.GetSubspace(minfee.ModuleName)
 		if !exists {
 			return nil, 0, errors.Wrap(sdkerror.ErrInvalidRequest, "minfee is not a registered subspace")

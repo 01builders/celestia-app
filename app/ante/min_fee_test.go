@@ -134,7 +134,7 @@ func TestValidateTxFee(t *testing.T) {
 			builder.SetFeeAmount(tc.fee)
 			tx := builder.GetTx()
 
-			ctx := sdk.NewContext(stateStore, tc.isCheckTx, nil)
+			ctx := sdk.NewContext(stateStore, tc.isCheckTx, nil).WithBlockHeight(1)
 
 			ctx = ctx.WithMinGasPrices(sdk.DecCoins{validatorMinGasPriceCoin})
 

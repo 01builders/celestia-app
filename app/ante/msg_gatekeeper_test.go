@@ -8,6 +8,7 @@ import (
 	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,8 +23,12 @@ func (m mockConsensusKeeper) AppVersion(ctx context.Context) (uint64, error) {
 }
 
 func TestMsgGateKeeperAnteHandler(t *testing.T) {
-	nestedBankSend := authz.NewMsgExec("", []sdk.Msg{&banktypes.MsgSend{}})
-	nestedMultiSend := authz.NewMsgExec("", []sdk.Msg{&banktypes.MsgMultiSend{}})
+	nestedBankSend := authz.NewMsgExec(testnode.RandomAddress().String(), []sdk.Msg{&banktypes.MsgSend{
+		FromAddress: testnode.RandomAddress().String(),
+	}})
+	nestedMultiSend := authz.NewMsgExec(testnode.RandomAddress().String(), []sdk.Msg{&banktypes.MsgMultiSend{}})
+	cdc := encoding.MakeConfig()
+	banktypes.RegisterInterfaces(cdc.InterfaceRegistry)
 
 	// Define test cases
 	tests := []struct {
@@ -33,8 +38,10 @@ func TestMsgGateKeeperAnteHandler(t *testing.T) {
 		version   uint64
 	}{
 		{
-			name:      "Accept MsgSend",
-			msg:       &banktypes.MsgSend{},
+			name: "Accept MsgSend",
+			msg: &banktypes.MsgSend{
+				FromAddress: testnode.RandomAddress().String(),
+			},
 			acceptMsg: true,
 			version:   1,
 		},
@@ -57,8 +64,10 @@ func TestMsgGateKeeperAnteHandler(t *testing.T) {
 			version:   1,
 		},
 		{
-			name:      "Reject MsgSend with version 2",
-			msg:       &banktypes.MsgSend{},
+			name: "Reject MsgSend with version 2",
+			msg: &banktypes.MsgSend{
+				FromAddress: testnode.RandomAddress().String(),
+			},
 			acceptMsg: false,
 			version:   2,
 		},
@@ -79,7 +88,6 @@ func TestMsgGateKeeperAnteHandler(t *testing.T) {
 				},
 				2: {},
 			}, mockConsensusKeeper{appVersion: tc.version})
-			cdc := encoding.MakeConfig()
 			anteHandler := sdk.ChainAnteDecorators(msgGateKeeper)
 
 			ctx := sdk.NewContext(nil, false, nil)

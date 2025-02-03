@@ -8,17 +8,16 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	codectestutil "github.com/cosmos/cosmos-sdk/codec/testutil"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -36,8 +35,7 @@ func setup() (*app.App, sdk.Context, client.Context, error) {
 	app.AuthKeeper.Params.Set(ctx, params)
 	ctx = ctx.WithBlockHeight(1)
 
-	// Set up TxConfig.
-	encodingConfig := moduletestutil.MakeTestEncodingConfig(codectestutil.CodecOptions{})
+	encodingConfig := encoding.MakeConfig()
 	// We're using TestMsg encoding in the test, so register it here.
 	encodingConfig.Amino.RegisterConcrete(&testdata.TestMsg{}, "testdata.TestMsg")
 	testdata.RegisterInterfaces(encodingConfig.InterfaceRegistry)
@@ -79,6 +77,8 @@ func TestConsumeGasForTxSize(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// set the version
 			ctx = app.NewContext(false)
+			err = app.SetAppVersion(ctx, tc.version)
+			require.NoError(t, err)
 			txBuilder = clientCtx.TxConfig.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(msg))
 			txBuilder.SetFeeAmount(feeAmount)
@@ -108,11 +108,14 @@ func TestConsumeGasForTxSize(t *testing.T) {
 			// track how much gas is necessary to retrieve parameters
 			beforeGas := ctx.GasMeter().GasConsumed()
 			app.AuthKeeper.GetParams(ctx)
+			_, err = app.ConsensusKeeper.AppVersion(ctx)
+			require.NoError(t, err)
 			afterGas := ctx.GasMeter().GasConsumed()
 			expectedGas += afterGas - beforeGas
 
 			beforeGas = ctx.GasMeter().GasConsumed()
 			ctx, err = antehandler(ctx, tx, false)
+			require.NoError(t, err)
 			require.Nil(t, err, "ConsumeTxSizeGasDecorator returned error: %v", err)
 
 			// require that decorator consumes expected amount of gas
@@ -131,12 +134,13 @@ func TestConsumeGasForTxSize(t *testing.T) {
 			require.True(t, len(simTxBytes) < len(txBytes), "simulated tx still has signatures")
 
 			// Set suite.ctx with smaller simulated TxBytes manually
-			ctx = ctx.WithTxBytes(simTxBytes)
+			ctx = ctx.WithTxBytes(simTxBytes).WithExecMode(sdk.ExecModeSimulate)
 
 			beforeSimGas := ctx.GasMeter().GasConsumed()
 
 			// run antehandler with simulate=true
-			ctx, err = antehandler(ctx, tx, true)
+			ctx, err = antehandler(ctx, tx, false)
+			require.NoError(t, err)
 			consumedSimGas := ctx.GasMeter().GasConsumed() - beforeSimGas
 
 			// require that antehandler passes and does not underestimate decorator cost

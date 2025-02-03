@@ -23,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -84,6 +85,7 @@ func NewTestApp() *app.App {
 		TestAppLogger, db, nil,
 		0,
 		0,
+		baseapp.SetChainID(ChainID),
 	)
 }
 

@@ -43,7 +43,7 @@ func init() {
 // in or empty.
 // CONTRACT: To use this decorator, signatures of transaction must be represented
 // as legacytx.StdSignature otherwise simulate mode will incorrectly estimate gas cost.
-
+//
 // The code was copied from celestia's fork of the cosmos-sdk:
 // https://github.com/celestiaorg/cosmos-sdk/blob/release/v0.46.x-celestia/x/auth/ante/basic.go
 // In app versions v2 and below, the txSizeCostPerByte used for gas cost estimation is taken from the auth module.
@@ -68,7 +68,9 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 	}
 	params := cgts.ak.GetParams(ctx)
 
-	consumeGasForTxSize(ctx, storetypes.Gas(len(ctx.TxBytes())), params, cgts.consensusKeeper)
+	if err := consumeGasForTxSize(ctx, storetypes.Gas(len(ctx.TxBytes())), params, cgts.consensusKeeper); err != nil {
+		return ctx, err
+	}
 
 	// simulate gas cost for signatures in simulate mode
 	if simulate {
@@ -109,7 +111,9 @@ func (cgts ConsumeTxSizeGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, sim
 				txBytes *= params.TxSigLimit
 			}
 
-			consumeGasForTxSize(ctx, txBytes, params, cgts.consensusKeeper)
+			if err = consumeGasForTxSize(ctx, txBytes, params, cgts.consensusKeeper); err != nil {
+				return ctx, err
+			}
 		}
 	}
 

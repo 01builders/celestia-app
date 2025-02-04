@@ -122,6 +122,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
 	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 )
 
 // maccPerms is short for module account permissions. It is a map from module
@@ -150,8 +151,7 @@ const (
 
 var (
 	_ celestiaserver.Application = (*App)(nil)
-	// TODO: removed pending full IBC integration
-	// _ ibctesting.TestingApp      = (*App)(nil)
+	_ ibctesting.TestingApp      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -529,17 +529,17 @@ func New(
 		genutil.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.StakingKeeper, app, encodingConfig.TxConfig, genutiltypes.DefaultMessageValidator),
 		auth.NewAppModule(encodingConfig.Codec, app.AuthKeeper, app.AccountsKeeper, nil, nil),
 		vesting.NewAppModule(app.AuthKeeper, app.BankKeeper),
-		bank.NewAppModule(encodingConfig.Codec, app.BankKeeper, app.AuthKeeper),
+		bankModule{bank.NewAppModule(encodingConfig.Codec, app.BankKeeper, app.AuthKeeper), app.encodingConfig.Codec},
 		feegrantmodule.NewAppModule(encodingConfig.Codec, app.FeeGrantKeeper, encodingConfig.InterfaceRegistry),
-		gov.NewAppModule(encodingConfig.Codec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper),
-		mint.NewAppModule(encodingConfig.Codec, app.MintKeeper, app.AuthKeeper),
-		slashing.NewAppModule(encodingConfig.Codec, app.SlashingKeeper, app.AuthKeeper,
-			app.BankKeeper, app.StakingKeeper, encodingConfig.InterfaceRegistry, cometService),
+		govModule{gov.NewAppModule(encodingConfig.Codec, app.GovKeeper, app.AuthKeeper, app.BankKeeper, app.PoolKeeper), app.encodingConfig.Codec},
+		mintModule{mint.NewAppModule(encodingConfig.Codec, app.MintKeeper, app.AuthKeeper), app.encodingConfig.Codec},
+		slashingModule{slashing.NewAppModule(encodingConfig.Codec, app.SlashingKeeper, app.AuthKeeper,
+			app.BankKeeper, app.StakingKeeper, encodingConfig.InterfaceRegistry, cometService), app.encodingConfig.Codec},
 		distr.NewAppModule(encodingConfig.Codec, app.DistrKeeper, app.StakingKeeper),
-		staking.NewAppModule(encodingConfig.Codec, app.StakingKeeper),
+		stakingModule{staking.NewAppModule(encodingConfig.Codec, app.StakingKeeper), app.encodingConfig.Codec},
 		evidence.NewAppModule(encodingConfig.Codec, app.EvidenceKeeper, cometService),
 		authzmodule.NewAppModule(encodingConfig.Codec, app.AuthzKeeper, encodingConfig.InterfaceRegistry),
-		ibc.NewAppModule(encodingConfig.Codec, app.IBCKeeper),
+		ibcModule{ibc.NewAppModule(encodingConfig.Codec, app.IBCKeeper), app.encodingConfig.Codec},
 		params.NewAppModule(app.ParamsKeeper),
 		transfer.NewAppModule(encodingConfig.Codec, app.TransferKeeper),
 		blob.NewAppModule(encodingConfig.Codec, app.BlobKeeper),
@@ -547,7 +547,7 @@ func New(
 		signal.NewAppModule(app.SignalKeeper),
 		minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
 		// packetforward.NewAppModule(app.PacketForwardKeeper),
-		ica.NewAppModule(encodingConfig.Codec, &app.ICAControllerKeeper, &app.ICAHostKeeper),
+		icaModule{ica.NewAppModule(encodingConfig.Codec, &app.ICAControllerKeeper, &app.ICAHostKeeper), app.encodingConfig.Codec},
 	)
 
 	// order begin block, end block and init genesis

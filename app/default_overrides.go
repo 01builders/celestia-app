@@ -8,8 +8,6 @@ import (
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/bank"
 	banktypes "cosmossdk.io/x/bank/types"
-	distribution "cosmossdk.io/x/distribution"
-	distributiontypes "cosmossdk.io/x/distribution/types"
 	"cosmossdk.io/x/gov"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	"cosmossdk.io/x/slashing"
@@ -35,10 +33,11 @@ import (
 // implementation to provide custom default genesis state.
 type bankModule struct {
 	bank.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/bank module genesis state.
-func (bankModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (m bankModule) DefaultGenesis() json.RawMessage {
 	metadata := banktypes.Metadata{
 		Description: "The native token of the Celestia network.",
 		Base:        BondDenom,
@@ -64,67 +63,52 @@ func (bankModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	genState := banktypes.DefaultGenesisState()
 	genState.DenomMetadata = append(genState.DenomMetadata, metadata)
 
-	return cdc.MustMarshalJSON(genState)
+	return m.Codec.MustMarshalJSON(genState)
 }
 
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type stakingModule struct {
 	staking.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
-func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	params := stakingtypes.DefaultParams()
-	params.UnbondingTime = appconsts.DefaultUnbondingTime
-	params.BondDenom = BondDenom
-	params.MinCommissionRate = math.LegacyNewDecWithPrec(5, 2) // 5%
+func (m stakingModule) DefaultGenesis() json.RawMessage {
+	genesis := stakingtypes.DefaultGenesisState()
+	genesis.Params.UnbondingTime = appconsts.DefaultUnbondingTime
+	genesis.Params.BondDenom = BondDenom
+	genesis.Params.MinCommissionRate = math.LegacyNewDecWithPrec(5, 2) // 5%
 
-	return cdc.MustMarshalJSON(&stakingtypes.GenesisState{
-		Params: params,
-	})
+	return m.Codec.MustMarshalJSON(genesis)
 }
 
 // stakingModule wraps the x/staking module in order to overwrite specific
 // ModuleManager APIs.
 type slashingModule struct {
 	slashing.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/staking module genesis state.
-func (slashingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	params := slashingtypes.DefaultParams()
-	params.MinSignedPerWindow = math.LegacyNewDecWithPrec(75, 2) // 75%
-	params.SignedBlocksWindow = 5000
-	params.DowntimeJailDuration = time.Minute * 1
-	params.SlashFractionDoubleSign = math.LegacyNewDecWithPrec(2, 2) // 2%
-	params.SlashFractionDowntime = math.LegacyZeroDec()              // 0%
+func (m slashingModule) DefaultGenesis() json.RawMessage {
+	genesis := slashingtypes.DefaultGenesisState()
+	genesis.Params.MinSignedPerWindow = math.LegacyNewDecWithPrec(75, 2) // 75%
+	genesis.Params.SignedBlocksWindow = 5000
+	genesis.Params.DowntimeJailDuration = time.Minute * 1
+	genesis.Params.SlashFractionDoubleSign = math.LegacyNewDecWithPrec(2, 2) // 2%
+	genesis.Params.SlashFractionDowntime = math.LegacyZeroDec()              // 0%
 
-	return cdc.MustMarshalJSON(&slashingtypes.GenesisState{
-		Params: params,
-	})
-}
-
-type distributionModule struct {
-	distribution.AppModule
-}
-
-// DefaultGenesis returns custom x/distribution module genesis state.
-func (distributionModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	params := distributiontypes.DefaultParams()
-	params.BaseProposerReward = math.LegacyZeroDec()  // 0%
-	params.BonusProposerReward = math.LegacyZeroDec() // 0%
-	return cdc.MustMarshalJSON(&distributiontypes.GenesisState{
-		Params: params,
-	})
+	return m.Codec.MustMarshalJSON(genesis)
 }
 
 type ibcModule struct {
 	ibc.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/ibc module genesis state.
-func (ibcModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (m ibcModule) DefaultGenesis() json.RawMessage {
 	// per ibc documentation, this value should be 3-5 times the expected block
 	// time. The expected block time is 15 seconds, therefore this value is 75
 	// seconds.
@@ -132,48 +116,48 @@ func (ibcModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	gs := ibctypes.DefaultGenesisState()
 	gs.ClientGenesis.Params.AllowedClients = []string{"06-solomachine", "07-tendermint"}
 	gs.ConnectionGenesis.Params.MaxExpectedTimePerBlock = uint64(maxBlockTime.Nanoseconds())
-	return cdc.MustMarshalJSON(gs)
+
+	return m.Codec.MustMarshalJSON(gs)
 }
 
 // icaModule defines a custom wrapper around the ica module to provide custom
 // default genesis state.
 type icaModule struct {
 	ica.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom ica module genesis state.
-func (icaModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (m icaModule) DefaultGenesis() json.RawMessage {
 	gs := icagenesistypes.DefaultGenesis()
 	gs.HostGenesisState.Params.AllowMessages = icaAllowMessages()
 	gs.HostGenesisState.Params.HostEnabled = true
 	gs.ControllerGenesisState.Params.ControllerEnabled = false
-	return cdc.MustMarshalJSON(gs)
+	return m.Codec.MustMarshalJSON(gs)
 }
 
 type mintModule struct {
 	mint.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/mint module genesis state.
-func (mintModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (m mintModule) DefaultGenesis() json.RawMessage {
 	genState := minttypes.DefaultGenesisState()
 	genState.BondDenom = BondDenom
 
-	return cdc.MustMarshalJSON(genState)
-}
-
-func newGovModule() govModule {
-	return govModule{gov.AppModule{}}
+	return m.Codec.MustMarshalJSON(genState)
 }
 
 // govModule is a custom wrapper around the x/gov module's AppModuleBasic
 // implementation to provide custom default genesis state.
 type govModule struct {
 	gov.AppModule
+	codec.Codec
 }
 
 // DefaultGenesis returns custom x/gov module genesis state.
-func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (m govModule) DefaultGenesis() json.RawMessage {
 	genState := govtypes.DefaultGenesisState()
 	day := time.Hour * 24
 	oneWeek := day * 7
@@ -182,7 +166,7 @@ func (govModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	genState.Params.MaxDepositPeriod = &oneWeek
 	genState.Params.VotingPeriod = &oneWeek
 
-	return cdc.MustMarshalJSON(genState)
+	return m.Codec.MustMarshalJSON(genState)
 }
 
 // DefaultConsensusParams returns a ConsensusParams with a MaxBytes

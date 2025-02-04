@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"cosmossdk.io/collections"
@@ -60,6 +61,18 @@ func (app *App) ExportAppStateAndValidators(forZeroHeight bool, jailAllowedAddrs
 		Height:          app.getExportHeight(forZeroHeight),
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, nil
+}
+
+// mountKeysAndInit mounts the keys for the provided app version and then
+// invokes baseapp.Init().
+func (app *App) mountKeysAndInit(appVersion uint64) {
+	app.Logger().Info(fmt.Sprintf("mounting KV stores for app version %v", appVersion))
+	app.MountKVStores(app.keys)
+
+	// Invoke load latest version for its side-effect of invoking baseapp.Init()
+	if err := app.LoadLatestVersion(); err != nil {
+		panic(fmt.Sprintf("loading latest version: %s", err.Error()))
+	}
 }
 
 func (app *App) getExportHeight(forZeroHeight bool) int64 {

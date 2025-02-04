@@ -58,7 +58,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	celestiatx "github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
 	"github.com/celestiaorg/celestia-app/v4/app/posthandler"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	appv1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	appv2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	appv3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
@@ -600,13 +599,10 @@ func New(
 	// app.SetMigrateStoreFn(app.migrateCommitStore)
 	// app.SetMigrateModuleFn(app.migrateModules)
 
-	// we don't seal the store until the app version has been initialised
-	// this will just initialise the base keys (i.e. the param store)
-	if err := app.CommitMultiStore().LoadLatestVersion(); err != nil {
+	app.encodingConfig = encodingConfig
+	if err := app.LoadLatestVersion(); err != nil {
 		panic(err)
 	}
-
-	app.encodingConfig = encodingConfig
 
 	return app
 }
@@ -656,98 +652,6 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// res.Timeouts.TimeoutCommit = app.getTimeoutCommit(currentVersion)
 	// res.Timeouts.TimeoutPropose = appconsts.GetTimeoutPropose(currentVersion)
 	return res, nil
-}
-
-// Info implements the ABCI interface. This method is a wrapper around baseapp's
-// Info command so that it can take the app version and setup the multicommit
-// store.
-//
-// Side-effect: calls baseapp.Init()
-func (app *App) InfoV1(req *abci.InfoRequest) (*abci.InfoResponse, error) {
-	if height := app.LastBlockHeight(); height > 0 {
-		ctx, err := app.CreateQueryContext(height, false)
-		if err != nil {
-			return nil, err
-		}
-		appVersion, err := app.AppVersion(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if appVersion == 0 {
-			app.SetAppVersion(ctx, v1)
-		}
-	}
-
-	resp, err := app.BaseApp.Info(req)
-	if err != nil {
-		return nil, err
-	}
-	// mount the stores for the provided app version
-	if resp.AppVersion > 0 && !app.IsSealed() {
-		app.mountKeysAndInit(resp.AppVersion)
-	}
-
-	// REVIEW: these were moved to YAML, okay to delete?
-	// resp.Timeouts.TimeoutCommit = app.getTimeoutCommit(resp.AppVersion)
-	// resp.Timeouts.TimeoutPropose = appconsts.GetTimeoutPropose(resp.AppVersion)
-
-	return resp, nil
-}
-
-// InitChain implements the ABCI interface. This method is a wrapper around
-// baseapp's InitChain so that we can take the app version and setup the multicommit
-// store.
-//
-// Side-effect: calls baseapp.Init()
-func (app *App) InitChainV1(req *abci.InitChainRequest) (res *abci.InitChainResponse, err error) {
-	req = setDefaultAppVersion(req)
-	appVersion := req.ConsensusParams.Version.App
-	ctx := context.Background()
-	av, err := app.AppVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if av == 0 && !app.IsSealed() {
-		app.mountKeysAndInit(appVersion)
-	}
-
-	res, err = app.BaseApp.InitChain(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if appVersion != v1 {
-		app.SetAppVersion(ctx, appVersion)
-	}
-	return res, nil
-}
-
-// setDefaultAppVersion sets the default app version in the consensus params if
-// it was 0. This is needed because chains (e.x. mocha-4) did not explicitly set
-// an app version in genesis.json.
-func setDefaultAppVersion(req *abci.InitChainRequest) *abci.InitChainRequest {
-	if req.ConsensusParams == nil {
-		panic("no consensus params set")
-	}
-	if req.ConsensusParams.Version == nil {
-		panic("no version set in consensus params")
-	}
-	if req.ConsensusParams.Version.App == 0 {
-		req.ConsensusParams.Version.App = v1
-	}
-	return req
-}
-
-// mountKeysAndInit mounts the keys for the provided app version and then
-// invokes baseapp.Init().
-func (app *App) mountKeysAndInit(appVersion uint64) {
-	app.Logger().Info(fmt.Sprintf("mounting KV stores for app version %v", appVersion))
-	app.MountKVStores(app.keys)
-
-	// Invoke load latest version for its side-effect of invoking baseapp.Init()
-	if err := app.LoadLatestVersion(); err != nil {
-		panic(fmt.Sprintf("loading latest version: %s", err.Error()))
-	}
 }
 
 // InitChainer is middleware that gets invoked part-way through the baseapp's InitChain invocation.
@@ -888,20 +792,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 
 	return paramsKeeper
-}
-
-func isSupportedAppVersion(appVersion uint64) bool {
-	return appVersion == v1 || appVersion == v2 || appVersion == v3
-}
-
-// getTimeoutCommit returns the timeoutCommit if a user has overridden it via the
-// --timeout-commit flag. Otherwise, it returns the default timeout commit based
-// on the app version.
-func (app *App) getTimeoutCommit(appVersion uint64) time.Duration {
-	if app.timeoutCommit != 0 {
-		return app.timeoutCommit
-	}
-	return appconsts.GetTimeoutCommit(appVersion)
 }
 
 type moduleEnvFactory struct {

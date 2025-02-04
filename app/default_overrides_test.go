@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	distributiontypes "cosmossdk.io/x/distribution/types"
 	govtypes "cosmossdk.io/x/gov/types/v1"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	tmcfg "github.com/cometbft/cometbft/config"
@@ -21,8 +20,8 @@ func Test_newGovModule(t *testing.T) {
 	day := time.Hour * 24
 	oneWeek := day * 7
 
-	gm := newGovModule()
-	raw := gm.DefaultGenesis(encCfg.Codec)
+	gm := govModule{Codec: encCfg.Codec}
+	raw := gm.DefaultGenesis()
 	govGenesisState := govtypes.GenesisState{}
 
 	encCfg.Codec.MustUnmarshalJSON(raw, &govGenesisState)
@@ -35,24 +34,6 @@ func Test_newGovModule(t *testing.T) {
 	assert.Equal(t, want, govGenesisState.Params.MinDeposit)
 	assert.Equal(t, oneWeek, *govGenesisState.Params.MaxDepositPeriod)
 	assert.Equal(t, oneWeek, *govGenesisState.Params.VotingPeriod)
-}
-
-// TestDefaultGenesis verifies that the distribution module's genesis state has
-// defaults overridden.
-func TestDefaultGenesis(t *testing.T) {
-	encCfg := encoding.MakeConfig()
-	dm := distributionModule{}
-	raw := dm.DefaultGenesis(encCfg.Codec)
-	distributionGenesisState := distributiontypes.GenesisState{}
-	encCfg.Codec.MustUnmarshalJSON(raw, &distributionGenesisState)
-
-	// Verify that BaseProposerReward and BonusProposerReward were overridden to 0%.
-	assert.Equal(t, math.LegacyZeroDec(), distributionGenesisState.Params.BaseProposerReward)
-	assert.Equal(t, math.LegacyZeroDec(), distributionGenesisState.Params.BonusProposerReward)
-
-	// Verify that other params weren't overridden.
-	assert.Equal(t, distributiontypes.DefaultParams().WithdrawAddrEnabled, distributionGenesisState.Params.WithdrawAddrEnabled)
-	assert.Equal(t, distributiontypes.DefaultParams().CommunityTax, distributionGenesisState.Params.CommunityTax)
 }
 
 func TestDefaultAppConfig(t *testing.T) {
@@ -94,8 +75,8 @@ func TestDefaultConsensusConfig(t *testing.T) {
 
 func Test_icaDefaultGenesis(t *testing.T) {
 	encCfg := encoding.MakeConfig()
-	ica := icaModule{}
-	raw := ica.DefaultGenesis(encCfg.Codec)
+	ica := icaModule{Codec: encCfg.Codec}
+	raw := ica.DefaultGenesis()
 	got := icagenesistypes.GenesisState{}
 	encCfg.Codec.MustUnmarshalJSON(raw, &got)
 

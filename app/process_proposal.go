@@ -51,7 +51,6 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
 		app.ParamsKeeper,
-		app.MsgGateKeeper,
 		app.BlockedParamsGovernance(),
 	)
 	appVersion, err := app.ConsensusKeeper.AppVersion(ctx)

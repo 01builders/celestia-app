@@ -41,7 +41,6 @@ func (app *App) PrepareProposalHandler(ctx sdk.Context, req *abci.PrepareProposa
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
 		app.ParamsKeeper,
-		app.MsgGateKeeper,
 		app.BlockedParamsGovernance(),
 	)
 

@@ -197,9 +197,6 @@ type App struct {
 	// useful for testing purposes and should not be used on public networks
 	// (Arabica, Mocha, or Mainnet Beta).
 	timeoutCommit time.Duration
-	// MsgGateKeeper is used to define which messages are accepted for a given
-	// app version.
-	MsgGateKeeper *ante.MsgVersioningGateKeeper
 }
 
 // RegisterGRPCServerWithSkipCheckHeader implements server.Application.
@@ -551,10 +548,6 @@ func New(
 	// which will be used both as the antehandler and as part of the circuit breaker in
 	// the msg service router
 
-	// TODO: keep a list of all accepted messages previously app.configurator.GetAcceptedMessages()
-	app.MsgGateKeeper = ante.NewMsgVersioningGateKeeper(map[uint64]map[string]struct{}{}, app.ConsensusKeeper)
-	// app.MsgServiceRouter().SetCircuit(app.MsgGateKeeper)
-
 	// Initialize the KV stores for the base modules (e.g. params). The base modules will be included in every app version.
 	app.MountKVStores(app.keys) // TODO: this was using previously baseKeys, but we want to start from a v4 app
 	app.MountTransientStores(tkeys)
@@ -576,7 +569,6 @@ func New(
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
 		app.ParamsKeeper,
-		app.MsgGateKeeper,
 		app.BlockedParamsGovernance(),
 	))
 	app.SetPostHandler(posthandler.New())

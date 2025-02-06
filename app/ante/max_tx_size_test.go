@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
@@ -9,6 +10,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
+
+type mockConsensusKeeper struct {
+	ante.ConsensusKeeper
+	appVersion uint64
+}
+
+func (m mockConsensusKeeper) AppVersion(ctx context.Context) (uint64, error) {
+	return m.appVersion, nil
+}
 
 func TestMaxTxSizeDecorator(t *testing.T) {
 	testCases := []struct {

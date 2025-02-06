@@ -46,7 +46,6 @@ func (a *App) OutOfOrderPrepareProposal(req *abci.PrepareProposalRequest) (*abci
 		ante.DefaultSigVerificationGasConsumer,
 		a.IBCKeeper,
 		a.ParamsKeeper,
-		a.MsgGateKeeper,
 		a.BlockedParamsGovernance(),
 	)
 

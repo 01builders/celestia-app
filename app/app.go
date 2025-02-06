@@ -66,9 +66,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	blobkeeper "github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	"github.com/celestiaorg/celestia-app/v4/x/blobstream"
-	blobstreamkeeper "github.com/celestiaorg/celestia-app/v4/x/blobstream/keeper"
-	blobstreamtypes "github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 	"github.com/celestiaorg/celestia-app/v4/x/mint"
 	mintkeeper "github.com/celestiaorg/celestia-app/v4/x/mint/keeper"
@@ -189,8 +186,7 @@ type App struct {
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 	// PacketForwardKeeper *packetforwardkeeper.Keeper // TODO: deprecated by ibc-go/v10 ?
-	BlobKeeper       blobkeeper.Keeper
-	BlobstreamKeeper blobstreamkeeper.Keeper
+	BlobKeeper blobkeeper.Keeper
 
 	ModuleManager *module.Manager
 	configurator  module.Configurator
@@ -376,21 +372,12 @@ func New(
 		app.ConsensusKeeper,
 	)
 
-	app.BlobstreamKeeper = *blobstreamkeeper.NewKeeper(
-		envFactory.make(blobstreamtypes.ModuleName, blobstreamtypes.StoreKey),
-		encodingConfig.Codec,
-		app.GetSubspace(blobstreamtypes.ModuleName),
-		app.StakingKeeper,
-		app.ConsensusKeeper,
-	)
-
 	// Register the staking hooks. NOTE: stakingKeeper is passed by reference
 	// above so that it will contain these hooks.
 	app.StakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			app.BlobstreamKeeper.Hooks(),
 		),
 	)
 
@@ -542,7 +529,6 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transfer.NewAppModule(encodingConfig.Codec, app.TransferKeeper),
 		blob.NewAppModule(encodingConfig.Codec, app.BlobKeeper),
-		blobstream.NewAppModule(encodingConfig.Codec, app.BlobstreamKeeper), // v1->v1
 		signal.NewAppModule(app.SignalKeeper),
 		minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
 		// packetforward.NewAppModule(app.PacketForwardKeeper),
@@ -787,7 +773,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(blobtypes.ModuleName)
-	paramsKeeper.Subspace(blobstreamtypes.ModuleName)
 	paramsKeeper.Subspace(minfee.ModuleName)
 	// paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 

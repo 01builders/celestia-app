@@ -18,7 +18,6 @@ import (
 	stakingtypes "cosmossdk.io/x/staking/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	blobstreamtypes "github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	signaltypes "github.com/celestiaorg/celestia-app/v4/x/signal/types"
@@ -55,7 +54,6 @@ func (app *App) setModuleOrder() {
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		blobtypes.ModuleName,
-		blobstreamtypes.ModuleName,
 		paramstypes.ModuleName,
 		authz.ModuleName,
 		vestingtypes.ModuleName,
@@ -81,7 +79,6 @@ func (app *App) setModuleOrder() {
 		banktypes.ModuleName,
 		genutiltypes.ModuleName,
 		blobtypes.ModuleName,
-		blobstreamtypes.ModuleName,
 		paramstypes.ModuleName,
 		authz.ModuleName,
 		vestingtypes.ModuleName,
@@ -111,7 +108,6 @@ func (app *App) setModuleOrder() {
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		blobtypes.ModuleName,
-		blobstreamtypes.ModuleName,
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -138,7 +134,6 @@ func allStoreKeys() []string {
 		feegrant.StoreKey,
 		pooltypes.StoreKey, // added in v4
 		evidencetypes.StoreKey,
-		blobstreamtypes.StoreKey,
 		ibctransfertypes.StoreKey,
 		ibcexported.StoreKey,
 		// packetforwardtypes.StoreKey,

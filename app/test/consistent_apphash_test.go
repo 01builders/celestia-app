@@ -23,7 +23,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	blobstreamtypes "github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	signal "github.com/celestiaorg/celestia-app/v4/x/signal/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
@@ -36,7 +35,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -310,13 +308,6 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	// NewMsgUnjail - unjails validator-3
 	msgUnjail := slashingtypes.NewMsgUnjail(genValidators[3].GetOperator())
 	thirdBlockSdkMsgs = append(thirdBlockSdkMsgs, msgUnjail)
-
-	// NewMsgRegisterEVMAddress - registers an EVM address
-	// This message was removed in v2
-	if v, _ := testApp.AppVersion(testApp.NewContext(false)); v == v1.Version {
-		msgRegisterEVMAddress := blobstreamtypes.NewMsgRegisterEVMAddress(genValidators[1].GetOperator(), gethcommon.HexToAddress("hi"))
-		thirdBlockSdkMsgs = append(thirdBlockSdkMsgs, msgRegisterEVMAddress)
-	}
 
 	firstBlockTxs, err := processSdkMessages(signer, firstBlockSdkMsgs)
 	require.NoError(t, err)

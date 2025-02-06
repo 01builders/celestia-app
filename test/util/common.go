@@ -21,7 +21,6 @@ import (
 	distrkeeper "cosmossdk.io/x/distribution/keeper"
 	distrtypes "cosmossdk.io/x/distribution/types"
 	"cosmossdk.io/x/params"
-	paramskeeper "cosmossdk.io/x/params/keeper"
 	paramstypes "cosmossdk.io/x/params/types"
 	pooltypes "cosmossdk.io/x/protocolpool/types"
 	slashingkeeper "cosmossdk.io/x/slashing/keeper"
@@ -33,9 +32,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
-	"github.com/celestiaorg/celestia-app/v4/x/blobstream/keeper"
-	blobsteamkeeper "github.com/celestiaorg/celestia-app/v4/x/blobstream/keeper"
-	blobstreamtypes "github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	tmversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	tmed "github.com/cometbft/cometbft/crypto/ed25519"
@@ -52,6 +48,9 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
+
+// TODO: This probably should be deleted.
+var blobstreamModuleName = "blobstream"
 
 var (
 	// TestingStakeParams is a set of staking params for testing
@@ -169,23 +168,21 @@ func initEVMAddrs(count int) []gethcommon.Address {
 
 // TestInput stores the various keepers required to test Blobstream
 type TestInput struct {
-	BlobstreamKeeper keeper.Keeper
-	AuthKeeper       authkeeper.AccountKeeper
-	StakingKeeper    *stakingkeeper.Keeper
-	SlashingKeeper   slashingkeeper.Keeper
-	DistKeeper       distrkeeper.Keeper
-	BankKeeper       bankkeeper.BaseKeeper
-	Context          sdk.Context
-	Codec            codec.Codec
-	LegacyAmino      *codec.LegacyAmino
+	AuthKeeper     authkeeper.AccountKeeper
+	StakingKeeper  *stakingkeeper.Keeper
+	SlashingKeeper slashingkeeper.Keeper
+	DistKeeper     distrkeeper.Keeper
+	BankKeeper     bankkeeper.BaseKeeper
+	Context        sdk.Context
+	Codec          codec.Codec
+	LegacyAmino    *codec.LegacyAmino
 }
 
-// CreateTestEnvWithoutBlobstreamKeysInit creates the keeper testing environment for Blobstream
-func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
+// CreateTestEnv creates the keeper testing environment
+func CreateTestEnv(t *testing.T) TestInput {
 	t.Helper()
 
 	// Initialize store keys
-	keyBlobstream := storetypes.NewKVStoreKey(blobstreamtypes.StoreKey)
 	keyAuth := storetypes.NewKVStoreKey(authtypes.StoreKey)
 	keyAccount := storetypes.NewKVStoreKey(accounts.StoreKey)
 	keyStaking := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
@@ -200,7 +197,6 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	// Initialize memory database and mount stores on it
 	db := coretesting.NewMemDB()
 	ms := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
-	ms.MountStoreWithDB(keyBlobstream, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyAuth, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyAccount, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, storetypes.StoreTypeIAVL, db)
@@ -246,16 +242,12 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 	cometService := runtime.NewContextAwareCometInfoService()
 	authority := authtypes.NewModuleAddress("gov")
 
-	paramsKeeper := paramskeeper.NewKeeper(cdc, aminoCdc, keyParams, tkeyParams)
-	paramsKeeper.Subspace(blobstreamtypes.DefaultParamspace)
-
 	// this is also used to initialize module accounts for all the map keys
 	moduleAccountPermissions := map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		blobstreamtypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
 	}
 
 	signingCtx := cdc.InterfaceRegistry().SigningContext()
@@ -263,6 +255,9 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		SigningContext: signingCtx,
 		ProtoCodec:     cdc,
 	})
+	if err != nil {
+		t.Fatalf("failed to create tx decoder: %v", err)
+	}
 
 	accountKeeper, err := accounts.NewKeeper(
 		cdc,
@@ -341,16 +336,16 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		moduleAccount := authtypes.NewEmptyModuleAccount(name, permissions...)
 		totalSupply := sdk.NewCoins(sdk.NewInt64Coin("stake", 100000000))
 		if name == stakingtypes.NotBondedPoolName {
-			err = bankKeeper.MintCoins(ctx, blobstreamtypes.ModuleName, totalSupply)
+			err = bankKeeper.MintCoins(ctx, blobstreamModuleName, totalSupply)
 			require.NoError(t, err)
-			err = bankKeeper.SendCoinsFromModuleToModule(ctx, blobstreamtypes.ModuleName, moduleAccount.Name, totalSupply)
+			err = bankKeeper.SendCoinsFromModuleToModule(ctx, blobstreamModuleName, moduleAccount.Name, totalSupply)
 			require.NoError(t, err)
 		} else if name == distrtypes.ModuleName {
 			// some big pot to pay out
 			amt := sdk.NewCoins(sdk.NewInt64Coin("stake", 500000))
-			err = bankKeeper.MintCoins(ctx, blobstreamtypes.ModuleName, amt)
+			err = bankKeeper.MintCoins(ctx, blobstreamModuleName, amt)
 			require.NoError(t, err)
-			err = bankKeeper.SendCoinsFromModuleToModule(ctx, blobstreamtypes.ModuleName, moduleAccount.Name, amt)
+			err = bankKeeper.SendCoinsFromModuleToModule(ctx, blobstreamModuleName, moduleAccount.Name, amt)
 			require.NoError(t, err)
 		}
 		authKeeper.SetModuleAccount(ctx, moduleAccount)
@@ -368,42 +363,23 @@ func CreateTestEnvWithoutBlobstreamKeysInit(t *testing.T) TestInput {
 		authority.String(),
 	)
 
-	blobstreamKeeper := keeper.NewKeeper(
-		runtime.NewEnvironment(runtime.NewKVStoreService(keyBlobstream), ctx.Logger()),
-		cdc,
-		getSubspace(paramsKeeper, blobstreamtypes.DefaultParamspace),
-		stakingKeeper,
-		consensusKeeper,
-	)
-	blobstreamKeeper.SetParams(ctx, *blobstreamtypes.DefaultGenesis().Params)
-
 	stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			distKeeper.Hooks(),
 			slashingKeeper.Hooks(),
-			blobstreamKeeper.Hooks(),
 		),
 	)
 
 	return TestInput{
-		BlobstreamKeeper: *blobstreamKeeper,
-		AuthKeeper:       authKeeper,
-		BankKeeper:       bankKeeper,
-		StakingKeeper:    stakingKeeper,
-		SlashingKeeper:   slashingKeeper,
-		DistKeeper:       distKeeper,
-		Context:          ctx,
-		Codec:            cdc,
-		LegacyAmino:      aminoCdc,
+		AuthKeeper:     authKeeper,
+		BankKeeper:     bankKeeper,
+		StakingKeeper:  stakingKeeper,
+		SlashingKeeper: slashingKeeper,
+		DistKeeper:     distKeeper,
+		Context:        ctx,
+		Codec:          cdc,
+		LegacyAmino:    aminoCdc,
 	}
-}
-
-// CreateTestEnv creates the keeper testing environment for Blobstream
-func CreateTestEnv(t *testing.T) TestInput {
-	input := CreateTestEnvWithoutBlobstreamKeysInit(t)
-	input.BlobstreamKeeper.SetLatestAttestationNonce(input.Context, blobsteamkeeper.InitialLatestAttestationNonce)
-	input.BlobstreamKeeper.SetEarliestAvailableAttestationNonce(input.Context, blobsteamkeeper.InitialEarliestAvailableAttestationNonce)
-	return input
 }
 
 // MakeAminoCodec creates a legacy amino codec for testing
@@ -416,14 +392,7 @@ func MakeAminoCodec() *codec.LegacyAmino {
 	sdk.RegisterLegacyAminoCodec(cdc)
 	ccodec.RegisterCrypto(cdc)
 	params.AppModule{}.RegisterLegacyAminoCodec(cdc)
-	blobstreamtypes.RegisterLegacyAminoCodec(cdc)
 	return cdc
-}
-
-// getSubspace returns a param subspace for a given module name.
-func getSubspace(k paramskeeper.Keeper, moduleName string) paramstypes.Subspace {
-	subspace, _ := k.GetSubspace(moduleName)
-	return subspace
 }
 
 // SetupFiveValChain does all the initialization for a 5 Validator chain using the keys here
@@ -437,7 +406,6 @@ func SetupFiveValChain(t *testing.T) (TestInput, sdk.Context) {
 	// Initialize each of the validators
 	for i := range []int{0, 1, 2, 3, 4} {
 		CreateValidator(t, input, AccAddrs[i], AccPubKeys[i], uint64(i), ValAddrs[i], ConsPubKeys[i], StakingAmount)
-		RegisterEVMAddress(t, input, ValAddrs[i], EVMAddrs[i])
 	}
 
 	// Run the staking endblocker to ensure valset is correct in state
@@ -465,8 +433,8 @@ func CreateValidator(
 	)
 
 	// Set the balance for the account
-	require.NoError(t, input.BankKeeper.MintCoins(input.Context, blobstreamtypes.ModuleName, InitCoins))
-	err := input.BankKeeper.SendCoinsFromModuleToAccount(input.Context, blobstreamtypes.ModuleName, acc.GetAddress(), InitCoins)
+	require.NoError(t, input.BankKeeper.MintCoins(input.Context, blobstreamModuleName, InitCoins))
+	err := input.BankKeeper.SendCoinsFromModuleToAccount(input.Context, blobstreamModuleName, acc.GetAddress(), InitCoins)
 	require.NoError(t, err)
 
 	// Set the account in state
@@ -476,18 +444,6 @@ func CreateValidator(
 	// and the staking handler
 	msgServer := stakingkeeper.NewMsgServerImpl(input.StakingKeeper)
 	_, err = msgServer.CreateValidator(input.Context, NewTestMsgCreateValidator(valAddr, consPubKey, stakingAmount))
-	require.NoError(t, err)
-}
-
-func RegisterEVMAddress(
-	t *testing.T,
-	input TestInput,
-	valAddr sdk.ValAddress,
-	evmAddr gethcommon.Address,
-) {
-	bsMsgServer := keeper.NewMsgServerImpl(input.BlobstreamKeeper)
-	registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), evmAddr)
-	_, err := bsMsgServer.RegisterEVMAddress(input.Context, registerMsg)
 	require.NoError(t, err)
 }
 
@@ -524,7 +480,6 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 
 	// Initialize each of the validators
 	stakingMsgServer := stakingkeeper.NewMsgServerImpl(input.StakingKeeper)
-	bsMsgServer := keeper.NewMsgServerImpl(input.BlobstreamKeeper)
 	for i, weight := range weights {
 		consPrivKey := ed25519.GenPrivKey()
 		consPubKey := consPrivKey.PubKey()
@@ -541,8 +496,8 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 
 		// Set the balance for the account
 		weightCoins := sdk.NewCoins(sdk.NewInt64Coin(TestingStakeParams.BondDenom, int64(weight)))
-		require.NoError(t, input.BankKeeper.MintCoins(input.Context, blobstreamtypes.ModuleName, weightCoins))
-		require.NoError(t, input.BankKeeper.SendCoinsFromModuleToAccount(input.Context, blobstreamtypes.ModuleName, accAddr, weightCoins))
+		require.NoError(t, input.BankKeeper.MintCoins(input.Context, blobstreamModuleName, weightCoins))
+		require.NoError(t, input.BankKeeper.SendCoinsFromModuleToAccount(input.Context, blobstreamModuleName, accAddr, weightCoins))
 
 		// Set the account in state
 		input.AuthKeeper.SetAccount(input.Context, acc)
@@ -553,10 +508,6 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 			input.Context,
 			NewTestMsgCreateValidator(valAddr, consPubKey, math.NewIntFromUint64(weight)),
 		)
-		require.NoError(t, err)
-
-		registerMsg := blobstreamtypes.NewMsgRegisterEVMAddress(valAddr.String(), EVMAddrs[i])
-		_, err = bsMsgServer.RegisterEVMAddress(input.Context, registerMsg)
 		require.NoError(t, err)
 
 		// Run the staking endblocker to ensure valset is correct in state
@@ -577,33 +528,4 @@ func SetupTestChain(t *testing.T, weights []uint64) (TestInput, sdk.Context) {
 func NewTestMsgUnDelegateValidator(address sdk.ValAddress, amt math.Int) *stakingtypes.MsgUndelegate {
 	msg := stakingtypes.NewMsgUndelegate(sdk.AccAddress(address).String(), address.String(), sdk.NewCoin("stake", amt))
 	return msg
-}
-
-// ExecuteBlobstreamHeights executes the end exclusive range of heights specified by beginHeight and endHeight
-// along with the Blobstream abci.EndBlocker on each one of them.
-// Returns the updated context with block height advanced to endHeight.
-func ExecuteBlobstreamHeights(ctx sdk.Context, bsKeeper keeper.Keeper, beginHeight int64, endHeight int64) sdk.Context {
-	for i := beginHeight; i < endHeight; i++ {
-		ctx = ctx.WithBlockHeight(i)
-
-		if err := bsKeeper.EndBlocker(ctx); err != nil {
-			panic(err)
-		}
-	}
-	return ctx
-}
-
-// ExecuteBlobstreamHeightsWithTime executes the end exclusive range of heights specified by beginHeight and endHeight
-// along with the Blobstream abci.EndBlocker on each one of them.
-// Uses the interval to calculate the block header time.
-func ExecuteBlobstreamHeightsWithTime(ctx sdk.Context, bsKeeper keeper.Keeper, beginHeight int64, endHeight int64, blockInterval time.Duration) sdk.Context {
-	blockTime := ctx.BlockTime()
-	for i := beginHeight; i < endHeight; i++ {
-		ctx = ctx.WithBlockHeight(i).WithBlockHeader(tmproto.Header{Time: blockTime})
-		if err := bsKeeper.EndBlocker(ctx); err != nil {
-			panic(err)
-		}
-		blockTime = blockTime.Add(blockInterval)
-	}
-	return ctx
 }

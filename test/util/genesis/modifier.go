@@ -11,7 +11,6 @@ import (
 	slashingtypes "cosmossdk.io/x/slashing/types"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	bstypes "github.com/celestiaorg/celestia-app/v4/x/blobstream/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -47,23 +46,12 @@ func SetSlashingParams(codec codec.Codec, parans slashingtypes.Params) Modifier 
 func ImmediateProposals(codec codec.Codec) Modifier {
 	return func(state map[string]json.RawMessage) map[string]json.RawMessage {
 		gs := v1.DefaultGenesisState()
-		gs.DepositParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1)))
-		gs.TallyParams.Quorum = "0.000001"
-		gs.TallyParams.Threshold = "0.000001"
+		gs.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1)))
+		gs.Params.Quorum = "0.000001"
+		gs.Params.Threshold = "0.000001"
 		vp := time.Second * 5
-		gs.VotingParams.VotingPeriod = &vp
+		gs.Params.VotingPeriod = &vp
 		state[govtypes.ModuleName] = codec.MustMarshalJSON(gs)
-		return state
-	}
-}
-
-// SetDataCommitmentWindow will set the provided data commitment window in the
-// blobstream module's genesis state.
-func SetDataCommitmentWindow(codec codec.Codec, window uint64) Modifier {
-	return func(state map[string]json.RawMessage) map[string]json.RawMessage {
-		blobstreamGenState := bstypes.DefaultGenesis()
-		blobstreamGenState.Params.DataCommitmentWindow = window
-		state[bstypes.ModuleName] = codec.MustMarshalJSON(blobstreamGenState)
 		return state
 	}
 }

@@ -11,7 +11,6 @@ import (
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	celestiaserver "github.com/celestiaorg/celestia-app/v4/server"
-	blobstreamclient "github.com/celestiaorg/celestia-app/v4/x/blobstream/client"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -137,7 +136,6 @@ func initRootCommand(rootCommand *cobra.Command, app *app.App) {
 		queryCommand(app.ModuleManager),
 		txCommand(app.ModuleManager),
 		keys.Commands(),
-		blobstreamclient.VerifyCmd(),
 		snapshot.Cmd(NewAppServer),
 	)
 

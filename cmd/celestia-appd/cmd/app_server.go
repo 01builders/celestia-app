@@ -23,7 +23,6 @@ func NewAppServer(
 		logger,
 		db,
 		traceStore,
-		cast.ToInt64(appOpts.Get(UpgradeHeightFlag)),
 		cast.ToDuration(appOpts.Get(TimeoutCommitFlag)),
 		baseappOptions...,
 	)

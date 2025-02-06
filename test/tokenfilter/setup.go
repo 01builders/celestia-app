@@ -139,7 +139,7 @@ func NewTestChain(t *testing.T, coord *ibctesting.Coordinator, chainID string) *
 // account. A Nop logger is set in SimApp.
 func SetupWithGenesisValSet(t testing.TB, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) ibctesting.TestingApp {
 	db := coretesting.NewMemDB()
-	app := app.New(log.NewNopLogger(), db, nil, 0, 0)
+	app := app.New(log.NewNopLogger(), db, nil, 0)
 	genesisState := app.ModuleManager.DefaultGenesis()
 
 	// set genesis accounts

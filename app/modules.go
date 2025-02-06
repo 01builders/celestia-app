@@ -94,8 +94,10 @@ func (app *App) setModuleOrder() {
 	// NOTE: The minfee module must occur before genutil so DeliverTx can
 	// successfully pass the fee checking logic
 	app.ModuleManager.SetOrderInitGenesis(
+		consensustypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		accounts.ModuleName,
 		distrtypes.ModuleName,
 		pooltypes.ModuleName,
 		stakingtypes.ModuleName,

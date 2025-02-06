@@ -84,7 +84,6 @@ func NewTestApp() *app.App {
 	return app.New(
 		TestAppLogger, db, nil,
 		0,
-		0,
 		baseapp.SetChainID(ChainID),
 	)
 }
@@ -444,12 +443,12 @@ func genesisStateWithValSet(
 	return genesisState
 }
 
-func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App, keyring.Keyring) {
+func SetupTestApp(t *testing.T) (*app.App, keyring.Keyring) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
 	chainID := "test_chain"
-	testApp := app.New(log.NewNopLogger(), db, nil, upgradeHeight, 0)
+	testApp := app.New(log.NewNopLogger(), db, nil, 0, baseapp.SetChainID(chainID))
 	genesisState, _, kr := GenesisStateWithSingleValidator(testApp, "account")
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
@@ -480,9 +479,13 @@ func SetupTestAppWithUpgradeHeight(t *testing.T, upgradeHeight int64) (*app.App,
 	require.NoError(t, err)
 
 	// assert that the chain starts with version provided in genesis
+	// because Info only fetch store if height > 0 (where the version is set from the consensus keeper)
+	// we just override the default baseapp height
+	// baseapp.InitialAppVersion = app.DefaultInitialConsensusParams().Version.App
+
 	infoResp, err = testApp.Info(&abci.InfoRequest{})
 	require.NoError(t, err)
-	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.App, infoResp.AppVersion)
+	require.EqualValues(t, app.DefaultInitialConsensusParams().Version.App, infoResp.AppVersion, infoResp.String())
 
 	_, err = testApp.Commit()
 	require.NoError(t, err)

@@ -2,7 +2,6 @@ package ante
 
 import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 
@@ -33,10 +32,6 @@ func (d BlobShareDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool
 	appVersion, err := d.consensusKeeper.AppVersion(ctx)
 	if err != nil {
 		return ctx, errors.Wrap(err, "failed to get app version")
-	}
-
-	if appVersion == v1.Version {
-		return next(ctx, tx, simulate)
 	}
 
 	maxBlobShares := d.getMaxBlobShares(ctx, appVersion)

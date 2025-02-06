@@ -44,7 +44,7 @@ const (
 func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
-	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0, 0)
+	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0)
 	encodingConfig := tempApp.GetEncodingConfig()
 
 	initClientContext := client.Context{}.
@@ -164,6 +164,8 @@ func initRootCommand(rootCommand *cobra.Command, app *app.App) {
 // addStartFlags adds flags to the start command.
 func addStartFlags(startCmd *cobra.Command) {
 	startCmd.Flags().Int64(UpgradeHeightFlag, 0, "Upgrade height to switch from v1 to v2. Must be coordinated amongst all validators")
+	startCmd.Flags().MarkDeprecated(UpgradeHeightFlag, "This flag is deprecated and was only useful prior to v4.")
+
 	startCmd.Flags().Duration(TimeoutCommitFlag, 0, "Override the application configured timeout_commit. Note: only for testing purposes.")
 	startCmd.Flags().Bool(FlagForceNoBBR, false, "bypass the requirement to use bbr locally")
 }

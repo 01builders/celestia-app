@@ -190,9 +190,6 @@ type App struct {
 
 	ModuleManager *module.Manager
 	configurator  module.Configurator
-	// upgradeHeightV2 is used as a coordination mechanism for the height-based
-	// upgrade from v1 to v2.
-	upgradeHeightV2 int64
 	// timeoutCommit is used to override the default timeoutCommit. This is
 	// useful for testing purposes and should not be used on public networks
 	// (Arabica, Mocha, or Mainnet Beta).
@@ -206,15 +203,10 @@ func (app *App) RegisterGRPCServerWithSkipCheckHeader(srv grpc.Server, skip bool
 
 // New returns a reference to an uninitialized app. Callers must subsequently
 // call app.Info or app.InitChain to initialize the baseapp.
-//
-// NOTE: upgradeHeightV2 refers specifically to the height that a node will
-// upgrade from v1 to v2. It will be deprecated in v3 in place for a dynamically
-// signaling scheme
 func New(
 	logger log.Logger,
 	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
-	upgradeHeightV2 int64,
 	timeoutCommit time.Duration,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
@@ -248,9 +240,8 @@ func New(
 		keys:    keys,
 		tkeys:   tkeys,
 		// memKeys now nil, was only in use by x/capability
-		memKeys:         nil,
-		upgradeHeightV2: upgradeHeightV2,
-		timeoutCommit:   timeoutCommit,
+		memKeys:       nil,
+		timeoutCommit: timeoutCommit,
 	}
 
 	// needed for migration from x/params -> module's ownership of own params
@@ -530,6 +521,7 @@ func New(
 		minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
 		// packetforward.NewAppModule(app.PacketForwardKeeper),
 		icaModule{ica.NewAppModule(encodingConfig.Codec, &app.ICAControllerKeeper, &app.ICAHostKeeper), encodingConfig.Codec},
+		consensus.NewAppModule(encodingConfig.Codec, app.ConsensusKeeper),
 	)
 
 	// order begin block, end block and init genesis
@@ -590,9 +582,6 @@ func (app *App) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	if ctx.HeaderInfo().Height == app.upgradeHeightV2 {
-		app.BaseApp.Logger().Info("upgraded from app version 1 to 2")
-	}
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
@@ -604,24 +593,16 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	}
 	currentVersion, err := app.AppVersion(ctx)
 	if err != nil {
-		panic(err)
+		return sdk.EndBlock{}, err
 	}
-	// For v1 only we upgrade using an agreed upon height known ahead of time
-	if currentVersion == v1 {
-		// check that we are at the height before the upgrade
-		if ctx.HeaderInfo().Height == app.upgradeHeightV2-1 {
-			app.BaseApp.Logger().Info(fmt.Sprintf("upgrading from app version %v to 2", currentVersion))
-			if err = app.SetAppVersion(ctx, v2); err != nil {
-				panic(err)
-			}
-		}
-		// from v2 to v3 and onwards we use a signaling mechanism
-	} else if shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx); shouldUpgrade {
+
+	// use a signaling mechanism for upgrade
+	if shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx); shouldUpgrade {
 		// Version changes must be increasing. Downgrades are not permitted
 		if newVersion > currentVersion {
 			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", newVersion)
 			if err = app.SetAppVersion(ctx, newVersion); err != nil {
-				panic(err)
+				return sdk.EndBlock{}, err
 			}
 			app.SignalKeeper.ResetTally(ctx)
 		}
@@ -634,6 +615,11 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 // InitChainer is middleware that gets invoked part-way through the baseapp's InitChain invocation.
 func (app *App) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
+	// set the initial version
+	if err := app.SetAppVersion(ctx, DefaultInitialVersion); err != nil {
+		return nil, err
+	}
+
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		return nil, err
@@ -642,6 +628,7 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, versionMap); err != nil {
 		return nil, err
 	}
+
 	return app.ModuleManager.InitGenesis(ctx, genesisState)
 }
 
@@ -724,8 +711,10 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-	app.ModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	// Register new celestia routes from grpc-gateway.
 	celestiatx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	// Register grpc-gateway routes for all modules.
+	app.ModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.

@@ -73,22 +73,12 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.ProcessProposa
 			}
 			tx = blobTx.Tx
 		}
-
-		// todo: uncomment once we're sure this isn't consensus breaking
-		// sdkCtx = sdkCtx.WithTxBytes(tx)
-
 		sdkTx, err := app.encodingConfig.TxConfig.TxDecoder()(tx)
+
 		// Set the tx bytes in the context for app version v3 and greater
-		if appVersion >= 3 {
-			ctx = ctx.WithTxBytes(tx)
-		}
+		ctx = ctx.WithTxBytes(tx)
 
 		if err != nil {
-			if blockHeader.Version.App == v1 {
-				// For appVersion 1, there was no block validity rule that all
-				// transactions must be decodable.
-				continue
-			}
 			// An error here means that a tx was included in the block that is not decodable.
 			logInvalidPropBlock(app.Logger(), blockHeader, fmt.Sprintf("tx %d is not decodable", idx))
 			return reject(), nil

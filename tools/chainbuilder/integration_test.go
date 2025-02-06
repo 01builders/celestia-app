@@ -62,7 +62,6 @@ func TestRun(t *testing.T) {
 		log.NewNopLogger(),
 		appDB,
 		nil,
-		0, // upgrade height v2
 		0, // timeout commit
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)

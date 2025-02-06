@@ -19,7 +19,7 @@ func appExporter(
 	appOptions servertypes.AppOptions,
 	_ []string,
 ) (servertypes.ExportedApp, error) {
-	application := app.New(logger, db, traceStore, 0, 0)
+	application := app.New(logger, db, traceStore, 0)
 	if height != -1 {
 		if err := application.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err

@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/math"
 	params "cosmossdk.io/x/params/keeper"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerror "github.com/cosmos/cosmos-sdk/types/errors"
@@ -55,15 +54,8 @@ func ValidateTxFee(ctx context.Context, tx transaction.Tx, paramKeeper params.Ke
 		}
 	}
 
-	// Ensure that the provided fee meets a network minimum threshold.
-	// Network minimum fee only applies to app versions greater than one.
-	appVersion, err := consensusKeeper.AppVersion(sdkCtx)
-	if err != nil {
-		return nil, 0, errors.Wrap(sdkerror.ErrLogic, "failed to get app version")
-	}
-
 	// sdkCtx.BlockHeight() > 0 is used to avoid errors when running tests which initialize genesis from v4
-	if appVersion > v1.Version && sdkCtx.BlockHeight() > 0 {
+	if sdkCtx.BlockHeight() > 0 {
 		subspace, exists := paramKeeper.GetSubspace(minfee.ModuleName)
 		if !exists {
 			return nil, 0, errors.Wrap(sdkerror.ErrInvalidRequest, "minfee is not a registered subspace")

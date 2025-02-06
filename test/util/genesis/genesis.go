@@ -210,7 +210,7 @@ func (g *Genesis) Export() (*coretypes.GenesisDoc, error) {
 		gentxs = append(gentxs, json.RawMessage(bz))
 	}
 
-	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0, 0)
+	tempApp := app.New(log.NewNopLogger(), coretesting.NewMemDB(), nil, 0)
 
 	return Document(
 		tempApp.ModuleManager.DefaultGenesis(),

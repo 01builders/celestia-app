@@ -198,7 +198,6 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		log.NewNopLogger(),
 		appDB,
 		nil,
-		0, // upgrade height v2
 		0, // timeout commit
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
@@ -394,6 +393,9 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				DecidedLastCommit: lastCommitInfo,
 				Txs:               txs,
 			})
+			if err != nil {
+				return fmt.Errorf("failed to finalize block: %w", err)
+			}
 
 			for _, tx := range resp.TxResults {
 				if tx.Code != abci.CodeTypeOK {

@@ -172,7 +172,6 @@ func DefaultAppCreator(opts ...AppCreationOptions) server.AppCreator {
 			log.NewNopLogger(),
 			coretesting.NewMemDB(),
 			nil, // trace store
-			0,   // v2 upgrade height
 			0,   // timeout commit
 			baseapp.SetMinGasPrices(fmt.Sprintf("%v%v", appconsts.DefaultMinGasPrice, app.BondDenom)),
 		)
@@ -191,7 +190,6 @@ func CustomAppCreator(minGasPrice string) server.AppCreator {
 			log.NewNopLogger(),
 			coretesting.NewMemDB(),
 			nil, // trace store
-			0,   // v2 upgrade height
 			0,   // timeout commit
 			baseapp.SetMinGasPrices(minGasPrice),
 		)

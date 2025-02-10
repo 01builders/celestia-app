@@ -3,7 +3,7 @@ package user
 import (
 	"math"
 
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
@@ -20,7 +20,7 @@ func SetGasLimit(limit uint64) TxOption {
 
 func SetFee(fees uint64) TxOption {
 	return func(builder sdkclient.TxBuilder) sdkclient.TxBuilder {
-		builder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, sdk.NewInt(int64(fees)))))
+		builder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin(appconsts.BondDenom, math.NewInt(int64(fees)))))
 		return builder
 	}
 }

@@ -4,22 +4,23 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/inclusion"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	"github.com/cometbft/cometbft/crypto/merkle"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestNewV0Blob(t *testing.T) {
@@ -36,7 +37,7 @@ func TestNewV0Blob(t *testing.T) {
 }
 
 func TestValidateBlobTx(t *testing.T) {
-	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	encCfg := encoding.MakeConfig()
 	signer, err := testnode.NewOfflineSigner()
 	require.NoError(t, err)
 	ns1 := share.MustNewV0Namespace(bytes.Repeat([]byte{0x01}, share.NamespaceVersionZeroIDSize))
@@ -149,7 +150,7 @@ func TestValidateBlobTx(t *testing.T) {
 		{
 			name: "complex transaction with one send and one pfb",
 			getTx: func() *tx.BlobTx {
-				sendMsg := banktypes.NewMsgSend(addr, addr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(10))))
+				sendMsg := banktypes.NewMsgSend(addr, addr, sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(10))))
 				transaction := blobfactory.ComplexBlobTxWithOtherMsgs(
 					t,
 					tmrand.NewRand(),
@@ -251,7 +252,7 @@ func TestValidateBlobTx(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := types.ValidateBlobTx(encCfg.TxConfig, tt.getTx(), appconsts.DefaultSubtreeRootThreshold, appconsts.LatestVersion)
+			err := types.ValidateBlobTx(encCfg.TxConfig.TxDecoder(), tt.getTx(), appconsts.DefaultSubtreeRootThreshold, appconsts.LatestVersion)
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, err, tt.expectedErr, tt.name)
 			}

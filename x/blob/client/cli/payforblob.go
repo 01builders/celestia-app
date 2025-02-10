@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -216,7 +216,12 @@ func broadcastPFB(cmd *cobra.Command, b ...*share.Blob) error {
 		return err
 	}
 
-	txBytes, err := writeTx(clientCtx, sdktx.NewFactoryCLI(clientCtx, cmd.Flags()), pfbMsg)
+	factoryCLI, err := sdktx.NewFactoryCLI(clientCtx, cmd.Flags())
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := writeTx(clientCtx, factoryCLI, pfbMsg)
 	if err != nil {
 		return err
 	}
@@ -289,7 +294,7 @@ func writeTx(clientCtx client.Context, txf sdktx.Factory, msgs ...sdk.Msg) ([]by
 		}
 	}
 
-	err = sdktx.Sign(txf, clientCtx.GetFromName(), tx, true)
+	err = sdktx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true)
 	if err != nil {
 		return nil, err
 	}

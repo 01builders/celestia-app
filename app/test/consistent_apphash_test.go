@@ -5,20 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
-	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
-	blobstreamtypes "github.com/celestiaorg/celestia-app/v3/x/blobstream/types"
-	signal "github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	"cosmossdk.io/math"
+	"cosmossdk.io/x/feegrant"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
+	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
+	signal "github.com/celestiaorg/celestia-app/v4/x/signal/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/go-square/v2/tx"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -31,15 +35,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisisTypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 type blobTx struct {
@@ -104,7 +103,7 @@ func TestConsistentAppHash(t *testing.T) {
 			// Create deterministic keys
 			kr, pubKeys := deterministicKeyRing(enc.Codec)
 			consensusParams := app.DefaultConsensusParams()
-			consensusParams.Version.AppVersion = tt.version
+			consensusParams.Version.App = tt.version
 			// Apply genesis state to the app.
 			valKeyRing, _, err := testutil.SetupDeterministicGenesisState(testApp, pubKeys, 20_000_000_000, consensusParams)
 			require.NoError(t, err)
@@ -112,7 +111,8 @@ func TestConsistentAppHash(t *testing.T) {
 			// Get account names and addresses from the keyring and create signer
 			signer, accountAddresses := getAccountsAndCreateSigner(t, kr, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 			// Validators from genesis state
-			genValidators := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false, tmproto.Header{}))
+			genValidators, err := testApp.StakingKeeper.GetAllValidators(testApp.NewContext(false))
+			require.NoError(t, err)
 			valSigner, _ := getAccountsAndCreateSigner(t, valKeyRing, enc.TxConfig, testutil.ChainID, tt.version, testApp)
 
 			// Convert validators to ABCI validators
@@ -159,10 +159,10 @@ func getAccountsAndCreateSigner(t *testing.T, kr keyring.Keyring, enc client.TxC
 func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer *user.Signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
 	// ----------- Create v1 SDK Messages ------------
 
-	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1_000)))
+	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1_000)))
 	// Minimum deposit required for a gov proposal to become active
-	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(10000000000)))
-	twoInt := sdk.NewInt(2)
+	depositAmount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(10000000000)))
+	twoInt := math.NewInt(2)
 
 	// ---------------- First Block ------------
 	var firstBlockSdkMsgs []sdk.Msg
@@ -172,12 +172,10 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, sendFundsMsg)
 
 	// MultiSend - creates a multi-send transaction from account-0 to account-1
-	multiSendFundsMsg := banktypes.NewMsgMultiSend([]banktypes.Input{
-		banktypes.NewInput(
-			accountAddresses[0],
-			amount,
-		),
-	},
+	multiSendFundsMsg := banktypes.NewMsgMultiSend(banktypes.NewInput(
+		accountAddresses[0],
+		amount,
+	),
 		[]banktypes.Output{
 			banktypes.NewOutput(
 				accountAddresses[1],
@@ -204,20 +202,20 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 
 	// MsgGrantAllowance - creates a grant allowance for account-1
 	basicAllowance := feegrant.BasicAllowance{
-		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewIntFromUint64(1000))),
+		SpendLimit: sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1000))),
 	}
 	feegrantMsg, err := feegrant.NewMsgGrantAllowance(&basicAllowance, accountAddresses[0], accountAddresses[1])
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, feegrantMsg)
 
 	// NewMsgSubmitProposal - submits a proposal to send funds from the governance account to account-1
-	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false, tmproto.Header{})).GetAddress()
+	govAccount := testApp.GovKeeper.GetGovernanceAccount(testApp.NewContext(false)).GetAddress()
 	msgSend := banktypes.MsgSend{
 		FromAddress: govAccount.String(),
 		ToAddress:   accountAddresses[1].String(),
 		Amount:      amount,
 	}
-	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "")
+	proposal, err := govtypes.NewMsgSubmitProposal([]sdk.Msg{&msgSend}, amount, accountAddresses[0].String(), "", "title", "summary", false)
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, proposal)
 
@@ -230,7 +228,7 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 		ed25519.GenPrivKeyFromSecret([]byte("validator")).PubKey(),
 		amount[0],
 		stakingtypes.NewDescription("taco tuesday", "my keybase", "www.celestia.org", "ping @celestiaorg on twitter", "fake validator"),
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(6, 0o2), sdk.NewDecWithPrec(12, 0o2), sdk.NewDecWithPrec(1, 0o2)),
+		stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(6, 0o2), math.LegacyNewDecWithPrec(12, 0o2), math.LegacyNewDecWithPrec(1, 0o2)),
 		sdk.OneInt())
 	require.NoError(t, err)
 	firstBlockSdkMsgs = append(firstBlockSdkMsgs, msgCreateValidator)
@@ -338,13 +336,6 @@ func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genVa
 	// NewMsgUnjail - unjails validator-3
 	msgUnjail := slashingtypes.NewMsgUnjail(genValidators[3].GetOperator())
 	thirdBlockSdkMsgs = append(thirdBlockSdkMsgs, msgUnjail)
-
-	// NewMsgRegisterEVMAddress - registers an EVM address
-	// This message was removed in v2
-	if testApp.AppVersion() == v1.Version {
-		msgRegisterEVMAddress := blobstreamtypes.NewMsgRegisterEVMAddress(genValidators[1].GetOperator(), gethcommon.HexToAddress("hi"))
-		thirdBlockSdkMsgs = append(thirdBlockSdkMsgs, msgRegisterEVMAddress)
-	}
 
 	firstBlockTxs, err := processSdkMessages(signer, firstBlockSdkMsgs)
 	require.NoError(t, err)

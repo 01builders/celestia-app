@@ -3,12 +3,12 @@ package app_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestExportAppStateAndValidators(t *testing.T) {
@@ -20,7 +20,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 		exported, err := testApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 		require.NoError(t, err)
 		assert.NotNil(t, exported)
-		assert.Equal(t, uint64(1), exported.ConsensusParams.Version.AppVersion)
+		assert.Equal(t, uint64(1), exported.ConsensusParams.Version.App)
 	})
 	t.Run("should return exported app for version 2", func(t *testing.T) {
 		forZeroHeight := false
@@ -33,7 +33,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, exported)
 		// TODO: the following assertion is commented out because the exported app does not populate consensus params.version
-		// assert.Equal(t, uint64(2), exported.ConsensusParams.Version.AppVersion)
+		// assert.Equal(t, uint64(2), exported.ConsensusParams.Version.App)
 	})
 }
 

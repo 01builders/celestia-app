@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/celestiaorg/celestia-app/v3/x/mint/client/cli"
-	mint "github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	"github.com/celestiaorg/celestia-app/v4/x/mint/client/cli"
+	mint "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )
 
 type IntegrationTestSuite struct {
@@ -99,7 +99,7 @@ func (s *IntegrationTestSuite) TestGetCmdQueryAnnualProvisions() {
 		},
 	}
 
-	expectedAnnualProvision := mint.InitialInflationRateAsDec().MulInt(sdk.NewInt(testnode.DefaultInitialBalance))
+	expectedAnnualProvision := mint.InitialInflationRateAsDec().MulInt(math.NewInt(testnode.DefaultInitialBalance))
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			cmd := cli.GetCmdQueryAnnualProvisions()

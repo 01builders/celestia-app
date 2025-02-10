@@ -5,19 +5,20 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
-	"github.com/celestiaorg/celestia-app/v3/x/mint/simulation"
-	"github.com/celestiaorg/celestia-app/v3/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/celestiaorg/celestia-app/v4/x/mint/simulation"
+	"github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/kv"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 )
 
 func TestDecodeStore(t *testing.T) {
-	cdc := simapp.MakeTestEncodingConfig().Codec
+	cdc := moduletestutil.MakeTestEncodingConfig().Codec
 	decoder := simulation.NewDecodeStore(cdc)
-	minter := types.NewMinter(sdk.OneDec(), sdk.NewDec(15), sdk.DefaultBondDenom)
+	minter := types.NewMinter(math.LegacyOneDec(), math.LegacyNewDec(15), sdk.DefaultBondDenom)
 	unixEpoch := time.Unix(0, 0).UTC()
 	genesisTime := types.GenesisTime{GenesisTime: &unixEpoch}
 

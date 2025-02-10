@@ -7,34 +7,34 @@ import (
 	"path/filepath"
 	"time"
 
+	"cosmossdk.io/log"
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
 	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	tmrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/privval"
+	smproto "github.com/cometbft/cometbft/proto/tendermint/state"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	tmdbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/privval"
-	smproto "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	tmdbm "github.com/tendermint/tm-db"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/da"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/da"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
 var defaultNamespace share.Namespace
@@ -147,7 +147,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		appCfg.StateSync.SnapshotInterval = 0
 		cp := app.DefaultConsensusParams()
 
-		cp.Version.AppVersion = cfg.AppVersion // set the app version
+		cp.Version.App = cfg.AppVersion // set the app version
 		gen = genesis.NewDefaultGenesis().
 			WithConsensusParams(cp).
 			WithKeyring(kr).
@@ -200,15 +200,15 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		log.NewNopLogger(),
 		appDB,
 		nil,
-		0,
-		encCfg,
-		0, // upgrade height v2
 		0, // timeout commit
 		util.EmptyAppOptions{},
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 
-	infoResp := simApp.Info(abci.RequestInfo{})
+	infoResp, err := simApp.Info(&abci.RequestInfo{})
+	if err != nil {
+		return fmt.Errorf("failed to get app info: %w", err)
+	}
 
 	lastHeight := blockStore.Height()
 	if infoResp.LastBlockHeight != lastHeight {
@@ -237,7 +237,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		csParams := types.TM2PB.ConsensusParams(genDoc.ConsensusParams)
-		res := simApp.InitChain(abci.RequestInitChain{
+		res, err := simApp.InitChain(&abci.RequestInitChain{
 			ChainId:         genDoc.ChainID,
 			Time:            genDoc.GenesisTime,
 			ConsensusParams: csParams,
@@ -245,6 +245,9 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 			AppStateBytes:   genDoc.AppState,
 			InitialHeight:   genDoc.InitialHeight,
 		})
+		if err != nil {
+			return err
+		}
 
 		vals, err := types.PB2TM.ValidatorUpdates(res.Validators)
 		if err != nil {
@@ -271,8 +274,8 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		currentTime = state.LastBlockTime.Add(cfg.BlockInterval)
 	}
 
-	if state.ConsensusParams.Version.AppVersion != cfg.AppVersion {
-		return fmt.Errorf("app version mismatch: state has %d, but cfg has %d", state.ConsensusParams.Version.AppVersion, cfg.AppVersion)
+	if state.ConsensusParams.Version.App != cfg.AppVersion {
+		return fmt.Errorf("app version mismatch: state has %d, but cfg has %d", state.ConsensusParams.Version.App, cfg.AppVersion)
 	}
 
 	if state.LastBlockHeight != lastHeight {
@@ -285,7 +288,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		kr,
 		encCfg.TxConfig,
 		state.ChainID,
-		state.ConsensusParams.Version.AppVersion,
+		state.ConsensusParams.Version.App,
 		user.NewAccount(testnode.DefaultValidatorAccountName, 0, uint64(lastHeight)+1),
 	)
 	if err != nil {

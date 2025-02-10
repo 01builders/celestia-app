@@ -8,18 +8,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/pkg/trace"
-	"github.com/tendermint/tendermint/pkg/trace/schema"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/types"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/celestiaorg/celestia-app/v3/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 	"github.com/celestiaorg/knuu/pkg/instance"
 	"github.com/celestiaorg/knuu/pkg/knuu"
 	"github.com/celestiaorg/knuu/pkg/sidecars/netshaper"
@@ -61,29 +59,31 @@ type Node struct {
 
 // PullRoundStateTraces retrieves the round state traces from a node.
 // It will save them to the provided path.
-func (n *Node) PullRoundStateTraces(path string) ([]trace.Event[schema.RoundState], error) {
-	addr := n.AddressTracing()
-	n.logger.Println("Pulling round state traces", "address", addr)
+// TODOv4: pending implementation of "github.com/cometbft/cometbft/pkg/trace" in cometbft fork
+// func (n *Node) PullRoundStateTraces(path string) ([]trace.Event[schema.RoundState], error) {
+// 	addr := n.AddressTracing()
+// 	n.logger.Println("Pulling round state traces", "address", addr)
 
-	err := trace.GetTable(addr, schema.RoundState{}.Table(), path)
-	if err != nil {
-		return nil, fmt.Errorf("getting table: %w", err)
-	}
-	return nil, nil
-}
+// 	err := trace.GetTable(addr, schema.RoundState{}.Table(), path)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("getting table: %w", err)
+// 	}
+// 	return nil, nil
+// }
 
 // PullBlockSummaryTraces retrieves the block summary traces from a node.
 // It will save them to the provided path.
-func (n *Node) PullBlockSummaryTraces(path string) ([]trace.Event[schema.BlockSummary], error) {
-	addr := n.AddressTracing()
-	n.logger.Println("Pulling block summary traces", "address", addr)
+// TODOv4: pending implementation of "github.com/cometbft/cometbft/pkg/trace" in cometbft fork
+// func (n *Node) PullBlockSummaryTraces(path string) ([]trace.Event[schema.BlockSummary], error) {
+// 	addr := n.AddressTracing()
+// 	n.logger.Println("Pulling block summary traces", "address", addr)
 
-	err := trace.GetTable(addr, schema.BlockSummary{}.Table(), path)
-	if err != nil {
-		return nil, fmt.Errorf("getting table: %w", err)
-	}
-	return nil, nil
-}
+// 	err := trace.GetTable(addr, schema.BlockSummary{}.Table(), path)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("getting table: %w", err)
+// 	}
+// 	return nil, nil
+// }
 
 // Resources defines the resource requirements for a Node.
 type Resources struct {

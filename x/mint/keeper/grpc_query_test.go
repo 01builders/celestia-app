@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/x/mint/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -24,9 +23,9 @@ type MintTestSuite struct {
 
 func (suite *MintTestSuite) SetupTest() {
 	testApp, _ := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-	ctx := testApp.NewContext(false, tmproto.Header{})
+	ctx := testApp.NewContext(false)
 
-	queryHelper := baseapp.NewQueryServerTestHelper(ctx, testApp.InterfaceRegistry())
+	queryHelper := baseapp.NewQueryServerTestHelper(ctx, testApp.GetEncodingConfig().InterfaceRegistry)
 	types.RegisterQueryServer(queryHelper, testApp.MintKeeper)
 	queryClient := types.NewQueryClient(queryHelper)
 

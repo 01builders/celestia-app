@@ -7,23 +7,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmconfig "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/node"
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmconfig "github.com/tendermint/tendermint/config"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/node"
-	rpctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 const (
@@ -38,7 +37,7 @@ type Context struct {
 }
 
 func NewContext(goContext context.Context, keyring keyring.Keyring, tmConfig *tmconfig.Config, chainID, apiAddress string) Context {
-	config := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	config := encoding.MakeConfig()
 	clientContext := client.Context{}.
 		WithKeyring(keyring).
 		WithHomeDir(tmConfig.RootDir).
@@ -265,8 +264,6 @@ func (c *Context) PostData(account, broadcastMode string, ns share.Namespace, bl
 		res, err = c.BroadcastTxSync(blobTx)
 	case flags.BroadcastAsync:
 		res, err = c.BroadcastTxAsync(blobTx)
-	case flags.BroadcastBlock:
-		res, err = c.BroadcastTxCommit(blobTx)
 	default:
 		return nil, fmt.Errorf("unsupported broadcast mode %s; supported modes: sync, async, block", c.BroadcastMode)
 	}
@@ -290,7 +287,7 @@ func (c *Context) FillBlock(squareSize int, account string, broadcastMode string
 	}
 
 	if broadcastMode == "" {
-		broadcastMode = flags.BroadcastBlock
+		broadcastMode = flags.BroadcastSync
 	}
 
 	// create the tx the size of the square minus one row

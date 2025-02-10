@@ -72,7 +72,7 @@ func (m *tokenFilterMiddleware) OnRecvPacket(
 
 // receiverChainIsSource checks the first denomination prefix in the ibc transfer denom provided against the packet source port and channel.
 // If the prefix matches it means that the token was originally sent from this chain.
-// This is because OnRecvPacket prefixes the destination port and channel to the token denomination when first sent.
+// This is because ibc transfer prefixes the destination port and channel to the token denomination when minting vouchers in recv packet.
 func receiverChainIsSource(srcPort, srcChannel string, denom transfertypes.Denom) bool {
 	return denom.HasPrefix(srcPort, srcChannel)
 }

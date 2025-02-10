@@ -7,7 +7,8 @@ import (
 	"cosmossdk.io/math"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+
+	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/suite"
@@ -25,6 +26,10 @@ type TokenFilterTestSuite struct {
 	otherChain *ibctesting.TestChain
 }
 
+func TestTokenFilterTestSuite(t *testing.T) {
+	suite.Run(t, new(TokenFilterTestSuite))
+}
+
 func (suite *TokenFilterTestSuite) SetupTest() {
 	chains := make(map[string]*ibctesting.TestChain)
 	suite.coordinator = &ibctesting.Coordinator{
@@ -32,6 +37,9 @@ func (suite *TokenFilterTestSuite) SetupTest() {
 		CurrentTime: time.Now(),
 		Chains:      chains,
 	}
+
+	// TODO: we can remove setup.go boilerplate code in favour of overriding ibctesting.DefaultTestingAppInit
+	// between calls below. i.e. set init func to generate celestia app, then reset to generate simapp.
 	suite.celestiaChain = NewTestChain(suite.T(), suite.coordinator, ibctesting.GetChainID(1))
 	suite.otherChain = ibctesting.NewTestChain(suite.T(), suite.coordinator, ibctesting.GetChainID(2))
 
@@ -43,8 +51,8 @@ func NewTransferPath(celestiaChain, otherChain *ibctesting.TestChain) *ibctestin
 	path := ibctesting.NewPath(celestiaChain, otherChain)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
-	path.EndpointA.ChannelConfig.Version = types.Version
-	path.EndpointB.ChannelConfig.Version = types.Version
+	path.EndpointA.ChannelConfig.Version = transfertypes.V1
+	path.EndpointB.ChannelConfig.Version = transfertypes.V1
 
 	return path
 }
@@ -64,7 +72,7 @@ func (suite *TokenFilterTestSuite) TestHandleOutboundTransfer() {
 	coinToSendToB := sdk.NewCoin(sdk.DefaultBondDenom, amount)
 
 	// send half the users balance from celestiaChain to otherChain
-	msg := types.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.celestiaChain.SenderAccount.GetAddress().String(), suite.otherChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
+	msg := transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, sdk.NewCoins(coinToSendToB), suite.celestiaChain.SenderAccount.GetAddress().String(), suite.otherChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "", nil)
 	res, err := suite.celestiaChain.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
 
@@ -76,9 +84,10 @@ func (suite *TokenFilterTestSuite) TestHandleOutboundTransfer() {
 	suite.Require().NoError(err) // relay committed
 
 	// check that the token exists on chain B
-	voucherDenomTrace := types.ParseDenomTrace(types.GetPrefixedDenom(packet.GetDestPort(), packet.GetDestChannel(), sdk.DefaultBondDenom))
-	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
-	coinSentFromAToB := types.GetTransferCoin(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.DefaultBondDenom, amount)
+	denom := transfertypes.NewDenom(sdk.DefaultBondDenom, transfertypes.NewHop(packet.GetDestPort(), packet.GetDestChannel()))
+	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), denom.IBCDenom())
+
+	coinSentFromAToB := sdk.NewCoin(denom.IBCDenom(), amount)
 	suite.Require().Equal(coinSentFromAToB, balance)
 
 	// check that the account on celestiaChain has "amount" less tokens than before
@@ -87,7 +96,7 @@ func (suite *TokenFilterTestSuite) TestHandleOutboundTransfer() {
 	suite.Require().Equal(want, intermediateBalance.Amount)
 
 	// Send the native celestiaChain token on otherChain back to celestiaChain
-	msg = types.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, coinSentFromAToB, suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
+	msg = transfertypes.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.NewCoins(coinSentFromAToB), suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "", nil)
 	res, err = suite.otherChain.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
 
@@ -115,7 +124,7 @@ func (suite *TokenFilterTestSuite) TestHandleInboundTransfer() {
 	coinToSendToA := sdk.NewCoin(sdk.DefaultBondDenom, amount)
 
 	// send from otherChain to celestiaChain
-	msg := types.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, coinToSendToA, suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
+	msg := transfertypes.NewMsgTransfer(path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, sdk.NewCoins(coinToSendToA), suite.otherChain.SenderAccount.GetAddress().String(), suite.celestiaChain.SenderAccount.GetAddress().String(), timeoutHeight, 0, "", nil)
 	res, err := suite.otherChain.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
 
@@ -127,12 +136,8 @@ func (suite *TokenFilterTestSuite) TestHandleInboundTransfer() {
 	suite.Require().NoError(err) // relay committed
 
 	// check that the token does not exist on chain A (was rejected)
-	voucherDenomTrace := types.ParseDenomTrace(types.GetPrefixedDenom(packet.GetDestPort(), packet.GetDestChannel(), sdk.DefaultBondDenom))
-	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
-	emptyCoin := sdk.NewInt64Coin(voucherDenomTrace.IBCDenom(), 0)
+	denom := transfertypes.NewDenom(sdk.DefaultBondDenom, transfertypes.NewHop(packet.GetDestPort(), packet.GetDestChannel()))
+	balance := suite.otherChain.GetSimApp().BankKeeper.GetBalance(suite.otherChain.GetContext(), suite.otherChain.SenderAccount.GetAddress(), denom.IBCDenom())
+	emptyCoin := sdk.NewInt64Coin(denom.IBCDenom(), 0)
 	suite.Require().Equal(emptyCoin, balance)
-}
-
-func TestTokenFilterTestSuite(t *testing.T) {
-	suite.Run(t, new(TokenFilterTestSuite))
 }

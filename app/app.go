@@ -309,7 +309,7 @@ func New(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	app.GovKeeper.SetLegacyRouter(govRouter)
 
-	// Create Transfer Keepers.
+	// Create packet forward keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
 		encodingConfig.Codec,
 		keys[packetforwardtypes.StoreKey],

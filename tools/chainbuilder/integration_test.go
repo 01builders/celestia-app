@@ -11,17 +11,16 @@ import (
 	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	tmconfig "github.com/cometbft/cometbft/config"
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/rpc/client/local"
-	dbm "github.com/cosmos/cosmos-db"
+	tmdbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/server"
 
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +54,7 @@ func TestRun(t *testing.T) {
 	tmCfg := testnode.DefaultTendermintConfig()
 	tmCfg.SetRoot(cfg.ExistingDir)
 
-	appDB, err := dbm.NewDB("application", dbm.GoLevelDBBackend, tmCfg.DBDir())
+	appDB, err := tmdbm.NewDB("application", tmdbm.GoLevelDBBackend, tmCfg.DBDir())
 	require.NoError(t, err)
 
 	app := app.New(
@@ -63,24 +62,20 @@ func TestRun(t *testing.T) {
 		appDB,
 		nil,
 		0, // timeout commit
+		util.EmptyAppOptions{},
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 
 	nodeKey, err := p2p.LoadNodeKey(tmCfg.NodeKeyFile())
 	require.NoError(t, err)
 
-	prival, err := privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile(), app.ValidatorKeyProvider())
-	require.NoError(t, err)
-
-	cmtApp := server.NewCometABCIWrapper(app)
 	cometNode, err := node.NewNode(
-		context.TODO(),
 		tmCfg,
-		prival,
+		privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(cmtApp),
+		proxy.NewLocalClientCreator(app),
 		node.DefaultGenesisDocProviderFunc(tmCfg),
-		tmconfig.DefaultDBProvider,
+		node.DefaultDBProvider,
 		node.DefaultMetricsProvider(tmCfg.Instrumentation),
 		tmlog.NewNopLogger(),
 	)

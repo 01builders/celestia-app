@@ -294,6 +294,7 @@ func New(
 		app.MsgServiceRouter(),
 		govModuleAddr,
 	)
+	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).

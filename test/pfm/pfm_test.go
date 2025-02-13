@@ -45,12 +45,6 @@ func SetupTest(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain,
 		Chains:      chains,
 	}
 
-	// restore default behaviour after test setup.
-	defaultFn := ibctesting.DefaultTestingAppInit
-	defer func() {
-		ibctesting.DefaultTestingAppInit = defaultFn
-	}()
-
 	// modify ibctesting package to return celestia as the next app when calling ibctesting.NewTestChain
 	ibctesting.DefaultTestingAppInit = func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()

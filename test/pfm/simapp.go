@@ -3,7 +3,6 @@ package pfm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
@@ -110,8 +109,6 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
 	transfer "github.com/cosmos/ibc-go/v8/modules/apps/transfer"
@@ -231,7 +228,7 @@ func NewSimApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *SimApp {
 
-	encodingConfig := encoding.MakeConfig(ModuleEncodingRegisters...)
+	//encodingConfig := encoding.MakeConfig(ModuleEncodingRegisters...)
 
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
@@ -287,7 +284,7 @@ func NewSimApp(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, group.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, icacontrollertypes.StoreKey, icahosttypes.StoreKey, capabilitytypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey, packetforwardtypes.StoreKey,
 		authzkeeper.StoreKey, ibcfeetypes.StoreKey, consensusparamtypes.StoreKey, circuittypes.StoreKey,
 	)
 
@@ -309,8 +306,6 @@ func NewSimApp(
 		memKeys:           memKeys,
 	}
 
-	//appCodec := app.appCodec
-
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
 	// set the BaseApp's parameter store
@@ -331,19 +326,10 @@ func NewSimApp(
 	// SDK module keepers
 
 	// add keepers
-	app.AccountKeeper = authkeeper.NewAccountKeeper(appCodec, runtime.NewKVStoreService(keys[authtypes.StoreKey]), authtypes.ProtoBaseAccount, maccPerms, authcodec.NewBech32Codec(sdk.Bech32MainPrefix), sdk.Bech32MainPrefix, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-
-	//app.BankKeeper = bankkeeper.NewBaseKeeper(
-	//	appCodec,
-	//	runtime.NewKVStoreService(keys[banktypes.StoreKey]),
-	//	app.AccountKeeper,
-	//	BlockedAddresses(),
-	//	authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	//	logger,
-	//)
+	app.AccountKeeper = authkeeper.NewAccountKeeper(appCodec, runtime.NewKVStoreService(keys[authtypes.StoreKey]), authtypes.ProtoBaseAccount, maccPerms, authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()), sdk.GetConfig().GetBech32AccountAddrPrefix(), authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		encodingConfig.Codec,
+		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
 		BlockedAddresses(),
@@ -352,7 +338,7 @@ func NewSimApp(
 	)
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]), app.AccountKeeper, app.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr), authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
+		appCodec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]), app.AccountKeeper, app.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()), authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusPubPrefix()),
 	)
 	app.MintKeeper = mintkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[minttypes.StoreKey]), app.StakingKeeper, app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
@@ -421,7 +407,7 @@ func NewSimApp(
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -432,7 +418,7 @@ func NewSimApp(
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
 		appCodec,
 		keys[packetforwardtypes.StoreKey],
-		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
+		nil, // will be zero-value here, reference is set later on with SetTransferKeeper.
 		app.IBCKeeper.ChannelKeeper,
 		app.BankKeeper,
 		app.IBCKeeper.ChannelKeeper,
@@ -448,6 +434,7 @@ func NewSimApp(
 		app.AccountKeeper, app.BankKeeper, app.ScopedTransferKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	// Create Transfer Stack
 	// SendPacket, since it is originating from the application to core IBC:
@@ -464,10 +451,9 @@ func NewSimApp(
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(transferStack, app.PacketForwardKeeper,
-		0, // retries on timeout
+		0,                                                                // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
-	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	// Add transfer stack to IBC Router
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
@@ -915,6 +901,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	keyTable := ibcclienttypes.ParamKeyTable()
 	keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
 	paramsKeeper.Subspace(ibcexported.ModuleName).WithKeyTable(keyTable)
+	//paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 	return paramsKeeper
 }
 

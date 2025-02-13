@@ -228,8 +228,6 @@ func NewSimApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *SimApp {
 
-	//encodingConfig := encoding.MakeConfig(ModuleEncodingRegisters...)
-
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{

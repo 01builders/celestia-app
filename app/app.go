@@ -394,6 +394,7 @@ func New(
 		signal.NewAppModule(app.SignalKeeper),
 		minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
+		// ensure the light client module types are registered.
 		ibctm.NewAppModule(),
 	)
 

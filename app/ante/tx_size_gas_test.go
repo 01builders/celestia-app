@@ -78,8 +78,10 @@ func TestConsumeGasForTxSize(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// set the version
 			ctx = app.NewContext(false)
+
+			// set the version
+			//require.NoError(t, app.SetAppVersion(ctx, tc.version))
 
 			txBuilder = clientCtx.TxConfig.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(msg))

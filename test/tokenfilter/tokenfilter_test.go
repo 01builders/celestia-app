@@ -32,6 +32,7 @@ func (suite *TokenFilterTestSuite) SetupTest() {
 		CurrentTime: time.Now(),
 		Chains:      chains,
 	}
+
 	suite.celestiaChain = NewTestChain(suite.T(), suite.coordinator, ibctesting.GetChainID(1))
 	suite.otherChain = ibctesting.NewTestChain(suite.T(), suite.coordinator, ibctesting.GetChainID(2))
 

@@ -14,6 +14,7 @@ import (
 	blob "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/stretchr/testify/require"
 )
@@ -28,8 +29,9 @@ func TestNonceMismatchIntegration(t *testing.T) {
 	require.NoError(t, err)
 	ctx := testApp.NewContext(true).WithMinGasPrices(minGasPrice)
 	addr := testfactory.GetAddress(kr, account)
-	enc := encoding.MakeConfig(app.ModuleEncodingRegisters...)
+	enc := moduletestutil.MakeTestEncodingConfig(app.ModuleEncodingRegisters...)
 	acc := testutil.DirectQueryAccount(testApp, addr)
+
 	// set the sequence to an incorrect value
 	signer, err := user.NewSigner(kr, enc.TxConfig, testutil.ChainID, appconsts.LatestVersion, user.NewAccount(account, acc.GetAccountNumber(), acc.GetSequence()+1))
 	require.NoError(t, err)

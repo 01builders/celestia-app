@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -18,6 +18,11 @@ func (app *App) MaxEffectiveSquareSize(ctx sdk.Context) int {
 	}
 
 	govMax := int(app.BlobKeeper.GovMaxSquareSize(ctx))
-	hardMax := appconsts.SquareSizeUpperBound(app.AppVersion())
+	appVersion, err := app.AppVersion(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	hardMax := appconsts.SquareSizeUpperBound(appVersion)
 	return min(govMax, hardMax)
 }

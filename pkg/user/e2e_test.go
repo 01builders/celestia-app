@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/celestiaorg/go-square/v2/share"
+	"github.com/cometbft/cometbft/config"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/config"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestConcurrentTxSubmission(t *testing.T) {
@@ -24,12 +24,12 @@ func TestConcurrentTxSubmission(t *testing.T) {
 	}
 
 	// Iterate over all mempool versions
-	mempools := []string{config.MempoolV0, config.MempoolV1, config.MempoolV2}
+	mempools := []string{config.MempoolTypeFlood, config.MempoolTypeFlood, config.MempoolTypeCAT}
 	for _, mempool := range mempools {
 		t.Run(fmt.Sprintf("mempool %s", mempool), func(t *testing.T) {
 			// Setup network
 			tmConfig := testnode.DefaultTendermintConfig()
-			tmConfig.Mempool.Version = mempool
+			tmConfig.Mempool.Type = mempool
 			tmConfig.Consensus.TimeoutCommit = 10 * time.Second
 			ctx, _, _ := testnode.NewNetwork(t, testnode.DefaultConfig().WithTendermintConfig(tmConfig))
 			_, err := ctx.WaitForHeight(1)

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
-	ante "github.com/celestiaorg/celestia-app/v3/x/blob/ante"
-	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
+	ante "github.com/celestiaorg/celestia-app/v4/x/blob/ante"
+	blob "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 )
 
 func TestPFBAnteHandler(t *testing.T) {
-	txConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...).TxConfig
+	txConfig := encoding.MakeConfig().TxConfig
 	testCases := []struct {
 		name        string
 		pfb         *blob.MsgPayForBlobs
@@ -124,7 +124,7 @@ func TestPFBAnteHandler(t *testing.T) {
 					Version: version.Consensus{
 						App: currentVersion,
 					},
-				}, true, nil).WithGasMeter(sdk.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
+				}, true, nil).WithGasMeter(storetypes.NewGasMeter(uint64(tc.txGas(gasPerBlobByte)))).WithIsCheckTx(true)
 
 				ctx.GasMeter().ConsumeGas(tc.gasConsumed, "test")
 				txBuilder := txConfig.NewTxBuilder()

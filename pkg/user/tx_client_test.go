@@ -5,24 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app/grpc/gasestimation"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 
+	"cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestTxClientTestSuite(t *testing.T) {
@@ -42,13 +42,14 @@ type TxClientTestSuite struct {
 }
 
 func (suite *TxClientTestSuite) SetupSuite() {
-	suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T(), testnode.DefaultTendermintConfig().Mempool.TTLDuration)
+	// suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T(), testnode.DefaultTendermintConfig().Mempool.TTLDuration)
+	suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T(), 0) // TODO: check ttl duration
 	suite.serviceClient = sdktx.NewServiceClient(suite.ctx.GRPCClient)
 }
 
 func (suite *TxClientTestSuite) TestSubmitPayForBlob() {
 	t := suite.T()
-	blobs := blobfactory.ManyRandBlobs(rand.NewRand(), 1e3, 1e4)
+	blobs := blobfactory.ManyRandBlobs(unsafe.NewRand(), 1e3, 1e4)
 
 	subCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -341,7 +342,7 @@ func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash string, e
 func setupTxClient(t *testing.T, ttlDuration time.Duration) (encoding.Config, *user.TxClient, testnode.Context) {
 	encCfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
 	defaultTmConfig := testnode.DefaultTendermintConfig()
-	defaultTmConfig.Mempool.TTLDuration = ttlDuration
+	// defaultTmConfig.Mempool.TTLDuration = ttlDuration TODO: check ttl duration
 	testnodeConfig := testnode.DefaultConfig().
 		WithTendermintConfig(defaultTmConfig).
 		WithFundedAccounts("a", "b", "c").
@@ -371,7 +372,7 @@ func (suite *TxClientTestSuite) TestGasPriceAndUsedEstimate() {
 			testnode.RandomAddress().(sdk.AccAddress),
 			sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10)),
 		)
-		rawTx, err := signer.CreateTx([]sdk.Msg{msg})
+		rawTx, _, err := signer.CreateTx([]sdk.Msg{msg})
 		require.NoError(t, err)
 		gasPrice, gasUsed, err := signer.QueryGasUsedAndPrice(ctx, suite.ctx.GRPCClient, gasestimation.TxPriority_TX_PRIORITY_HIGH, rawTx)
 		assert.NoError(t, err)

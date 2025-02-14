@@ -5,18 +5,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/celestiaorg/celestia-app/v3/app/grpc/gasestimation"
+	"cosmossdk.io/core/address"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
+	"github.com/celestiaorg/go-square/v2/share"
+	blobtx "github.com/celestiaorg/go-square/v2/tx"
 	"github.com/cosmos/cosmos-sdk/client"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"google.golang.org/grpc"
-
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
-	"github.com/celestiaorg/go-square/v2/share"
-	blobtx "github.com/celestiaorg/go-square/v2/tx"
 )
 
 // Signer is struct for building and signing Celestia transactions
@@ -24,9 +26,10 @@ import (
 // NOTE: All transactions may only have a single signer
 // Signer is not thread-safe.
 type Signer struct {
-	keys    keyring.Keyring
-	enc     client.TxConfig
-	chainID string
+	keys         keyring.Keyring
+	enc          client.TxConfig
+	addressCodec address.Codec
+	chainID      string
 	// FIXME: the signer is currently incapable of detecting an appversion
 	// change and could produce incorrect PFBs if it the network is at an
 	// appVersion that the signer does not support
@@ -51,6 +54,7 @@ func NewSigner(
 		keys:                keys,
 		chainID:             chainID,
 		enc:                 encCfg,
+		addressCodec:        addresscodec.NewBech32Codec(app.Bech32PrefixAccAddr),
 		accounts:            make(map[string]*Account),
 		addressToAccountMap: make(map[string]string),
 		appVersion:          appVersion,
@@ -67,12 +71,15 @@ func NewSigner(
 
 // CreateTx forms a transaction from the provided messages and signs it.
 // TxOptions may be optionally used to set the gas limit and fee.
-func (s *Signer) CreateTx(msgs []sdktypes.Msg, opts ...TxOption) ([]byte, error) {
+func (s *Signer) CreateTx(msgs []sdktypes.Msg, opts ...TxOption) ([]byte, authsigning.Tx, error) {
 	tx, _, _, err := s.SignTx(msgs, opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return s.EncodeTx(tx)
+
+	blob, err := s.EncodeTx(tx)
+
+	return blob, tx, err
 }
 
 func (s *Signer) SignTx(msgs []sdktypes.Msg, opts ...TxOption) (authsigning.Tx, string, uint64, error) {
@@ -95,7 +102,12 @@ func (s *Signer) CreatePayForBlobs(accountName string, blobs []*share.Blob, opts
 		return nil, 0, fmt.Errorf("account %s not found", accountName)
 	}
 
-	msg, err := blobtypes.NewMsgPayForBlobs(acc.address.String(), s.appVersion, blobs...)
+	addr, err := s.addressCodec.BytesToString(acc.address)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	msg, err := blobtypes.NewMsgPayForBlobs(addr, s.appVersion, blobs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -142,7 +154,12 @@ func (s *Signer) Account(name string) *Account {
 
 // AccountByAddress returns the account associated with the given address
 func (s *Signer) AccountByAddress(address sdktypes.AccAddress) *Account {
-	accountName, exists := s.addressToAccountMap[address.String()]
+	addrStr, err := s.addressCodec.BytesToString(address)
+	if err != nil {
+		return nil
+	}
+
+	accountName, exists := s.addressToAccountMap[addrStr]
 	if !exists {
 		return nil
 	}
@@ -160,13 +177,23 @@ func (s *Signer) Accounts() []*Account {
 }
 
 func (s *Signer) findAccount(txbuilder client.TxBuilder) (*Account, error) {
-	signers := txbuilder.GetTx().GetSigners()
+	signers, err := txbuilder.GetTx().GetSigners()
+	if err != nil {
+		return nil, fmt.Errorf("error getting signers: %w", err)
+	}
+
 	if len(signers) == 0 {
 		return nil, fmt.Errorf("message has no signer")
 	}
-	accountName, exists := s.addressToAccountMap[signers[0].String()]
+
+	signerStr, err := s.addressCodec.BytesToString(signers[0])
+	if err != nil {
+		return nil, fmt.Errorf("error converting signer to string: %w", err)
+	}
+
+	accountName, exists := s.addressToAccountMap[signerStr]
 	if !exists {
-		return nil, fmt.Errorf("account %s not found", signers[0].String())
+		return nil, fmt.Errorf("account %s not found", signerStr)
 	}
 	return s.accounts[accountName], nil
 }
@@ -213,7 +240,13 @@ func (s *Signer) AddAccount(acc *Account) error {
 	acc.address = addr
 	acc.pubKey = pk
 	s.accounts[acc.name] = acc
-	s.addressToAccountMap[addr.String()] = acc.name
+
+	addrStr, err := s.addressCodec.BytesToString(addr)
+	if err != nil {
+		return nil
+	}
+
+	s.addressToAccountMap[addrStr] = acc.name
 	return nil
 }
 
@@ -250,24 +283,24 @@ func (s *Signer) signTransaction(builder client.TxBuilder) (string, uint64, erro
 }
 
 func (s *Signer) createSignature(builder client.TxBuilder, account *Account, sequence uint64) ([]byte, error) {
+	addrStr, err := s.addressCodec.BytesToString(account.address)
+	if err != nil {
+		return nil, fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	signerData := authsigning.SignerData{
-		Address:       account.address.String(),
+		Address:       addrStr,
 		ChainID:       s.ChainID(),
 		AccountNumber: account.accountNumber,
 		Sequence:      sequence,
 		PubKey:        account.pubKey,
 	}
 
-	bytesToSign, err := s.enc.SignModeHandler().GetSignBytes(
-		signing.SignMode_SIGN_MODE_DIRECT,
-		signerData,
-		builder.GetTx(),
-	)
+	bytesToSign, err := authsigning.GetSignBytesAdapter(context.Background(), s.enc.SignModeHandler(), signing.SignMode_SIGN_MODE_DIRECT, signerData, builder.GetTx())
 	if err != nil {
 		return nil, fmt.Errorf("error getting sign bytes: %w", err)
 	}
-
-	signature, _, err := s.keys.Sign(account.name, bytesToSign)
+	signature, _, err := s.keys.Sign(account.name, bytesToSign, signing.SignMode_SIGN_MODE_DIRECT)
 	if err != nil {
 		return nil, fmt.Errorf("error signing bytes: %w", err)
 	}

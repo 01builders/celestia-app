@@ -5,17 +5,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/app/grpc/tx"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	"github.com/celestiaorg/celestia-app/v3/x/minfee"
-	signal "github.com/celestiaorg/celestia-app/v3/x/signal/types"
+	"cosmossdk.io/math"
+	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
+	signal "github.com/celestiaorg/celestia-app/v4/x/signal/types"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/abci/types"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -26,14 +29,13 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	oldgov "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestStandardSDKIntegrationTestSuite(t *testing.T) {
@@ -105,7 +107,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msgSend := banktypes.NewMsgSend(
 					testfactory.GetAddress(s.cctx.Keyring, account1),
 					testfactory.GetAddress(s.cctx.Keyring, account2),
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1))),
 				)
 				return []sdk.Msg{msgSend}, account1
 			},
@@ -118,7 +120,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msgSend := banktypes.NewMsgSend(
 					testfactory.GetAddress(s.cctx.Keyring, account1),
 					testfactory.GetAddress(s.cctx.Keyring, account2),
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000000))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000000))),
 				)
 				return []sdk.Msg{msgSend}, account1
 			},
@@ -130,7 +132,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				valopAddr := sdk.ValAddress(testfactory.GetAddress(s.cctx.Keyring, testnode.DefaultValidatorAccountName))
 				account1 := s.unusedAccount()
 				account1Addr := testfactory.GetAddress(s.cctx.Keyring, account1)
-				msg := stakingtypes.NewMsgDelegate(account1Addr, valopAddr, sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000)))
+				msg := stakingtypes.NewMsgDelegate(account1Addr.String(), valopAddr.String(), sdk.NewCoin(app.BondDenom, math.NewInt(1000000)))
 				return []sdk.Msg{msg}, account1
 			},
 			expectedCode: abci.CodeTypeOK,
@@ -140,7 +142,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				valAccAddr := testfactory.GetAddress(s.cctx.Keyring, testnode.DefaultValidatorAccountName)
 				valopAddr := sdk.ValAddress(valAccAddr)
-				msg := stakingtypes.NewMsgUndelegate(valAccAddr, valopAddr, sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000)))
+				msg := stakingtypes.NewMsgUndelegate(valAccAddr.String(), valopAddr.String(), sdk.NewCoin(app.BondDenom, math.NewInt(1000000)))
 				return []sdk.Msg{msg}, testnode.DefaultValidatorAccountName
 			},
 			expectedCode: abci.CodeTypeOK,
@@ -153,12 +155,12 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				valopAccAddr := testfactory.GetAddress(s.cctx.Keyring, account)
 				valopAddr := sdk.ValAddress(valopAccAddr)
 				msg, err := stakingtypes.NewMsgCreateValidator(
-					valopAddr,
+					valopAddr.String(),
 					pv.PrivKey.PubKey(),
-					sdk.NewCoin(app.BondDenom, sdk.NewInt(1)),
+					sdk.NewCoin(app.BondDenom, math.NewInt(1)),
 					stakingtypes.NewDescription("taco tuesday", "my keybase", "www.celestia.org", "ping @celestiaorg on twitter", "fake validator"),
-					stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(6, 0o2), sdk.NewDecWithPrec(12, 0o2), sdk.NewDecWithPrec(1, 0o2)),
-					sdk.NewInt(1),
+					stakingtypes.NewCommissionRates(math.LegacyNewDecWithPrec(6, 0o2), math.LegacyNewDecWithPrec(12, 0o2), math.LegacyNewDecWithPrec(1, 0o2)),
+					math.NewInt(1),
 				)
 				require.NoError(t, err)
 				return []sdk.Msg{msg}, account
@@ -177,7 +179,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msg := vestingtypes.NewMsgCreateVestingAccount(
 					sendingAccAddr,
 					vestAccAddr,
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000))),
 					time.Now().Add(time.Hour).Unix(),
 					time.Now().Add(time.Hour*2).Unix(),
 					false,
@@ -187,7 +189,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			expectedCode: abci.CodeTypeOK,
 		},
 		{
-			name: "create legacy community spend governance proposal",
+			name: "create community spend governance proposal",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				account := s.unusedAccount()
 				// Note: this test depends on at least one coin being present
@@ -195,21 +197,25 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				// to inflation so if 1 coin is not present in the community
 				// pool, consider expanding the block interval or waiting for
 				// more blocks to be produced prior to executing this test case.
-				coins := sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1)))
-				content := disttypes.NewCommunityPoolSpendProposal(
-					"title",
-					"description",
-					testfactory.GetAddress(s.cctx.Keyring, s.unusedAccount()),
-					coins,
-				)
+				coins := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1)))
+
 				addr := testfactory.GetAddress(s.cctx.Keyring, account)
-				msg, err := oldgov.NewMsgSubmitProposal(
-					content,
-					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000))),
-					addr,
+				msg, err := govv1.NewMsgSubmitProposal(
+					[]sdk.Msg{
+						disttypes.NewMsgFundCommunityPool(
+							coins,
+							testfactory.GetAddress(s.cctx.Keyring, s.unusedAccount()).String(),
+						),
+					},
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
+					addr.String(),
+					"metadata",
+					"title",
+					"summary",
+					false,
 				)
 				require.NoError(t, err)
+
 				return []sdk.Msg{msg}, account
 			},
 			expectedCode: abci.CodeTypeOK,
@@ -224,7 +230,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msg, err := oldgov.NewMsgSubmitProposal(
 					content,
 					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000))),
+						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
 					addr,
 				)
 				require.NoError(t, err)
@@ -241,13 +247,13 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msgSend1 := banktypes.NewMsgSend(
 					testfactory.GetAddress(s.cctx.Keyring, account1),
 					testfactory.GetAddress(s.cctx.Keyring, account2),
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1))),
 				)
 				account3 := s.unusedAccount()
 				msgSend2 := banktypes.NewMsgSend(
 					testfactory.GetAddress(s.cctx.Keyring, account1),
 					testfactory.GetAddress(s.cctx.Keyring, account3),
-					sdk.NewCoins(sdk.NewCoin(app.BondDenom, sdk.NewInt(1))),
+					sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1))),
 				)
 				return []sdk.Msg{msgSend1, msgSend2}, account1
 			},
@@ -263,7 +269,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msg, err := oldgov.NewMsgSubmitProposal(
 					content,
 					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000))),
+						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
 					addr,
 				)
 				require.NoError(t, err)
@@ -285,7 +291,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 				msg, err := oldgov.NewMsgSubmitProposal(
 					content,
 					sdk.NewCoins(
-						sdk.NewCoin(app.BondDenom, sdk.NewInt(1000000000))),
+						sdk.NewCoin(app.BondDenom, math.NewInt(1000000000))),
 					addr,
 				)
 				require.NoError(t, err)
@@ -307,7 +313,7 @@ func (s *StandardSDKIntegrationTestSuite) TestStandardSDK() {
 			name: "signal a version change",
 			msgFunc: func() (msgs []sdk.Msg, signer string) {
 				valAccount := s.getValidatorAccount()
-				msg := signal.NewMsgSignalVersion(valAccount, appconsts.LatestVersion+1)
+				msg := signal.NewMsgSignalVersion(valAccount.String(), appconsts.LatestVersion+1)
 				return []sdk.Msg{msg}, s.getValidatorName()
 			},
 			expectedCode: abci.CodeTypeOK,

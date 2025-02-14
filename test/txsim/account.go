@@ -9,16 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
+	"cosmossdk.io/x/feegrant"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
+	tmservice "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
@@ -199,19 +199,10 @@ func (am *AccountManager) Submit(ctx context.Context, op Operation) error {
 
 	var address types.AccAddress
 	for _, msg := range op.Msgs {
-		if err := msg.ValidateBasic(); err != nil {
-			return fmt.Errorf("error validating message: %w", err)
-		}
-
-		signers := msg.GetSigners()
-		if len(signers) != 1 {
-			return fmt.Errorf("only a single signer is supported got: %d", len(signers))
-		}
-
-		if address == nil {
-			address = signers[0]
-		} else if !address.Equals(signers[0]) {
-			return fmt.Errorf("all messages must be signed by the same account")
+		if m, ok := msg.(types.HasValidateBasic); ok {
+			if err := m.ValidateBasic(); err != nil {
+				return fmt.Errorf("error validating message: %w", err)
+			}
 		}
 	}
 

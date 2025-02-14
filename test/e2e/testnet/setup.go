@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
 )
 
 func MakeConfig(node *Node, peers []string, opts ...Option) (*config.Config, error) {
@@ -58,7 +58,7 @@ func WithPrometheus(prometheus bool) Option {
 
 func WithMempool(mempool string) Option {
 	return func(cfg *config.Config) {
-		cfg.Mempool.Version = mempool
+		cfg.Mempool.Type = mempool
 	}
 }
 

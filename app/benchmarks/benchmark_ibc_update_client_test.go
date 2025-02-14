@@ -8,29 +8,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	testutil "github.com/celestiaorg/celestia-app/v3/test/util"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	crypto2 "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmprotoversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	types3 "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	types2 "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
-	types4 "github.com/cosmos/ibc-go/v6/modules/light-clients/07-tendermint/types"
+	types3 "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	types2 "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	types4 "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	crypto2 "github.com/tendermint/tendermint/proto/tendermint/crypto"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmprotoversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	sm "github.com/tendermint/tendermint/state"
-	types0 "github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	sm "github.com/cometbft/cometbft/state"
+	types0 "github.com/cometbft/cometbft/types"
 )
 
 func BenchmarkIBC_CheckTx_Update_Client_Multi(b *testing.B) {
@@ -274,7 +274,7 @@ func generateIBCUpdateClientTransaction(b *testing.B, numberOfValidators int, nu
 	require.NoError(b, err)
 	rawTxs := make([][]byte, 0, numberOfMessages)
 	for i := 0; i < numberOfMessages; i++ {
-		rawTx, err := signer.CreateTx([]sdk.Msg{msgs[i]}, user.SetGasLimit(25497600000), user.SetFee(100000))
+		rawTx, _, err := signer.CreateTx([]sdk.Msg{msgs[i]}, user.SetGasLimit(25497600000), user.SetFee(100000))
 		require.NoError(b, err)
 		rawTxs = append(rawTxs, rawTx)
 		accountSequence++
@@ -386,7 +386,7 @@ func generateUpdateClientTransaction(b *testing.B, app *app.App, signer user.Sig
 	for index := 0; index < numberOfMsgs; index++ {
 		createClientMsg, err := types3.NewMsgCreateClient(&clientState, &consensusState, signerAddr)
 		require.NoError(b, err)
-		rawTx, err := signer.CreateTx([]sdk.Msg{createClientMsg}, user.SetGasLimit(2549760000), user.SetFee(10000))
+		rawTx, _, err := signer.CreateTx([]sdk.Msg{createClientMsg}, user.SetGasLimit(2549760000), user.SetFee(10000))
 		require.NoError(b, err)
 		resp := app.DeliverTx(types.RequestDeliverTx{Tx: rawTx})
 		var clientName string

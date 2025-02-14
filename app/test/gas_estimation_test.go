@@ -2,26 +2,27 @@ package app
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	"github.com/celestiaorg/celestia-app/v3/app/grpc/gasestimation"
-	"github.com/celestiaorg/celestia-app/v3/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v3/pkg/user"
-	"github.com/celestiaorg/celestia-app/v3/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testfactory"
-	"github.com/celestiaorg/celestia-app/v3/test/util/testnode"
-	blobtypes "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestEstimateGasPrice(t *testing.T) {
@@ -46,7 +47,6 @@ func TestEstimateGasPrice(t *testing.T) {
 	assert.Equal(t, appconsts.DefaultNetworkMinGasPrice, resp.EstimatedGasPrice)
 
 	encfg := encoding.MakeConfig(app.ModuleEncodingRegisters...)
-	rand := tmrand.NewRand()
 
 	txClient, err := user.SetupTxClient(cctx.GoContext(), cctx.Keyring, cctx.GRPCClient, encfg)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestEstimateGasPrice(t *testing.T) {
 			defer wg.Done()
 			// ensure that it is greater than the min gas price
 			gasPrice := float64(rand.Intn(1000)+1) * appconsts.DefaultMinGasPrice
-			blobs := blobfactory.ManyBlobs(rand, []share.Namespace{share.RandomBlobNamespace()}, []int{100})
+			blobs := blobfactory.ManyBlobs(tmrand.NewRand(), []share.Namespace{share.RandomBlobNamespace()}, []int{100})
 			resp, err := txClient.BroadcastPayForBlobWithAccount(
 				cctx.GoContext(),
 				accName,
@@ -149,7 +149,7 @@ func TestEstimateGasUsed(t *testing.T) {
 		testnode.RandomAddress().(sdk.AccAddress),
 		sdk.NewCoins(sdk.NewInt64Coin(appconsts.BondDenom, 10)),
 	)
-	rawTx, err := txClient.Signer().CreateTx(
+	rawTx, _, err := txClient.Signer().CreateTx(
 		[]sdk.Msg{msg},
 		user.SetGasLimit(0), // set to 0 to mimic txClient behavior
 		user.SetFee(1),

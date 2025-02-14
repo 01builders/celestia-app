@@ -3,18 +3,15 @@ package ante_test
 import (
 	"testing"
 
-	"github.com/celestiaorg/celestia-app/v3/app"
-	"github.com/celestiaorg/celestia-app/v3/app/encoding"
-	v1 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v1"
-	v2 "github.com/celestiaorg/celestia-app/v3/pkg/appconsts/v2"
-	ante "github.com/celestiaorg/celestia-app/v3/x/blob/ante"
-	blob "github.com/celestiaorg/celestia-app/v3/x/blob/types"
+	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
+	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
+	ante "github.com/celestiaorg/celestia-app/v4/x/blob/ante"
+	blob "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	version "github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
 func TestMaxTotalBlobSizeDecorator(t *testing.T) {
@@ -123,7 +120,7 @@ func TestMaxTotalBlobSizeDecorator(t *testing.T) {
 		},
 	}
 
-	txConfig := encoding.MakeConfig(app.ModuleEncodingRegisters...).TxConfig
+	txConfig := moduletestutil.MakeTestEncodingConfig().TxConfig
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			txBuilder := txConfig.NewTxBuilder()
@@ -131,7 +128,7 @@ func TestMaxTotalBlobSizeDecorator(t *testing.T) {
 			tx := txBuilder.GetTx()
 
 			decorator := ante.NewMaxTotalBlobSizeDecorator(mockBlobKeeper{})
-			ctx := sdk.Context{}.WithIsCheckTx(true).WithBlockHeader(tmproto.Header{Version: version.Consensus{App: tc.appVersion}})
+			ctx := sdk.Context{}.WithIsCheckTx(true)
 			_, err := decorator.AnteHandle(ctx, tx, false, mockNext)
 			assert.ErrorIs(t, tc.wantErr, err)
 		})

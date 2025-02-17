@@ -3,6 +3,7 @@ package genesis
 import (
 	"encoding/json"
 	"fmt"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"time"
 
 	"cosmossdk.io/math"
@@ -50,9 +51,13 @@ func Document(
 
 	authGenState := authtypes.DefaultGenesisState()
 	bankGenState := banktypes.DefaultGenesisState()
+	stakingGenState := stakingtypes.DefaultGenesisState()
+
 	authGenState.Accounts = append(authGenState.Accounts, sdkAccounts...)
 	bankGenState.Balances = append(bankGenState.Balances, genBals...)
 	bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
+
+	stakingGenState.Params.BondDenom = appconsts.BondDenom
 
 	// perform some basic validation of the genesis state
 	if err := authtypes.ValidateGenesis(*authGenState); err != nil {
@@ -65,10 +70,15 @@ func Document(
 		return nil, err
 	}
 
+	if err := stakingGenState.Params.Validate(); err != nil {
+		return nil, err
+	}
+
 	state := defaultGenesis
 	state[authtypes.ModuleName] = ecfg.Codec.MustMarshalJSON(authGenState)
 	state[banktypes.ModuleName] = ecfg.Codec.MustMarshalJSON(bankGenState)
 	state[genutiltypes.ModuleName] = ecfg.Codec.MustMarshalJSON(genutilGenState)
+	state[stakingtypes.ModuleName] = ecfg.Codec.MustMarshalJSON(stakingGenState)
 
 	for _, modifier := range mods {
 		state = modifier(state)

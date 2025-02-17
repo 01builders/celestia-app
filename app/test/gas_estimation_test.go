@@ -8,7 +8,6 @@ import (
 	"time"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
@@ -20,7 +19,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,7 +135,7 @@ func TestEstimateGasUsed(t *testing.T) {
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	require.NoError(t, cctx.WaitForNextBlock())
 
-	enc := moduletestutil.MakeTestEncodingConfig(app.ModuleEncodingRegisters...)
+	enc := testenc.MakeTestConfig()
 	txClient, err := user.SetupTxClient(cctx.GoContext(), cctx.Keyring, cctx.GRPCClient, enc)
 	require.NoError(t, err)
 	txClient.SetGasMultiplier(1)

@@ -36,7 +36,7 @@ func TestCheckTx(t *testing.T) {
 	accs := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"}
 
 	testApp, kr := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams(), accs...)
-	testApp.Commit() // TODO: Commit() shouldn't be called here? SetupTestAppWithGen calls InitChain, FinalizeBlock, Commit in order
+	// testApp.Commit() // TODO: Commit() shouldn't be called here? SetupTestAppWithGen calls InitChain, FinalizeBlock, Commit in order
 
 	opts := blobfactory.FeeTxOpts(1e9)
 

@@ -1,6 +1,7 @@
 package testnode
 
 import (
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	"path"
 	"strings"
 	"time"
@@ -84,13 +85,24 @@ func StartGRPCServer(logger log.Logger, app srvtypes.Application, appCfg *srvcon
 	if err != nil {
 		return nil, Context{}, emptycleanup, err
 	}
-
+	
 	cctx.Context = cctx.WithGRPCClient(conn)
 
 	return grpcSrv, cctx, func() error {
 		grpcSrv.Stop()
 		return nil
 	}, nil
+}
+
+func GetGRPCClient(address string, interfaceRegistry types.InterfaceRegistry) (*grpc.ClientConn, error) {
+	nodeGRPCAddr := strings.Replace(address, "0.0.0.0", "localhost", 1)
+	return grpc.NewClient(
+		nodeGRPCAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.ForceCodec(codec.NewProtoCodec(interfaceRegistry).GRPCCodec()),
+		),
+	)
 }
 
 func StartAPIServer(app srvtypes.Application, appCfg srvconfig.Config, cctx Context, grpcSrv *grpc.Server) (*api.Server, error) {

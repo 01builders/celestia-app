@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-
-	"cosmossdk.io/core/appmodule"
 
 	"github.com/celestiaorg/celestia-app/v4/x/blob/client/cli"
 	"github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
@@ -95,7 +93,7 @@ func (AppModule) GetQueryCmd() *cobra.Command {
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar module.Configurator) {
 	types.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(registrar, am.keeper)
 }

@@ -31,7 +31,6 @@ func TestGovDecorator(t *testing.T) {
 	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))
 
 	enc := moduletestutil.MakeTestEncodingConfig(app.ModuleEncodingRegisters...)
-	banktypes.RegisterInterfaces(enc.InterfaceRegistry)
 	from := testnode.RandomAddress().Bytes()
 	to := testnode.RandomAddress().Bytes()
 	msgSend := banktypes.NewMsgSend(from, to, coins)

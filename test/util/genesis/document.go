@@ -50,7 +50,6 @@ func Document(
 
 	authGenState := authtypes.DefaultGenesisState()
 	bankGenState := banktypes.DefaultGenesisState()
-
 	authGenState.Accounts = append(authGenState.Accounts, sdkAccounts...)
 	bankGenState.Balances = append(bankGenState.Balances, genBals...)
 	bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)

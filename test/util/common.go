@@ -10,8 +10,8 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	appparams "github.com/celestiaorg/celestia-app/v4/app/params"
 	testenc "github.com/celestiaorg/celestia-app/v4/test/util/encoding"
 	tmed "github.com/cometbft/cometbft/crypto/ed25519"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -245,7 +245,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 		authtypes.ProtoBaseAccount, // prototype
 		moduleAccountPermissions,
 		enc.AddressCodec,
-		app.Bech32PrefixAccAddr,
+		appparams.Bech32PrefixAccAddr,
 		authority.String(),
 	)
 

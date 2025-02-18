@@ -34,7 +34,8 @@ func TestEstimateGasPrice(t *testing.T) {
 	accountNames := testfactory.GenerateAccounts(150) // using 150 to have 2 pages of txs
 	cfg := testnode.DefaultConfig().WithFundedAccounts(accountNames...).
 		WithTimeoutCommit(10 * time.Second) // to have all the transactions in just a few blocks
-	cctx, _, grpcAddr := testnode.NewNetwork(t, cfg)
+
+	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	require.NoError(t, cctx.WaitForNextBlock())
 
 	// create the gas estimation client
@@ -46,8 +47,6 @@ func TestEstimateGasPrice(t *testing.T) {
 	assert.Equal(t, appconsts.DefaultNetworkMinGasPrice, resp.EstimatedGasPrice)
 
 	enc := testenc.MakeTestConfig()
-	cctx.GRPCClient, err = testnode.GetGRPCClient(grpcAddr, enc.InterfaceRegistry)
-
 	txClient, err := user.SetupTxClient(cctx.GoContext(), cctx.Keyring, cctx.GRPCClient, enc)
 	require.NoError(t, err)
 

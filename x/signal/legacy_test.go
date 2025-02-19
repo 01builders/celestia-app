@@ -19,6 +19,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	ibctypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -119,35 +122,33 @@ func (s *LegacyUpgradeTestSuite) TestNewGovUpgradeFailure() {
 }
 
 func (s *LegacyUpgradeTestSuite) TestIBCUpgradeFailure() {
-	// TODO upgrade to gov v1
+	t := s.T()
+	plan := upgradetypes.Plan{
+		Name:   "v2",
+		Height: 20,
+		Info:   "this should not pass",
+	}
+	upgradedClientState := &ibctmtypes.ClientState{}
 
-	// t := s.T()
-	// plan := types.Plan{
-	// 	Name:   "v2",
-	// 	Height: 20,
-	// 	Info:   "this should not pass",
-	// }
-	// upgradedClientState := &ibctmtypes.ClientState{}
+	upgradeMsg, err := ibctypes.NewUpgradeProposal("Upgrade to v2!", "Upgrade to v2!", plan, upgradedClientState)
+	require.NoError(t, err)
 
-	// upgradeMsg, err := ibctypes.NewUpgradeProposal("Upgrade to v2!", "Upgrade to v2!", plan, upgradedClientState)
-	// require.NoError(t, err)
+	dep := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000000)))
+	acc := s.unusedAccount()
+	accAddr := getAddress(acc, s.cctx.Keyring)
+	msg, err := v1beta1.NewMsgSubmitProposal(upgradeMsg, dep, accAddr)
+	require.NoError(t, err)
 
-	// dep := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1000000000000)))
-	// acc := s.unusedAccount()
-	// accAddr := getAddress(acc, s.cctx.Keyring)
-	// msg, err := v1beta1.NewMsgSubmitProposal(upgradeMsg, dep, accAddr)
-	// require.NoError(t, err)
-
-	// // submit the transaction and wait a block for it to be included
-	// txClient, err := testnode.NewTxClientFromContext(s.cctx)
-	// require.NoError(t, err)
-	// subCtx, cancel := context.WithTimeout(s.cctx.GoContext(), time.Minute)
-	// defer cancel()
-	// _, err = txClient.SubmitTx(subCtx, []sdk.Msg{msg}, blobfactory.DefaultTxOpts()...)
-	// require.Error(t, err)
-	// code := err.(*user.ExecutionError).Code
-	// require.EqualValues(t, 9, code) // we're only submitting the tx, so we expect everything to work
-	// assert.Contains(t, err.Error(), "ibc upgrade proposal not supported")
+	// submit the transaction and wait a block for it to be included
+	txClient, err := testnode.NewTxClientFromContext(s.cctx)
+	require.NoError(t, err)
+	subCtx, cancel := context.WithTimeout(s.cctx.GoContext(), time.Minute)
+	defer cancel()
+	_, err = txClient.SubmitTx(subCtx, []sdk.Msg{msg}, blobfactory.DefaultTxOpts()...)
+	require.Error(t, err)
+	code := err.(*user.ExecutionError).Code
+	require.EqualValues(t, 9, code) // we're only submitting the tx, so we expect everything to work
+	require.Contains(t, err.Error(), "ibc upgrade proposal not supported")
 }
 
 func getAddress(account string, kr keyring.Keyring) sdk.AccAddress {

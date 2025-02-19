@@ -105,7 +105,7 @@ func (app App) RegisterUpgradeHandlers() {
 			},
 			Deleted: []string{
 				crisistypes.StoreKey,
-				"blockstream",
+				"blobstream",
 			},
 		}
 

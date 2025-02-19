@@ -41,7 +41,7 @@ const ChainID = testfactory.ChainID
 
 var (
 	GenesisTime   = time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC).UTC()
-	TestAppLogger = log.NewLogger(os.Stdout)
+	TestAppLogger = log.NewLogger(os.Stdout, log.ColorOption(false))
 )
 
 // Get flags every time the simulator is run

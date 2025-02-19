@@ -23,7 +23,7 @@ type MintTestSuite struct {
 
 func (suite *MintTestSuite) SetupTest() {
 	testApp, _ := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-	ctx := testApp.NewContext(false)
+	ctx := testApp.NewContext(true)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, testApp.GetEncodingConfig().InterfaceRegistry)
 	types.RegisterQueryServer(queryHelper, testApp.MintKeeper)

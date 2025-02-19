@@ -20,6 +20,7 @@ func (k Keeper) BeginBlocker(ctx context.Context) error {
 	if err := mintBlockProvision(sdkCtx, k); err != nil {
 		return err
 	}
+
 	setPreviousBlockTime(sdkCtx, k)
 
 	return nil
@@ -93,6 +94,7 @@ func mintBlockProvision(ctx sdk.Context, k Keeper) error {
 func setPreviousBlockTime(ctx sdk.Context, k Keeper) {
 	minter := k.GetMinter(ctx)
 	blockTime := ctx.BlockTime()
+
 	minter.PreviousBlockTime = &blockTime
 	k.SetMinter(ctx, minter)
 }

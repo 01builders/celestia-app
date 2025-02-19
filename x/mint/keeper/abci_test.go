@@ -38,7 +38,7 @@ func TestInflationRate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "inflation rate is 0.08 for year zero",
-			ctx:  ctx.WithBlockHeight(1).WithBlockTime(*genesisTime),
+			ctx:  ctx.WithBlockTime(*genesisTime),
 			want: math.LegacyMustNewDecFromStr("0.08"),
 		},
 		{
@@ -72,7 +72,7 @@ func TestInflationRate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := app.MintKeeper.BeginBlocker(tc.ctx)
 			assert.NoError(t, err)
-			got, err := app.MintKeeper.InflationRate(ctx, &minttypes.QueryInflationRateRequest{})
+			got, err := app.MintKeeper.InflationRate(tc.ctx, &minttypes.QueryInflationRateRequest{})
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got.InflationRate)
 		})
@@ -83,16 +83,20 @@ func TestAnnualProvisions(t *testing.T) {
 	t.Run("annual provisions are set when originally zero", func(t *testing.T) {
 		a, _ := util.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
 		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
+		genesisTime := a.MintKeeper.GetGenesisTime(ctx).GenesisTime
+		ctx = ctx.WithBlockTime(*genesisTime)
 
-		assert.True(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.IsZero())
-		a.MintKeeper.BeginBlocker(ctx)
-		assert.False(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.IsZero())
+		// note, the is 0 case, isn't tested here, as the first block is committed during test app setup
+
+		assert.False(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.IsZero(), fmt.Sprintf("is %s", a.MintKeeper.GetMinter(ctx).AnnualProvisions))
 	})
 
 	t.Run("annual provisions are not updated more than once per year", func(t *testing.T) {
 		a, _ := util.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
 		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
 		genesisTime := a.MintKeeper.GetGenesisTime(ctx).GenesisTime
+		ctx = ctx.WithBlockTime(*genesisTime)
+
 		yearOneMinusOneSecond := genesisTime.Add(oneYear).Add(-time.Second)
 
 		initialSupply := math.NewInt(100_000_001_000_000)
@@ -101,7 +105,6 @@ func TestAnnualProvisions(t *testing.T) {
 		bondDenom, err := a.StakingKeeper.BondDenom(ctx)
 		require.NoError(t, err)
 		require.Equal(t, a.MintKeeper.GetMinter(ctx).BondDenom, bondDenom)
-		require.True(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.IsZero())
 
 		blockInterval := time.Second * 15
 
@@ -122,7 +125,7 @@ func TestAnnualProvisions(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(fmt.Sprintf("block height %v", tc.height), func(t *testing.T) {
 				ctx = ctx.WithBlockHeight(tc.height).WithBlockTime(tc.time)
-				a.MintKeeper.BeginBlocker(ctx)
+				assert.NoError(t, a.MintKeeper.BeginBlocker(ctx))
 				assert.True(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.Equal(want))
 			})
 		}
@@ -130,7 +133,7 @@ func TestAnnualProvisions(t *testing.T) {
 		t.Run("one year later", func(t *testing.T) {
 			yearOne := genesisTime.Add(oneYear)
 			ctx = ctx.WithBlockHeight(5).WithBlockTime(yearOne)
-			a.MintKeeper.BeginBlocker(ctx)
+			assert.NoError(t, a.MintKeeper.BeginBlocker(ctx))
 			assert.False(t, a.MintKeeper.GetMinter(ctx).AnnualProvisions.Equal(want))
 		})
 	})

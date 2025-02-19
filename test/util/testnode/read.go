@@ -3,6 +3,7 @@ package testnode
 import (
 	"context"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/app"
 
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/go-square/v2/tx"
@@ -112,7 +113,7 @@ func ReadBlockHeights(ctx context.Context, rpcAddress string, fromHeight, toHeig
 }
 
 func DecodeBlockData(data types.Data) ([]sdk.Tx, error) {
-	encCfg := encoding.MakeConfig()
+	encCfg := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	decoder := encCfg.TxConfig.TxDecoder()
 	txs := make([]sdk.Tx, 0)
 	for _, txBytes := range data.Txs {

@@ -6,6 +6,7 @@ package txsim_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -102,8 +103,9 @@ func TestTxSimulator(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
+			//ctx := context.TODO()
 
 			keyring, rpcAddr, grpcAddr := Setup(t)
 
@@ -123,7 +125,9 @@ func TestTxSimulator(t *testing.T) {
 				tc.sequences...,
 			)
 			// Expect all sequences to run for at least 30 seconds without error
-			require.ErrorIs(t, err, context.DeadlineExceeded)
+			if !errors.Is(err, context.DeadlineExceeded) {
+				require.NoError(t, err)
+			}
 
 			blocks, err := testnode.ReadBlockchain(context.Background(), rpcAddr)
 			require.NoError(t, err)

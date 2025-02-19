@@ -6,7 +6,6 @@ package txsim_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -124,7 +123,7 @@ func TestTxSimulator(t *testing.T) {
 				tc.sequences...,
 			)
 			// Expect all sequences to run for at least 30 seconds without error
-			require.True(t, errors.Is(err, context.DeadlineExceeded), err.Error())
+			require.ErrorIs(t, err, context.DeadlineExceeded)
 
 			blocks, err := testnode.ReadBlockchain(context.Background(), rpcAddr)
 			require.NoError(t, err)

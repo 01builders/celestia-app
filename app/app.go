@@ -425,14 +425,13 @@ func New(
 	app.configurator = module.NewConfigurator(encodingConfig.Codec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.ModuleManager.RegisterServices(app.configurator)
 
-	// extract the accepted message list from the configurator and create a gatekeeper
-	// which will be used both as the antehandler and as part of the circuit breaker in
-	// the msg service router
+	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
+	app.RegisterUpgradeHandlers() // must be called after module manager & configuator are initialized
 
 	// Initialize the KV stores for the base modules (e.g. params). The base modules will be included in every app version.
-	app.MountKVStores(app.keys) // TODO: this was using previously baseKeys, but we want to start from a v4 app
+	app.MountKVStores(app.keys)
 	app.MountMemoryStores(app.memKeys)
-	app.MountTransientStores(tkeys)
+	app.MountTransientStores(app.tkeys)
 
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
@@ -531,6 +530,7 @@ func isSupportedAppVersion(appVersion uint64) bool {
 	return appVersion == v1 || appVersion == v2 || appVersion == v3 || appVersion == v4
 }
 
+// DefaultGenesis returns the default genesis state
 func (app *App) DefaultGenesis() GenesisState {
 	return app.BasicManager.DefaultGenesis(app.encodingConfig.Codec)
 }

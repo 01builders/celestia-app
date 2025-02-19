@@ -363,7 +363,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				Timestamp:        currentTime,
 				Signature:        precommitVote.Signature,
 			}
-			commit = &types.Commit{BlockID: blockID, Signatures: []types.CommitSig{commitSig}}
+			commit = &types.Commit{Height: height, BlockID: blockID, Signatures: []types.CommitSig{commitSig}}
 
 			var lastCommitInfo abci.CommitInfo
 			if height > 1 {

@@ -201,6 +201,7 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 		nil,
 		0, // timeout commit
 		util.EmptyAppOptions{},
+		baseapp.SetChainID(cfg.ChainID),
 		baseapp.SetMinGasPrices(fmt.Sprintf("%f%s", appconsts.DefaultMinGasPrice, appconsts.BondDenom)),
 	)
 

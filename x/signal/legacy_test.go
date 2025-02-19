@@ -12,7 +12,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
-	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
@@ -29,20 +28,6 @@ func TestLegacyUpgrade(t *testing.T) {
 		t.Skip("skipping x/upgrade SDK integration test in short mode.")
 	}
 	suite.Run(t, new(LegacyUpgradeTestSuite))
-}
-
-// TestRemoval verifies that no handler exists for msg-based software upgrade
-// proposals.
-// TODO: This was being removed by msg gate keeper previously. Think we can remove the test.
-// Gatekeeper functionality should be replaced by something else??
-func TestRemoval(t *testing.T) {
-	t.Skip()
-
-	app, _ := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-	msgSoftwareUpgrade := upgradetypes.MsgSoftwareUpgrade{}
-	router := app.MsgServiceRouter()
-	handler := router.Handler(&msgSoftwareUpgrade)
-	require.Nil(t, handler)
 }
 
 type LegacyUpgradeTestSuite struct {

@@ -21,6 +21,11 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // UpgradeName defines the on-chain upgrade name from v3 to v4.
@@ -34,26 +39,36 @@ func (app App) RegisterUpgradeHandlers() {
 		subspace := subspace
 
 		var keyTable paramstypes.KeyTable
+		var set bool
+
 		switch subspace.Name() {
 		case authtypes.ModuleName:
-			keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = authtypes.ParamKeyTable(), true //nolint:staticcheck
 		case banktypes.ModuleName:
-			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = banktypes.ParamKeyTable(), true //nolint:staticcheck
 		case stakingtypes.ModuleName:
-			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = stakingtypes.ParamKeyTable(), true //nolint:staticcheck
 		case minttypes.ModuleName:
-			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = minttypes.ParamKeyTable(), true //nolint:staticcheck
 		case distrtypes.ModuleName:
-			keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = distrtypes.ParamKeyTable(), true //nolint:staticcheck
 		case slashingtypes.ModuleName:
-			keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = slashingtypes.ParamKeyTable(), true //nolint:staticcheck
 		case govtypes.ModuleName:
-			keyTable = govv1.ParamKeyTable() //nolint:staticcheck
+			keyTable, set = govv1.ParamKeyTable(), true //nolint:staticcheck
+		case ibcexported.ModuleName:
+			keyTable, set = ibcclienttypes.ParamKeyTable(), true
+			keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
+		case ibctransfertypes.ModuleName:
+			keyTable, set = ibctransfertypes.ParamKeyTable(), true //nolint:staticcheck
+		case icahosttypes.SubModuleName:
+			keyTable, set = icahosttypes.ParamKeyTable(), true //nolint:staticcheck
 		default:
+			set = false
 			// TODO add params migration for celestia modules after https://linear.app/binarybuilders/issue/CEL-5
 		}
 
-		if !subspace.HasKeyTable() {
+		if !subspace.HasKeyTable() && set {
 			subspace.WithKeyTable(keyTable)
 		}
 	}
@@ -68,6 +83,11 @@ func (app App) RegisterUpgradeHandlers() {
 			// migrate consensus params from the legacy params keeper to consensus params module
 			baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusKeeper.ParamsStore)
 
+			// block by default msg upgrade proposal from circuit breaker
+			app.CircuitKeeper.DisableList.Set(ctx, sdk.MsgTypeURL(&upgradetypes.MsgSoftwareUpgrade{}))
+			app.CircuitKeeper.DisableList.Set(ctx, sdk.MsgTypeURL(&upgradetypes.MsgCancelUpgrade{}))
+
+			// run module migrations
 			return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)

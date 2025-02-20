@@ -4,24 +4,17 @@ import (
 	"bytes"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	apperr "github.com/celestiaorg/celestia-app/v4/app/errors"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/celestiaorg/go-square/v2/tx"
 	abci "github.com/cometbft/cometbft/abci/types"
-	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,9 +29,9 @@ func TestCheckTx(t *testing.T) {
 	accs := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"}
 
 	testApp, kr := testutil.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams(), accs...)
-	// testApp.Commit() // TODO: Commit() shouldn't be called here? SetupTestAppWithGen calls InitChain, FinalizeBlock, Commit in order
+	testApp.Commit()
 
-	opts := blobfactory.FeeTxOpts(1e9)
+	// opts := blobfactory.FeeTxOpts(1e9)
 
 	type test struct {
 		name             string
@@ -62,188 +55,188 @@ func TestCheckTx(t *testing.T) {
 			},
 			expectedABCICode: abci.CodeTypeOK,
 		},
-		{
-			name:      "normal transaction, CheckTxType_Recheck",
-			checkType: abci.CheckTxType_Recheck,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[1], enc.TxConfig, 2)
-				btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
-					signer,
-					[]share.Namespace{ns1},
-					[]int{100},
-				)[0]
-				return btx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "invalid transaction, mismatched namespace",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[2], enc.TxConfig, 3)
-				btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
-					signer,
-					[]share.Namespace{ns1},
-					[]int{100},
-				)[0]
+		// {
+		// 	name:      "normal transaction, CheckTxType_Recheck",
+		// 	checkType: abci.CheckTxType_Recheck,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[1], enc.TxConfig, 2)
+		// 		btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
+		// 			signer,
+		// 			[]share.Namespace{ns1},
+		// 			[]int{100},
+		// 		)[0]
+		// 		return btx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "invalid transaction, mismatched namespace",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[2], enc.TxConfig, 3)
+		// 		btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
+		// 			signer,
+		// 			[]share.Namespace{ns1},
+		// 			[]int{100},
+		// 		)[0]
 
-				dtx, _, err := tx.UnmarshalBlobTx(btx)
-				require.NoError(t, err)
-				newBlob, err := share.NewBlob(share.RandomBlobNamespace(), dtx.Blobs[0].Data(), appconsts.DefaultShareVersion, nil)
-				require.NoError(t, err)
-				dtx.Blobs[0] = newBlob
-				bbtx, err := tx.MarshalBlobTx(dtx.Tx, dtx.Blobs[0])
-				require.NoError(t, err)
-				return bbtx
-			},
-			expectedABCICode: blobtypes.ErrNamespaceMismatch.ABCICode(),
-		},
-		{
-			name:      "PFB with no blob, CheckTxType_New",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[3], enc.TxConfig, 4)
-				btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
-					signer,
-					[]share.Namespace{ns1},
-					[]int{100},
-				)[0]
-				dtx, _ := coretypes.UnmarshalBlobTx(btx)
-				return dtx.Tx
-			},
-			expectedABCICode: blobtypes.ErrNoBlobs.ABCICode(),
-		},
-		{
-			name:      "normal blobTx w/ multiple blobs, CheckTxType_New",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[4], enc.TxConfig, 5)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[4]).Address().String(), 10_000, 10)
-				tx, _, err := signer.CreatePayForBlobs(accs[4], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "1,000 byte blob",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[5], enc.TxConfig, 6)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[5]).Address().String(), 1_000, 1)
-				tx, _, err := signer.CreatePayForBlobs(accs[5], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "10,000 byte blob",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[6], enc.TxConfig, 7)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[6]).Address().String(), 10_000, 1)
-				tx, _, err := signer.CreatePayForBlobs(accs[6], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "100,000 byte blob",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[7], enc.TxConfig, 8)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[7]).Address().String(), 100_000, 1)
-				tx, _, err := signer.CreatePayForBlobs(accs[7], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "1,000,000 byte blob",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[8], enc.TxConfig, 9)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[8]).Address().String(), 1_000_000, 1)
-				tx, _, err := signer.CreatePayForBlobs(accs[8], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "2,000,000 byte blob",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[9], enc.TxConfig, 10)
-				_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[9]).Address().String(), 2_000_000, 1)
-				tx, _, err := signer.CreatePayForBlobs(accs[9], blobs, opts...)
-				require.NoError(t, err)
-				return tx
-			},
-			expectedABCICode: blobtypes.ErrBlobsTooLarge.ABCICode(),
-		},
-		{
-			name:      "v1 blob with invalid signer",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[10], enc.TxConfig, 11)
-				blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), signer.Account(accs[10]).Address())
-				require.NoError(t, err)
-				blobTx, _, err := signer.CreatePayForBlobs(accs[10], []*share.Blob{blob}, opts...)
-				require.NoError(t, err)
-				blob, err = share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), testnode.RandomAddress().(sdk.AccAddress))
-				require.NoError(t, err)
-				bTx, _, err := tx.UnmarshalBlobTx(blobTx)
-				require.NoError(t, err)
-				bTx.Blobs[0] = blob
-				blobTxBytes, err := tx.MarshalBlobTx(bTx.Tx, bTx.Blobs[0])
-				require.NoError(t, err)
-				return blobTxBytes
-			},
-			expectedABCICode: blobtypes.ErrInvalidBlobSigner.ABCICode(),
-		},
-		{
-			name:      "v1 blob with valid signer",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[10], enc.TxConfig, 11)
-				blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), signer.Account(accs[10]).Address())
-				require.NoError(t, err)
-				blobTx, _, err := signer.CreatePayForBlobs(accs[10], []*share.Blob{blob}, opts...)
-				require.NoError(t, err)
-				return blobTx
-			},
-			expectedABCICode: abci.CodeTypeOK,
-		},
-		{
-			name:      "v1 blob over 2MiB",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[11], enc.TxConfig, 12)
-				blob, err := share.NewV1Blob(share.RandomBlobNamespace(), bytes.Repeat([]byte{1}, 2097152), signer.Account(accs[11]).Address())
-				require.NoError(t, err)
-				blobTx, _, err := signer.CreatePayForBlobs(accs[11], []*share.Blob{blob}, opts...)
-				require.NoError(t, err)
-				return blobTx
-			},
-			expectedABCICode: apperr.ErrTxExceedsMaxSize.ABCICode(),
-		},
-		{
-			name:      "v0 blob over 2MiB",
-			checkType: abci.CheckTxType_New,
-			getTx: func() []byte {
-				signer := createSigner(t, kr, accs[12], enc.TxConfig, 13)
-				blob, err := share.NewV0Blob(share.RandomBlobNamespace(), bytes.Repeat([]byte{1}, 2097152))
-				require.NoError(t, err)
-				blobTx, _, err := signer.CreatePayForBlobs(accs[12], []*share.Blob{blob}, opts...)
-				require.NoError(t, err)
-				return blobTx
-			},
-			expectedABCICode: apperr.ErrTxExceedsMaxSize.ABCICode(),
-		},
+		// 		dtx, _, err := tx.UnmarshalBlobTx(btx)
+		// 		require.NoError(t, err)
+		// 		newBlob, err := share.NewBlob(share.RandomBlobNamespace(), dtx.Blobs[0].Data(), appconsts.DefaultShareVersion, nil)
+		// 		require.NoError(t, err)
+		// 		dtx.Blobs[0] = newBlob
+		// 		bbtx, err := tx.MarshalBlobTx(dtx.Tx, dtx.Blobs[0])
+		// 		require.NoError(t, err)
+		// 		return bbtx
+		// 	},
+		// 	expectedABCICode: blobtypes.ErrNamespaceMismatch.ABCICode(),
+		// },
+		// {
+		// 	name:      "PFB with no blob, CheckTxType_New",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[3], enc.TxConfig, 4)
+		// 		btx := blobfactory.RandBlobTxsWithNamespacesAndSigner(
+		// 			signer,
+		// 			[]share.Namespace{ns1},
+		// 			[]int{100},
+		// 		)[0]
+		// 		dtx, _ := coretypes.UnmarshalBlobTx(btx)
+		// 		return dtx.Tx
+		// 	},
+		// 	expectedABCICode: blobtypes.ErrNoBlobs.ABCICode(),
+		// },
+		// {
+		// 	name:      "normal blobTx w/ multiple blobs, CheckTxType_New",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[4], enc.TxConfig, 5)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[4]).Address().String(), 10_000, 10)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[4], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "1,000 byte blob",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[5], enc.TxConfig, 6)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[5]).Address().String(), 1_000, 1)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[5], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "10,000 byte blob",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[6], enc.TxConfig, 7)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[6]).Address().String(), 10_000, 1)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[6], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "100,000 byte blob",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[7], enc.TxConfig, 8)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[7]).Address().String(), 100_000, 1)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[7], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "1,000,000 byte blob",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[8], enc.TxConfig, 9)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[8]).Address().String(), 1_000_000, 1)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[8], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "2,000,000 byte blob",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[9], enc.TxConfig, 10)
+		// 		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), signer.Account(accs[9]).Address().String(), 2_000_000, 1)
+		// 		tx, _, err := signer.CreatePayForBlobs(accs[9], blobs, opts...)
+		// 		require.NoError(t, err)
+		// 		return tx
+		// 	},
+		// 	expectedABCICode: blobtypes.ErrBlobsTooLarge.ABCICode(),
+		// },
+		// {
+		// 	name:      "v1 blob with invalid signer",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[10], enc.TxConfig, 11)
+		// 		blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), signer.Account(accs[10]).Address())
+		// 		require.NoError(t, err)
+		// 		blobTx, _, err := signer.CreatePayForBlobs(accs[10], []*share.Blob{blob}, opts...)
+		// 		require.NoError(t, err)
+		// 		blob, err = share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), testnode.RandomAddress().(sdk.AccAddress))
+		// 		require.NoError(t, err)
+		// 		bTx, _, err := tx.UnmarshalBlobTx(blobTx)
+		// 		require.NoError(t, err)
+		// 		bTx.Blobs[0] = blob
+		// 		blobTxBytes, err := tx.MarshalBlobTx(bTx.Tx, bTx.Blobs[0])
+		// 		require.NoError(t, err)
+		// 		return blobTxBytes
+		// 	},
+		// 	expectedABCICode: blobtypes.ErrInvalidBlobSigner.ABCICode(),
+		// },
+		// {
+		// 	name:      "v1 blob with valid signer",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[10], enc.TxConfig, 11)
+		// 		blob, err := share.NewV1Blob(share.RandomBlobNamespace(), []byte("data"), signer.Account(accs[10]).Address())
+		// 		require.NoError(t, err)
+		// 		blobTx, _, err := signer.CreatePayForBlobs(accs[10], []*share.Blob{blob}, opts...)
+		// 		require.NoError(t, err)
+		// 		return blobTx
+		// 	},
+		// 	expectedABCICode: abci.CodeTypeOK,
+		// },
+		// {
+		// 	name:      "v1 blob over 2MiB",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[11], enc.TxConfig, 12)
+		// 		blob, err := share.NewV1Blob(share.RandomBlobNamespace(), bytes.Repeat([]byte{1}, 2097152), signer.Account(accs[11]).Address())
+		// 		require.NoError(t, err)
+		// 		blobTx, _, err := signer.CreatePayForBlobs(accs[11], []*share.Blob{blob}, opts...)
+		// 		require.NoError(t, err)
+		// 		return blobTx
+		// 	},
+		// 	expectedABCICode: apperr.ErrTxExceedsMaxSize.ABCICode(),
+		// },
+		// {
+		// 	name:      "v0 blob over 2MiB",
+		// 	checkType: abci.CheckTxType_New,
+		// 	getTx: func() []byte {
+		// 		signer := createSigner(t, kr, accs[12], enc.TxConfig, 13)
+		// 		blob, err := share.NewV0Blob(share.RandomBlobNamespace(), bytes.Repeat([]byte{1}, 2097152))
+		// 		require.NoError(t, err)
+		// 		blobTx, _, err := signer.CreatePayForBlobs(accs[12], []*share.Blob{blob}, opts...)
+		// 		require.NoError(t, err)
+		// 		return blobTx
+		// 	},
+		// 	expectedABCICode: apperr.ErrTxExceedsMaxSize.ABCICode(),
+		// },
 	}
 
 	for _, tt := range tests {

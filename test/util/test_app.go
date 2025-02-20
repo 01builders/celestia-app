@@ -89,10 +89,10 @@ func initialiseTestApp(testApp *app.App, valSet *tmtypes.ValidatorSet) {
 		panic(err)
 	}
 
-	_, err = testApp.Commit()
-	if err != nil {
-		panic(err)
-	}
+	// _, err = testApp.Commit()
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 // NewTestApp creates a new app instance with an empty memDB and a no-op logger.

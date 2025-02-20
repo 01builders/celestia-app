@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/core/address"
 	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	"github.com/celestiaorg/celestia-app/v4/app/params"
-	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -19,6 +18,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"google.golang.org/grpc"
+
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
 // Signer is struct for building and signing Celestia transactions

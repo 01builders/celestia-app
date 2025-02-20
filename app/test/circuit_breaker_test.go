@@ -1,6 +1,8 @@
 package app_test
 
 import (
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"testing"
 	"time"
 
@@ -35,8 +37,8 @@ var expiration = time.Now().Add(time.Hour)
 func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to update the app version easily
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	testApp, keyRing := util.SetupTestAppWithGenesisValSet(app.DefaultInitialConsensusParams(), granter, grantee)
-
-	signer, err := user.NewSigner(keyRing, enc.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 1, 0))
+	header := tmproto.Header{Time: time.Now(), Height: 2, Version: version.Consensus{App: appVersion}}
+	signer, err := user.NewSigner(keyRing, enc.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 2, 0))
 	require.NoError(t, err)
 
 	granterAddress := testfactory.GetAddress(keyRing, granter)
@@ -45,7 +47,7 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 	authorization := authz.NewGenericAuthorization(signaltypes.URLMsgTryUpgrade)
 	msg, err := authz.NewMsgGrant(granterAddress, granteeAddress, authorization, &expiration)
 	require.NoError(t, err)
-	ctx := testApp.NewContext(true)
+	ctx := testApp.NewContext(true).WithBlockHeader(header)
 	_, err = testApp.AuthzKeeper.Grant(ctx, msg)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "/celestia.signal.v1.Msg/TryUpgrade doesn't exist.: invalid type")
@@ -54,7 +56,7 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 	require.NoError(t, err)
 
 	tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
-	blockResp, err := testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{tryUpgradeTx}})
+	blockResp, err := testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{tryUpgradeTx}, Height: 2, Time: ctx.BlockTime()})
 	require.NoError(t, err)
 	res := blockResp.TxResults[0]
 	assert.Equal(t, uint32(0x25), res.Code, res.Log)

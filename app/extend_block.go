@@ -1,11 +1,11 @@
 package app
 
 import (
-	"github.com/celestiaorg/rsmt2d"
 	coretypes "github.com/cometbft/cometbft/types"
 
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
+	"github.com/celestiaorg/rsmt2d"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"

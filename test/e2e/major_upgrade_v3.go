@@ -6,8 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/celestiaorg/knuu/pkg/knuu"
 	tmtypes "github.com/cometbft/cometbft/types"
+
+	"github.com/celestiaorg/knuu/pkg/knuu"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"

@@ -7,8 +7,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/celestiaorg/knuu/pkg/knuu"
 	"github.com/cometbft/cometbft/libs/trace"
+
+	"github.com/celestiaorg/knuu/pkg/knuu"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/e2e/testnet"

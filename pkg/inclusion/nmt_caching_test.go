@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/rsmt2d"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/go-square/v2/share"
-
 	"github.com/celestiaorg/nmt"
+	"github.com/celestiaorg/rsmt2d"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"

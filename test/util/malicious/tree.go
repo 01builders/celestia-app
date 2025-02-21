@@ -3,13 +3,11 @@ package malicious
 import (
 	"fmt"
 
-	"github.com/celestiaorg/rsmt2d"
-
 	"github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
-
 	"github.com/celestiaorg/nmt"
 	"github.com/celestiaorg/nmt/namespace"
+	"github.com/celestiaorg/rsmt2d"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/wrapper"

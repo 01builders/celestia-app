@@ -8,8 +8,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/celestiaorg/knuu/pkg/knuu"
 	"github.com/cometbft/cometbft/rpc/client/http"
+
+	"github.com/celestiaorg/knuu/pkg/knuu"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"

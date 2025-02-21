@@ -126,7 +126,7 @@ func (s *IntegrationTestSuite) getTotalSupply(height int64) sdktypes.Coins {
 	return resp.Supply
 }
 
-func (s *IntegrationTestSuite) estimateInflationRate(startHeight int64, endHeight int64) math.LegacyDec {
+func (s *IntegrationTestSuite) estimateInflationRate(startHeight, endHeight int64) math.LegacyDec {
 	startSupply := s.getTotalSupply(startHeight).AmountOf(app.BondDenom)
 	endSupply := s.getTotalSupply(endHeight).AmountOf(app.BondDenom)
 	diffSupply := endSupply.Sub(startSupply)

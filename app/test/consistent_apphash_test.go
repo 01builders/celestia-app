@@ -79,7 +79,7 @@ func TestConsistentAppHash(t *testing.T) {
 		{
 			name:    "execute sdk messages and blob tx on v2",
 			version: v2.Version,
-			encodedSdkMessages: func(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer *user.Signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
+			encodedSdkMessages: func(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
 				firstBlockEncodedTxs, secondBlockEncodedTxs, thirdBlockEncodedTxs := encodedSdkMessagesV1(t, accountAddresses, genValidators, testApp, signer, valSigner)
 				encodedMessagesV2 := encodedSdkMessagesV2(t, genValidators, valSigner)
 				thirdBlockEncodedTxs = append(thirdBlockEncodedTxs, encodedMessagesV2...)
@@ -153,7 +153,7 @@ func getAccountsAndCreateSigner(t *testing.T, kr keyring.Keyring, enc client.TxC
 }
 
 // encodedSdkMessagesV1 returns encoded SDK messages for v1
-func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer *user.Signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
+func encodedSdkMessagesV1(t *testing.T, accountAddresses []sdk.AccAddress, genValidators []stakingtypes.Validator, testApp *app.App, signer, valSigner *user.Signer) ([][]byte, [][]byte, [][]byte) {
 	// ----------- Create v1 SDK Messages ------------
 
 	amount := sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewIntFromUint64(1_000)))

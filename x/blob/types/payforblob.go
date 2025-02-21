@@ -213,7 +213,7 @@ func ValidateBlobShareVersion(signer sdk.AccAddress, blobs ...*share.Blob) error
 
 // ExtractBlobComponents separates and returns the components of a slice of
 // blobs.
-func ExtractBlobComponents(pblobs []*share.Blob) (namespaces []share.Namespace, sizes []uint32, shareVersions []uint32) {
+func ExtractBlobComponents(pblobs []*share.Blob) (namespaces []share.Namespace, sizes, shareVersions []uint32) {
 	namespaces = make([]share.Namespace, len(pblobs))
 	sizes = make([]uint32, len(pblobs))
 	shareVersions = make([]uint32, len(pblobs))

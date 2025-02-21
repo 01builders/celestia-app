@@ -29,7 +29,7 @@ func GenerateRandomlySizedBlobs(count, maxBlobSize int) []*share.Blob {
 }
 
 // GenerateBlobsWithNamespace generates blobs with namespace share.
-func GenerateBlobsWithNamespace(count int, blobSize int, ns share.Namespace) []*share.Blob {
+func GenerateBlobsWithNamespace(count, blobSize int, ns share.Namespace) []*share.Blob {
 	blobs := make([]*share.Blob, count)
 	for i := 0; i < count; i++ {
 		blob, err := share.NewBlob(ns, tmrand.Bytes(blobSize), appconsts.DefaultShareVersion, nil)

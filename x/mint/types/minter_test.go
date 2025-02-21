@@ -165,7 +165,7 @@ func randomBlockInterval() time.Duration {
 }
 
 // randInRange returns a random number in the range (min, max) inclusive.
-func randInRange(min int64, max int64) int64 {
+func randInRange(min, max int64) int64 {
 	return rand.Int63n(max-min) + min
 }
 

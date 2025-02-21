@@ -147,7 +147,7 @@ func CalculateMeanGasFromRecentBlocks(ctx context.Context, rpcAddress, msgType s
 	return CalculateMeanGas(ctx, rpcAddress, msgType, status.SyncInfo.LatestBlockHeight-blocks+1, status.SyncInfo.LatestBlockHeight)
 }
 
-func CalculateMeanGas(ctx context.Context, rpcAddress, msgType string, fromHeight int64, toHeight int64) (float64, int64, error) {
+func CalculateMeanGas(ctx context.Context, rpcAddress, msgType string, fromHeight, toHeight int64) (float64, int64, error) {
 	var (
 		encCfg   = encoding.MakeConfig()
 		decoder  = encCfg.TxConfig.TxDecoder()

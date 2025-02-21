@@ -250,7 +250,7 @@ func benchmarkIBCProcessProposalUpdateClient(b *testing.B, numberOfValidators, c
 // Note: the number of the verified signatures is: 2 * numberOfValidators / 3
 // the offset is just a hack for transactions to be processed by the needed
 // ABCI method.
-func generateIBCUpdateClientTransaction(b *testing.B, numberOfValidators int, numberOfMessages int, offsetAccountSequence int) (*app.App, [][]byte) {
+func generateIBCUpdateClientTransaction(b *testing.B, numberOfValidators, numberOfMessages, offsetAccountSequence int) (*app.App, [][]byte) {
 	account := "test"
 	testApp, kr := testutil.SetupTestAppWithGenesisValSetAndMaxSquareSize(app.DefaultConsensusParams(), 128, account)
 	addr := testfactory.GetAddress(kr, account)
@@ -285,7 +285,7 @@ func generateIBCUpdateClientTransaction(b *testing.B, numberOfValidators int, nu
 	return testApp, rawTxs
 }
 
-func generateUpdateClientTransaction(b *testing.B, app *app.App, signer user.Signer, signerAddr string, signerName string, numberOfValidators int, numberOfMsgs int) []*types3.MsgUpdateClient {
+func generateUpdateClientTransaction(b *testing.B, app *app.App, signer user.Signer, signerAddr, signerName string, numberOfValidators, numberOfMsgs int) []*types3.MsgUpdateClient {
 	state, _, privVals := makeState(numberOfValidators, 5)
 	wBefore := time.Now()
 	time.Sleep(time.Second)

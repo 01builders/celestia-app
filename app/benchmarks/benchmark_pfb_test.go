@@ -67,7 +67,8 @@ func benchmarkCheckTxPFB(b *testing.B, size int) {
 	}
 
 	b.ResetTimer()
-	resp := testApp.CheckTx(checkTxRequest)
+	resp, err := testApp.CheckTx(&checkTxRequest)
+	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, uint32(0), resp.Code)
 	require.Equal(b, "", resp.Codespace)
@@ -217,7 +218,8 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 		Height:    10,
 	}
 
-	prepareProposalResponse := testApp.PrepareProposal(prepareProposalRequest)
+	prepareProposalResponse, err := testApp.PrepareProposal(prepareProposalRequest)
+	require.NoError(b, err)
 	require.GreaterOrEqual(b, len(prepareProposalResponse.BlockData.Txs), 1)
 
 	processProposalRequest := types.RequestProcessProposal{
@@ -233,7 +235,8 @@ func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	}
 
 	b.ResetTimer()
-	resp := testApp.ProcessProposal(processProposalRequest)
+	resp, err := testApp.ProcessProposal(processProposalRequest)
+	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
 

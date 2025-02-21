@@ -206,7 +206,7 @@ type SimApp struct {
 	configurator module.Configurator
 }
 
-func (app *SimApp) ExportAppStateAndValidators(forZeroHeight bool, jailAllowedAddrs, modulesToExport []string) (servertypes.ExportedApp, error) {
+func (app *SimApp) ExportAppStateAndValidators(_ bool, _, _ []string) (servertypes.ExportedApp, error) {
 	panic("implement me")
 }
 
@@ -389,7 +389,8 @@ func NewSimApp(
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		// TODO: is this still needed?
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)) // nolint:staticcheck
 	govConfig := govtypes.DefaultConfig()
 	/*
 		Example of setting gov params:

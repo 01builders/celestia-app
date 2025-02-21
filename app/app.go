@@ -749,6 +749,8 @@ func (app *App) NewProposalContext(header tmproto.Header) sdk.Context {
 // getTimeoutCommit returns the timeoutCommit if a user has overridden it via the
 // --timeout-commit flag. Otherwise, it returns the default timeout commit based
 // on the app version.
+// TODO: is this still needed?
+// nolint:unused
 func (app *App) getTimeoutCommit(appVersion uint64) time.Duration {
 	if app.timeoutCommit != 0 {
 		return app.timeoutCommit

@@ -312,7 +312,8 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 		}
 
 		startTime := time.Now()
-		resp := testApp.ProcessProposal(processProposalRequest)
+		resp, err := testApp.ProcessProposal(processProposalRequest)
+		require.NoError(b, err)
 		endTime := time.Now()
 		require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Result)
 

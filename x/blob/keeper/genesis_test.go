@@ -14,7 +14,8 @@ func TestGenesis(t *testing.T) {
 	}
 
 	k, _, ctx := CreateKeeper(t, appconsts.LatestVersion)
-	k.InitGenesis(ctx, genesisState)
+	err := k.InitGenesis(ctx, genesisState)
+	require.NoError(t, err)
 	got := k.ExportGenesis(ctx)
 	require.NotNil(t, got)
 	require.Equal(t, types.DefaultParams(), got.Params)

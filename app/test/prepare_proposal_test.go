@@ -13,7 +13,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 
@@ -264,7 +263,7 @@ func TestPrepareProposalCappingNumberOfMessages(t *testing.T) {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 
 	addrs := make([]sdk.AccAddress, 0, numberOfAccounts)
-	accs := make([]types.AccountI, 0, numberOfAccounts)
+	accs := make([]sdk.AccountI, 0, numberOfAccounts)
 	signers := make([]*user.Signer, 0, numberOfAccounts)
 	for index, account := range accounts {
 		addr := testfactory.GetAddress(kr, account)

@@ -14,6 +14,7 @@ import (
 // UpgradeProposalType. Handling of updating the IBC Client will be done in v2 of the
 // app.
 // TODO(review): This can be removed completely in favor of govv1 messaging.
+// nolint:staticcheck
 func NewClientProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {

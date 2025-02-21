@@ -1,14 +1,16 @@
 package tokenfilter
 
 import (
-	"cosmossdk.io/log"
 	"encoding/json"
+	"testing"
+	"time"
+
+	"cosmossdk.io/log"
+
 	"github.com/celestiaorg/celestia-app/v4/test/pfm"
 	dbm "github.com/cosmos/cosmos-db"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 
 	"cosmossdk.io/math"
 	"github.com/celestiaorg/celestia-app/v4/app"

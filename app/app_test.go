@@ -103,9 +103,11 @@ func TestInitChain(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			application := app.New(logger, db, traceStore, timeoutCommit, appOptions)
 			if tc.wantPanic {
-				assert.Panics(t, func() { application.InitChain(&tc.request) })
+				_, err := application.InitChain(&tc.request)
+				assert.Error(t, err)
 			} else {
-				assert.NotPanics(t, func() { application.InitChain(&tc.request) })
+				_, err := application.InitChain(&tc.request)
+				assert.NoError(t, err)
 			}
 		})
 	}

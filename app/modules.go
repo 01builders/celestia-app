@@ -49,38 +49,36 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 )
 
-var (
-	// ModuleEncodingRegisters keeps track of all the module methods needed to
-	// register interfaces and specific type to encoding config
-	ModuleEncodingRegisters = []module.AppModuleBasic{
-		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{},
-		bankModule{},
-		capability.AppModuleBasic{},
-		stakingModule{},
-		mintModule{},
-		distribution.AppModuleBasic{},
-		gov.AppModuleBasic{},
-		params.AppModuleBasic{},
-		crisis.AppModuleBasic{},
-		slashingModule{},
-		authzmodule.AppModuleBasic{},
-		feegrantmodule.AppModuleBasic{},
-		ibcModule{},
-		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
-		vesting.AppModuleBasic{},
-		blob.AppModule{},
-		signal.AppModule{},
-		minfee.AppModule{},
-		packetforward.AppModuleBasic{},
-		consensus.AppModuleBasic{},
-		upgrade.AppModuleBasic{},
-		icaModule{},
-		ibctm.AppModuleBasic{},
-		solomachine.AppModuleBasic{},
-	}
-)
+// ModuleEncodingRegisters keeps track of all the module methods needed to
+// register interfaces and specific type to encoding config
+var ModuleEncodingRegisters = []module.AppModuleBasic{
+	auth.AppModuleBasic{},
+	genutil.AppModuleBasic{},
+	bankModule{},
+	capability.AppModuleBasic{},
+	stakingModule{},
+	mintModule{},
+	distribution.AppModuleBasic{},
+	gov.AppModuleBasic{},
+	params.AppModuleBasic{},
+	crisis.AppModuleBasic{},
+	slashingModule{},
+	authzmodule.AppModuleBasic{},
+	feegrantmodule.AppModuleBasic{},
+	ibcModule{},
+	evidence.AppModuleBasic{},
+	transfer.AppModuleBasic{},
+	vesting.AppModuleBasic{},
+	blob.AppModule{},
+	signal.AppModule{},
+	minfee.AppModule{},
+	packetforward.AppModuleBasic{},
+	consensus.AppModuleBasic{},
+	upgrade.AppModuleBasic{},
+	icaModule{},
+	ibctm.AppModuleBasic{},
+	solomachine.AppModuleBasic{},
+}
 
 func (app *App) setModuleOrder() {
 	// During begin block slashing happens after distr.BeginBlocker so that

@@ -435,7 +435,9 @@ func New(
 	app.CustomQueryRouter().AddRoute(proof.ShareInclusionQueryPath, proof.QueryShareInclusionProof)
 
 	app.configurator = module.NewConfigurator(encodingConfig.Codec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.ModuleManager.RegisterServices(app.configurator)
+	if err := app.ModuleManager.RegisterServices(app.configurator); err != nil {
+		panic(err)
+	}
 
 	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
 	app.RegisterUpgradeHandlers() // must be called after module manager & configuator are initialized
@@ -500,7 +502,9 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		// Version changes must be increasing. Downgrades are not permitted
 		if newVersion > currentVersion {
 			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", newVersion)
-			app.SetAppVersion(ctx, newVersion)
+			if err := app.SetAppVersion(ctx, newVersion); err != nil {
+				return sdk.EndBlock{}, err
+			}
 			app.SignalKeeper.ResetTally(ctx)
 		}
 	}

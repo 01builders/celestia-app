@@ -2,9 +2,10 @@ package testnode
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/server"
 	"io"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/server"
 
 	"cosmossdk.io/log"
 	"github.com/celestiaorg/celestia-app/v4/app"
@@ -160,8 +161,8 @@ func DefaultTendermintConfig() *tmconfig.Config {
 
 type AppCreationOptions func(app *app.App)
 
-func WithTimeoutCommit(d time.Duration) AppCreationOptions {
-	return func(app *app.App) {
+func WithTimeoutCommit(_ time.Duration) AppCreationOptions {
+	return func(_ *app.App) {
 		// TODO: Update the timeout commit in the cometBFT config.
 	}
 }

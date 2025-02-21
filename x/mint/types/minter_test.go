@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	v1 "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,7 +69,7 @@ func TestCalculateInflationRate(t *testing.T) {
 	for _, tc := range testCases {
 		years := time.Duration(tc.year * NanosecondsPerYear * int64(time.Nanosecond))
 		blockTime := genesisTime.Add(years)
-		ctx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger()).WithBlockHeader(v1.Header{
+		ctx := sdk.NewContext(nil, tmproto.Header{}, false, log.NewNopLogger()).WithBlockHeader(tmproto.Header{
 			Time: blockTime,
 		})
 		inflationRate := minter.CalculateInflationRate(ctx, genesisTime)

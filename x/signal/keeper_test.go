@@ -2,13 +2,18 @@ package signal_test
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"math/big"
+	"testing"
+
 	"cosmossdk.io/core/header"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"fmt"
+
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
@@ -24,9 +29,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math"
-	"math/big"
-	"testing"
 )
 
 func TestGetVotingPowerThreshold(t *testing.T) {

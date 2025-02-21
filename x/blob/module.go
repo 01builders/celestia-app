@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"google.golang.org/grpc"
 
 	"cosmossdk.io/core/appmodule"

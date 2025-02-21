@@ -35,7 +35,7 @@ func NewV1Blob(ns share.Namespace, data []byte, signer sdk.AccAddress) (*share.B
 
 // ValidateBlobTx performs stateless checks on the BlobTx to ensure that the
 // blobs attached to the transaction are valid.
-func ValidateBlobTx(txcfg client.TxEncodingConfig, bTx *tx.BlobTx, subtreeRootThreshold int, appVersion uint64) error {
+func ValidateBlobTx(txcfg client.TxEncodingConfig, bTx *tx.BlobTx, subtreeRootThreshold int, _ uint64) error {
 	if bTx == nil {
 		return ErrNoBlobs
 	}

@@ -418,7 +418,7 @@ func processSdkMessages(signer *user.Signer, sdkMessages []sdk.Msg) ([][]byte, e
 }
 
 // executeTxs executes a set of transactions and returns the data hash and app hash
-func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, validators []abci.Validator, lastCommitHash []byte) ([]byte, []byte, error) {
+func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, validators []abci.Validator, _ []byte) ([]byte, []byte, error) {
 	height := testApp.LastBlockHeight() + 1
 
 	genesisTime := testutil.GenesisTime
@@ -459,7 +459,7 @@ func executeTxs(testApp *app.App, encodedBlobTx []byte, encodedSdkTxs [][]byte, 
 	}
 
 	// process block
-	var validator3Signed = func() tmproto.BlockIDFlag {
+	validator3Signed := func() tmproto.BlockIDFlag {
 		if height == 2 {
 			return tmproto.BlockIDFlagCommit
 		}

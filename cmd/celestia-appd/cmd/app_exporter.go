@@ -17,7 +17,7 @@ func appExporter(
 	forZeroHeight bool,
 	jailWhiteList []string,
 	appOptions servertypes.AppOptions,
-	moduleToExport []string,
+	_ []string,
 ) (servertypes.ExportedApp, error) {
 	application := app.New(logger, db, traceStore, 0, appOptions)
 	if height != -1 {

@@ -82,7 +82,7 @@ func (am AppModule) DefaultGenesis(_ codec.JSONCodec) json.RawMessage {
 }
 
 // ValidateGenesis is always successful, as we ignore the value.
-func (am AppModule) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+func (am AppModule) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, _ json.RawMessage) error {
 	return nil
 }
 

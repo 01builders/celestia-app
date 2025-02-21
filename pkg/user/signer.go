@@ -271,7 +271,6 @@ func (s *Signer) signTransaction(builder client.TxBuilder) (string, uint64, erro
 		PubKey:   account.pubKey,
 		Sequence: account.sequence,
 	})
-
 	if err != nil {
 		return "", 0, fmt.Errorf("error setting draft signatures: %w", err)
 	}

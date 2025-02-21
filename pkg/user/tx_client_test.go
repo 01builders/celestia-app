@@ -339,7 +339,7 @@ func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash string, e
 	require.Equal(t, seqAfterBroadcast, seqBeforeBroadcast+1)
 }
 
-func setupTxClient(t *testing.T, ttlDuration time.Duration) (encoding.Config, *user.TxClient, testnode.Context) {
+func setupTxClient(t *testing.T, _ time.Duration) (encoding.Config, *user.TxClient, testnode.Context) {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	defaultTmConfig := testnode.DefaultTendermintConfig()
 	// defaultTmConfig.Mempool.TTLDuration = ttlDuration TODO: check ttl duration

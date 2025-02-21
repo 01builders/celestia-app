@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"strings"
 	"time"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/cosmos/cosmos-sdk/types/module/testutil"
 
 	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"

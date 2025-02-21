@@ -2,14 +2,16 @@ package pfm
 
 import (
 	"bytes"
-	"cosmossdk.io/log"
 	"encoding/json"
 	"errors"
+	"testing"
+	"time"
+
+	"cosmossdk.io/log"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	"testing"
-	"time"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	sdk "github.com/cosmos/cosmos-sdk/types"

@@ -9,13 +9,15 @@ import (
 	"time"
 
 	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/cometbft/cometbft/config"
+	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2/share"
+
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/cometbft/cometbft/config"
-	"github.com/stretchr/testify/require"
 )
 
 func TestConcurrentTxSubmission(t *testing.T) {

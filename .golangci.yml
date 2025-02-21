@@ -13,8 +13,17 @@ linters:
     - stylecheck
     - unconvert
     - gocritic
+    - gci
 
 linters-settings:
   nakedret:
     # Ban the use of naked returns because they reduce code readability.
     max-func-lines: 0 # override the default: 30
+  gci:
+    custom-order: true
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(github.com/celestiaorg/go-square)
+      - prefix(github.com/celestiaorg/nmt)
+      - prefix(github.com/celestiaorg/celestia-app/v4)

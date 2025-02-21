@@ -3,9 +3,9 @@ package appconsts
 import (
 	"crypto/sha256"
 
-	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/rsmt2d"
-	// "github.com/cometbft/cometbft/pkg/consts"
+
+	"github.com/celestiaorg/go-square/v2/share"
 )
 
 // These constants were originally sourced from:

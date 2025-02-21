@@ -7,9 +7,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/knuu/pkg/instance"
 	"github.com/celestiaorg/knuu/pkg/knuu"
+
+	"github.com/celestiaorg/go-square/v2/share"
 )
 
 const (

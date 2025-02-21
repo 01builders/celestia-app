@@ -7,13 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/x/minfee"
-	blobtx "github.com/celestiaorg/go-square/v2/tx"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
+
+	blobtx "github.com/celestiaorg/go-square/v2/tx"
+
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 )
 
 // EstimationZScore is the z-score corresponding to 10% and 90% of the gas prices distribution.

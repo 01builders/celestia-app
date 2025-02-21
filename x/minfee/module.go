@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	grpc "google.golang.org/grpc"
-
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	params "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	grpc "google.golang.org/grpc"
 )
 
 var (

@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 )
 
 type IntegrationTestSuite struct {

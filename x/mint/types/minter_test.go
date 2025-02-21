@@ -3,7 +3,7 @@ package types
 import (
 	"math/rand"
 	"testing"
-	time "time"
+	"time"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"

@@ -3,9 +3,10 @@ package ante
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // MaxTxSizeDecorator ensures that a tx can not be larger than

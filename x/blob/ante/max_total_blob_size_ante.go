@@ -28,11 +28,11 @@ func (d MaxTotalBlobSizeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 		return next(ctx, tx, simulate)
 	}
 
-	max := d.maxTotalBlobSize(ctx, ctx.BlockHeader().Version.App)
+	maxSize := d.maxTotalBlobSize(ctx, ctx.BlockHeader().Version.App)
 	for _, m := range tx.GetMsgs() {
 		if pfb, ok := m.(*blobtypes.MsgPayForBlobs); ok {
-			if total := getTotal(pfb.BlobSizes); total > max {
-				return ctx, errors.Wrapf(blobtypes.ErrTotalBlobSizeTooLarge, "total blob size %d exceeds max %d", total, max)
+			if total := getTotal(pfb.BlobSizes); total > maxSize {
+				return ctx, errors.Wrapf(blobtypes.ErrTotalBlobSizeTooLarge, "total blob size %d exceeds max %d", total, maxSize)
 			}
 		}
 	}

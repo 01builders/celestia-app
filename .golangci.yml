@@ -27,3 +27,4 @@ linters-settings:
       - default # Default section: contains all imports that could not be matched to another section type.
       - prefix(github.com/celestiaorg)
       - prefix(github.com/celestiaorg/celestia-app/v4)
+      

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
-	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
+	v4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	version "github.com/cometbft/cometbft/proto/tendermint/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,32 +24,25 @@ func TestMaxTxSizeDecorator(t *testing.T) {
 	}{
 		{
 			name:        "good tx; under max tx size threshold",
-			txSize:      v3.MaxTxSize - 1,
-			appVersion:  v3.Version,
+			txSize:      v4.MaxTxSize - 1,
+			appVersion:  v4.Version,
 			expectError: false,
 			isCheckTx:   []bool{true, false},
 		},
 		{
 			name:        "bad tx; over max tx size threshold",
-			txSize:      v3.MaxTxSize + 1,
-			appVersion:  v3.Version,
+			txSize:      v4.MaxTxSize + 1,
+			appVersion:  v4.Version,
 			expectError: true,
 			isCheckTx:   []bool{true, false},
 		},
 		{
 			name:        "good tx; equal to max tx size threshold",
-			txSize:      v3.MaxTxSize,
-			appVersion:  v3.Version,
+			txSize:      v4.MaxTxSize,
+			appVersion:  v4.Version,
 			expectError: false,
 			isCheckTx:   []bool{true, false},
 		},
-		//{
-		//	name:        "good tx; limit only applies to v3 and above",
-		//	txSize:      v3.MaxTxSize + 10,
-		//	appVersion:  v2.Version,
-		//	expectError: false,
-		//	isCheckTx:   []bool{true, false},
-		//},
 	}
 
 	for _, tc := range testCases {

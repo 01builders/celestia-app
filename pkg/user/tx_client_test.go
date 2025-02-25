@@ -2,12 +2,12 @@ package user_test
 
 import (
 	"context"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/authz"

@@ -50,7 +50,7 @@ func TestMaxTxSizeDecorator(t *testing.T) {
 		//	appVersion:  v2.Version,
 		//	expectError: false,
 		//	isCheckTx:   []bool{true, false},
-		//},
+		// },
 	}
 
 	for _, tc := range testCases {

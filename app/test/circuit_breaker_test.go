@@ -6,7 +6,6 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proto/tendermint/version"
-
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,11 +34,11 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 	// NOTE: the below sections are commented out due to the lack of the MsgVersioningGateKeeper ante handler, this will not be required
 	// once the multiplexer is implemented.
 
-	//enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
+	// enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	testApp, keyRing := util.SetupTestAppWithGenesisValSet(app.DefaultInitialConsensusParams(), granter, grantee)
 	header := tmproto.Header{Time: time.Now(), Height: 2, Version: version.Consensus{App: appVersion}}
-	//signer, err := user.NewSigner(keyRing, enc.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 2, 0))
-	//require.NoError(t, err)
+	// signer, err := user.NewSigner(keyRing, enc.TxConfig, util.ChainID, appVersion, user.NewAccount(granter, 2, 0))
+	// require.NoError(t, err)
 
 	granterAddress := testfactory.GetAddress(keyRing, granter)
 	granteeAddress := testfactory.GetAddress(keyRing, grantee)
@@ -54,7 +53,7 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 
 	// when the muiliplexer is introduced.
 
-	//_, err = testApp.BeginBlocker(ctx)
+	// _, err = testApp.BeginBlocker(ctx)
 	//require.NoError(t, err)
 	//
 	//tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
@@ -73,7 +72,7 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 }
 
 //
-//func newTryUpgradeTx(t *testing.T, signer *user.Signer, senderAddress sdk.AccAddress) coretypes.Tx {
+// func newTryUpgradeTx(t *testing.T, signer *user.Signer, senderAddress sdk.AccAddress) coretypes.Tx {
 //	msg := signaltypes.NewMsgTryUpgrade(senderAddress)
 //	options := blobfactory.FeeTxOpts(1e9)
 //

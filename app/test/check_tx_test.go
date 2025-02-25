@@ -31,7 +31,6 @@ import (
 // Here we only need to check the functionality that is added to CheckTx. We
 // assume that the rest of CheckTx is tested by the cosmos-sdk.
 func TestCheckTx(t *testing.T) {
-
 	var (
 		err  error
 		resp *abci.ResponseCheckTx

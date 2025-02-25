@@ -54,42 +54,41 @@ func TestCircuitBreaker(t *testing.T) { // TODO: we need to pass a find a way to
 	// when the muiliplexer is introduced.
 
 	// _, err = testApp.BeginBlocker(ctx)
-	//require.NoError(t, err)
-	//
-	//tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
-	//blockResp, err := testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{tryUpgradeTx}, Height: 2, Time: ctx.BlockTime()})
-	//require.NoError(t, err)
-	//res := blockResp.TxResults[0]
-	//assert.Equal(t, uint32(0x25), res.Code, res.Log)
-	//assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
-	//
-	//nestedTx := newNestedTx(t, signer, granterAddress)
-	//blockResp, err = testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{nestedTx}})
-	//require.NoError(t, err)
-	//res = blockResp.TxResults[0]
-	//assert.Equal(t, uint32(0x25), res.Code, res.Log)
-	//assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
+	// require.NoError(t, err)
+
+	// tryUpgradeTx := newTryUpgradeTx(t, signer, granterAddress)
+	// blockResp, err := testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{tryUpgradeTx}, Height: 2, Time: ctx.BlockTime()})
+	// require.NoError(t, err)
+	// res := blockResp.TxResults[0]
+	// assert.Equal(t, uint32(0x25), res.Code, res.Log)
+	// assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
+
+	// nestedTx := newNestedTx(t, signer, granterAddress)
+	// blockResp, err = testApp.FinalizeBlock(&abci.RequestFinalizeBlock{Txs: [][]byte{nestedTx}})
+	// require.NoError(t, err)
+	// res = blockResp.TxResults[0]
+	// assert.Equal(t, uint32(0x25), res.Code, res.Log)
+	// assert.Contains(t, res.Log, "message type /celestia.signal.v1.MsgTryUpgrade is not supported in version 1: feature not supported")
 }
 
-//
 // func newTryUpgradeTx(t *testing.T, signer *user.Signer, senderAddress sdk.AccAddress) coretypes.Tx {
-//	msg := signaltypes.NewMsgTryUpgrade(senderAddress)
-//	options := blobfactory.FeeTxOpts(1e9)
-//
-//	rawTx, _, err := signer.CreateTx([]sdk.Msg{msg}, options...)
-//	require.NoError(t, err)
-//
-//	return rawTx
-//}
-//
-//func newNestedTx(t *testing.T, signer *user.Signer, granterAddress sdk.AccAddress) coretypes.Tx {
-//	innerMsg := signaltypes.NewMsgTryUpgrade(granterAddress)
-//	msg := authz.NewMsgExec(granterAddress, []sdk.Msg{innerMsg})
-//
-//	options := blobfactory.FeeTxOpts(1e9)
-//
-//	rawTx, _, err := signer.CreateTx([]sdk.Msg{&msg}, options...)
-//	require.NoError(t, err)
-//
-//	return rawTx
-//}
+// 	msg := signaltypes.NewMsgTryUpgrade(senderAddress)
+// 	options := blobfactory.FeeTxOpts(1e9)
+
+// 	rawTx, _, err := signer.CreateTx([]sdk.Msg{msg}, options...)
+// 	require.NoError(t, err)
+
+// 	return rawTx
+// }
+
+// func newNestedTx(t *testing.T, signer *user.Signer, granterAddress sdk.AccAddress) coretypes.Tx {
+// 	innerMsg := signaltypes.NewMsgTryUpgrade(granterAddress)
+// 	msg := authz.NewMsgExec(granterAddress, []sdk.Msg{innerMsg})
+
+// 	options := blobfactory.FeeTxOpts(1e9)
+
+// 	rawTx, _, err := signer.CreateTx([]sdk.Msg{&msg}, options...)
+// 	require.NoError(t, err)
+
+// 	return rawTx
+// }

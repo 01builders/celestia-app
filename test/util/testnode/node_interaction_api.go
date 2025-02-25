@@ -16,12 +16,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/celestiaorg/go-square/v2/share"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
@@ -40,7 +40,7 @@ type Context struct {
 }
 
 func NewContext(goContext context.Context, keyring keyring.Keyring, tmConfig *tmconfig.Config, chainID, apiAddress string) Context {
-	config := testutil.MakeTestEncodingConfig(app.ModuleEncodingRegisters...)
+	config := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	clientContext := client.Context{}.
 		WithKeyring(keyring).
 		WithHomeDir(tmConfig.RootDir).

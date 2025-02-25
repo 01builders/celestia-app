@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
-	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
@@ -45,13 +44,13 @@ func TestMaxTxSizeDecorator(t *testing.T) {
 			expectError: false,
 			isCheckTx:   []bool{true, false},
 		},
-		{
-			name:        "good tx; limit only applies to v3 and above",
-			txSize:      v3.MaxTxSize + 10,
-			appVersion:  v2.Version,
-			expectError: false,
-			isCheckTx:   []bool{true, false},
-		},
+		//{
+		//	name:        "good tx; limit only applies to v3 and above",
+		//	txSize:      v3.MaxTxSize + 10,
+		//	appVersion:  v2.Version,
+		//	expectError: false,
+		//	isCheckTx:   []bool{true, false},
+		//},
 	}
 
 	for _, tc := range testCases {

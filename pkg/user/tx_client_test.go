@@ -2,6 +2,7 @@ package user_test
 
 import (
 	"context"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"testing"
 	"time"
 
@@ -342,10 +343,13 @@ func setupTxClient(t *testing.T, _ time.Duration) (encoding.Config, *user.TxClie
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	defaultTmConfig := testnode.DefaultTendermintConfig()
 	// defaultTmConfig.Mempool.TTLDuration = ttlDuration TODO: check ttl duration
+	chainID := unsafe.Str(6)
 	testnodeConfig := testnode.DefaultConfig().
 		WithTendermintConfig(defaultTmConfig).
 		WithFundedAccounts("a", "b", "c").
-		WithAppCreator(testnode.CustomAppCreator("0utia"))
+		WithChainID(chainID).
+		WithAppCreator(testnode.CustomAppCreator(baseapp.SetMinGasPrices("0utia"), baseapp.SetChainID(chainID)))
+
 	ctx, _, _ := testnode.NewNetwork(t, testnodeConfig)
 	_, err := ctx.WaitForHeight(1)
 	require.NoError(t, err)

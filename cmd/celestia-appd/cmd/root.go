@@ -8,6 +8,8 @@ import (
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	"github.com/01builders/nova"
+	"github.com/01builders/nova/abci"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -129,7 +131,15 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
-	server.AddCommands(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, addStartFlags)
+	server.AddCommandsWithStartCmdOptions(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, server.StartCmdOptions{
+		AddFlags: addStartFlags,
+		StartCommandHandler: nova.NewNova(map[string]abci.Version{
+			"v3": {
+				Height:      300,
+				GRPCAddress: "localhost:10001",
+			},
+		}), // multiplexer
+	})
 
 	// find start command
 	startCmd, _, err := rootCommand.Find([]string{"start"})

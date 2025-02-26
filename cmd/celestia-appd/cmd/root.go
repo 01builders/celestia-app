@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"os"
 
 	kitlog "github.com/go-kit/log"
@@ -115,6 +116,7 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		genutilcli.InitCmd(capp.BasicManager, app.DefaultNodeHome),
 		genutilcli.Commands(capp.GetTxConfig(), capp.BasicManager, app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCommand, true),
+		NewTestnetCmd(capp.BasicManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		commands.CompactGoLevelDBCmd,

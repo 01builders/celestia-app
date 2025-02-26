@@ -172,6 +172,13 @@ test-e2e:
 	go run ./test/e2e $(filter-out $@,$(MAKECMDGOALS))
 .PHONY: test-e2e
 
+## test-system black box system tests
+test-system: build
+	mkdir -p ./test/systemtests/binaries/
+	cp ./build/celestia-appd ./test/systemtests/binaries/
+	$(MAKE) -C ./test/systemtests test
+.PHONY: test-system
+
 ## test-race: Run tests in race mode.
 test-race:
 # TODO: Remove the -skip flag once the following tests no longer contain data races.

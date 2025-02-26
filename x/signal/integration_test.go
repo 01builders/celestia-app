@@ -3,6 +3,7 @@ package signal_test
 import (
 	"testing"
 
+	"cosmossdk.io/core/header"
 	"cosmossdk.io/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -28,7 +29,7 @@ func TestUpgradeIntegration(t *testing.T) {
 			App: v2.Version,
 		},
 		ChainID: appconsts.TestChainID,
-	}, false, log.NewNopLogger())
+	}, false, log.NewNopLogger()).WithHeaderInfo(header.Info{ChainID: appconsts.TestChainID})
 
 	res, err := app.SignalKeeper.VersionTally(ctx, &types.QueryVersionTallyRequest{
 		Version: 3,

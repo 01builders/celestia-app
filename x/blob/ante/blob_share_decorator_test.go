@@ -13,7 +13,6 @@ import (
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
@@ -40,12 +39,6 @@ func TestBlobShareDecorator(t *testing.T) {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 
 	testCases := []testCase{
-		{
-			name:        "want no error if appVersion v1 and 8 MiB blob",
-			blobsPerPFB: 1,
-			blobSize:    8 * mebibyte,
-			appVersion:  v1.Version,
-		},
 		{
 			name:        "PFB with 1 blob that is 1 byte",
 			blobsPerPFB: 1,

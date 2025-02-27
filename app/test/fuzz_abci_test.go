@@ -1,10 +1,10 @@
 package app_test
 
 import (
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ func TestPrepareProposalConsistency(t *testing.T) {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	accounts := make([]string, 1100) // 1000 for creating blob txs, 100 for creating send txs
 	for i := range accounts {
-		accounts[i] = tmrand.Str(20)
+		accounts[i] = random.Str(20)
 	}
 	maxShareCount := int64(appconsts.DefaultSquareSizeUpperBound * appconsts.DefaultSquareSizeUpperBound)
 

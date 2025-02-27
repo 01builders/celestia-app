@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -35,7 +34,7 @@ var (
 func RandMsgPayForBlobsWithSigner(rand *rand.Rand, signer string, size, blobCount int) (*blobtypes.MsgPayForBlobs, []*share.Blob) {
 	blobs := make([]*share.Blob, blobCount)
 	for i := 0; i < blobCount; i++ {
-		blob, err := blobtypes.NewV0Blob(testfactory.RandomBlobNamespaceWithPRG(rand), tmrand.Bytes(size))
+		blob, err := blobtypes.NewV0Blob(testfactory.RandomBlobNamespaceWithPRG(rand), random.Bytes(size))
 		if err != nil {
 			panic(err)
 		}
@@ -53,7 +52,7 @@ func RandV0BlobsWithNamespace(namespaces []share.Namespace, sizes []int) []*shar
 	blobs := make([]*share.Blob, len(namespaces))
 	var err error
 	for i, ns := range namespaces {
-		blobs[i], err = share.NewV0Blob(ns, tmrand.Bytes(sizes[i]))
+		blobs[i], err = share.NewV0Blob(ns, random.Bytes(sizes[i]))
 		if err != nil {
 			panic(err)
 		}
@@ -65,7 +64,7 @@ func RandV1BlobsWithNamespace(namespaces []share.Namespace, sizes []int, signer 
 	blobs := make([]*share.Blob, len(namespaces))
 	var err error
 	for i, ns := range namespaces {
-		blobs[i], err = share.NewV1Blob(ns, tmrand.Bytes(sizes[i]), signer)
+		blobs[i], err = share.NewV1Blob(ns, random.Bytes(sizes[i]), signer)
 		if err != nil {
 			panic(err)
 		}
@@ -74,7 +73,7 @@ func RandV1BlobsWithNamespace(namespaces []share.Namespace, sizes []int, signer 
 }
 
 func RandMsgPayForBlobsWithNamespaceAndSigner(signer string, ns share.Namespace, size int) (*blobtypes.MsgPayForBlobs, *share.Blob) {
-	blob, err := blobtypes.NewV0Blob(ns, tmrand.Bytes(size))
+	blob, err := blobtypes.NewV0Blob(ns, random.Bytes(size))
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +89,7 @@ func RandMsgPayForBlobsWithNamespaceAndSigner(signer string, ns share.Namespace,
 }
 
 func RandMsgPayForBlobs(rand *rand.Rand, size int) (*blobtypes.MsgPayForBlobs, *share.Blob) {
-	blob, err := share.NewBlob(testfactory.RandomBlobNamespaceWithPRG(rand), tmrand.Bytes(size), share.ShareVersionZero, nil)
+	blob, err := share.NewBlob(testfactory.RandomBlobNamespaceWithPRG(rand), random.Bytes(size), share.ShareVersionZero, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -218,7 +217,7 @@ func Repeat[T any](s T, count int) []T {
 func ManyBlobs(r *rand.Rand, namespaces []share.Namespace, sizes []int) []*share.Blob {
 	blobs := make([]*share.Blob, len(namespaces))
 	for i, ns := range namespaces {
-		blob, err := share.NewBlob(ns, random.Bytes(r, sizes[i]), share.ShareVersionZero, nil)
+		blob, err := share.NewBlob(ns, random.BytesR(r, sizes[i]), share.ShareVersionZero, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -232,7 +231,7 @@ func NestedBlobs(t *testing.T, namespaces []share.Namespace, sizes [][]int) [][]
 	counter := 0
 	for i, set := range sizes {
 		for _, size := range set {
-			blob, err := blobtypes.NewV0Blob(namespaces[counter], tmrand.Bytes(size))
+			blob, err := blobtypes.NewV0Blob(namespaces[counter], random.Bytes(size))
 			require.NoError(t, err)
 			blobs[i] = append(blobs[i], blob)
 			counter++

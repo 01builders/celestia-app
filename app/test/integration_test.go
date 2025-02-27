@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	coretypes "github.com/cometbft/cometbft/types"
@@ -273,7 +272,7 @@ func ExtendBlockTest(t *testing.T, block *coretypes.Block) {
 		// save block to json file for further debugging if this occurs
 		b, err := json.MarshalIndent(block, "", "  ")
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(fmt.Sprintf("bad_block_%s.json", tmrand.Str(6)), b, 0o644))
+		require.NoError(t, os.WriteFile(fmt.Sprintf("bad_block_%s.json", random.Str(6)), b, 0o644))
 	}
 }
 
@@ -301,7 +300,7 @@ func (s *IntegrationTestSuite) TestIsEmptyBlockRef() {
 
 func newBlobWithSize(size int) *share.Blob {
 	ns := share.MustNewV0Namespace(bytes.Repeat([]byte{1}, share.NamespaceVersionZeroIDSize))
-	data := tmrand.Bytes(size)
+	data := random.Bytes(size)
 	blob, err := share.NewBlob(ns, data, share.ShareVersionZero, nil)
 	if err != nil {
 		panic(err)

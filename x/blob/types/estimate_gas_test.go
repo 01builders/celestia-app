@@ -2,11 +2,11 @@ package types_test
 
 import (
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
 
@@ -24,7 +24,7 @@ import (
 
 func TestPFBGasEstimation(t *testing.T) {
 	encCfg := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
-	rand := tmrand.NewRand()
+	rand := random.New()
 
 	testCases := []struct {
 		blobSizes []int
@@ -90,7 +90,7 @@ func FuzzPFBGasEstimation(f *testing.F) {
 		signer, err := user.NewSigner(kr, encCfg.TxConfig, testutil.ChainID, appconsts.LatestVersion, user.NewAccount(accnts[0], 1, 0))
 		require.NoError(t, err)
 
-		rand := tmrand.NewRand()
+		rand := random.New()
 		rand.Seed(seed)
 		blobs := blobfactory.ManyRandBlobs(rand, blobSizes...)
 		gas := blobtypes.DefaultEstimateGas(toUint32(blobSizes))

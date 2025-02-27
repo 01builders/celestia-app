@@ -3,9 +3,8 @@ package testfactory
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
-
-	tmrand "cosmossdk.io/math/unsafe"
 
 	"github.com/celestiaorg/go-square/v2/share"
 
@@ -34,7 +33,7 @@ func GenerateRandomlySizedBlobs(count, maxBlobSize int) []*share.Blob {
 func GenerateBlobsWithNamespace(count, blobSize int, ns share.Namespace) []*share.Blob {
 	blobs := make([]*share.Blob, count)
 	for i := 0; i < count; i++ {
-		blob, err := share.NewBlob(ns, tmrand.Bytes(blobSize), appconsts.DefaultShareVersion, nil)
+		blob, err := share.NewBlob(ns, random.Bytes(blobSize), appconsts.DefaultShareVersion, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -51,7 +50,7 @@ func GenerateBlobsWithNamespace(count, blobSize int, ns share.Namespace) []*shar
 
 func GenerateRandomBlob(dataSize int) *share.Blob {
 	ns := share.MustNewV0Namespace(bytes.Repeat([]byte{0x1}, share.NamespaceVersionZeroIDSize))
-	blob, err := share.NewBlob(ns, tmrand.Bytes(dataSize), appconsts.DefaultShareVersion, nil)
+	blob, err := share.NewBlob(ns, random.Bytes(dataSize), appconsts.DefaultShareVersion, nil)
 	if err != nil {
 		panic(err)
 	}

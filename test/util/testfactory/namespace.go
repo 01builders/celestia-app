@@ -10,7 +10,7 @@ import (
 
 // RandomBlobNamespaceIDWithPRG returns a random blob namespace ID using the supplied Pseudo-Random number Generator (PRG).
 func RandomBlobNamespaceIDWithPRG(r *rand.Rand) []byte {
-	return random.Bytes(r, share.NamespaceVersionZeroIDSize)
+	return random.BytesR(r, share.NamespaceVersionZeroIDSize)
 }
 
 func RandomBlobNamespace() share.Namespace {

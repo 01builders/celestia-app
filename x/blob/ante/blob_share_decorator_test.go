@@ -1,9 +1,9 @@
 package ante_test
 
 import (
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestBlobShareDecorator(t *testing.T) {
 		wantErr               error
 	}
 
-	rand := tmrand.NewRand()
+	rand := random.New()
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 
 	testCases := []testCase{

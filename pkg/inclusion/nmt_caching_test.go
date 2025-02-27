@@ -2,10 +2,10 @@ package inclusion
 
 import (
 	"bytes"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"sort"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -192,7 +192,7 @@ func chunkSlice(slice [][]byte, chunkSize int) [][][]byte {
 // namespace.
 func generateRandNamespacedRawData(count int) (result [][]byte) {
 	for i := 0; i < count; i++ {
-		rawData := tmrand.Bytes(share.ShareSize)
+		rawData := random.Bytes(share.ShareSize)
 		namespace := share.RandomBlobNamespace().Bytes()
 		copy(rawData, namespace)
 		result = append(result, rawData)

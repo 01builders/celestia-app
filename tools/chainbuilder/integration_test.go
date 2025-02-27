@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
-	tmrand "cosmossdk.io/math/unsafe"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/node"
@@ -38,7 +38,7 @@ func TestRun(t *testing.T) {
 		NumBlocks:     numBlocks,
 		BlockSize:     appconsts.DefaultMaxBytes,
 		BlockInterval: time.Second,
-		ChainID:       tmrand.Str(6),
+		ChainID:       random.Str(6),
 		Namespace:     defaultNamespace,
 	}
 

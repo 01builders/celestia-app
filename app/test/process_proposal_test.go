@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	coretypes "github.com/cometbft/cometbft/types"
@@ -202,7 +201,7 @@ func TestProcessProposal(t *testing.T) {
 			name:  "undecodable tx with app version 1",
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
-				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
+				d.Txs = append([][]byte{random.Bytes(300)}, d.Txs...)
 				// Update the data hash so that the test doesn't fail due to an incorrect data root.
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
@@ -213,7 +212,7 @@ func TestProcessProposal(t *testing.T) {
 			name:  "undecodable tx with app version 2",
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
-				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
+				d.Txs = append([][]byte{random.Bytes(300)}, d.Txs...)
 				// Update the data hash so that the test doesn't fail due to an incorrect data root.
 				d.Hash = calculateNewDataHash(t, d.Txs)
 			},

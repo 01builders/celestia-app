@@ -1,7 +1,7 @@
 package malicious
 
 import (
-	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
 	"math/rand"
@@ -84,7 +84,7 @@ func TestMaliciousTestNode(t *testing.T) {
 	// malicious square builder.
 	client, err := testnode.NewTxClientFromContext(cctx)
 	require.NoError(t, err)
-	blobs := blobfactory.ManyRandBlobs(tmrand.NewRand(), 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000)
+	blobs := blobfactory.ManyRandBlobs(random.New(), 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000)
 	txres, err := client.SubmitPayForBlob(cctx.GoContext(), blobs, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	require.Equal(t, abci.CodeTypeOK, txres.Code)

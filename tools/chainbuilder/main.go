@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"os"
 	"path/filepath"
 	"time"
 
 	"cosmossdk.io/log"
-	tmrand "cosmossdk.io/math/unsafe"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -78,7 +78,7 @@ func main() {
 				BlockInterval: blockInterval,
 				ExistingDir:   existingDir,
 				Namespace:     namespace,
-				ChainID:       tmrand.Str(6),
+				ChainID:       random.Str(6),
 				UpToTime:      upToTime,
 				AppVersion:    appVersion,
 			}

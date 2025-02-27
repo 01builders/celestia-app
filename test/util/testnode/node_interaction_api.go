@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"strings"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmconfig "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
@@ -298,7 +298,7 @@ func (c *Context) FillBlock(squareSize int, account, broadcastMode string) (*sdk
 
 	// we use a formula to guarantee that the tx is the exact size needed to force a specific square size.
 	blobSize := share.AvailableBytesFromSparseShares(shareCount)
-	return c.PostData(account, broadcastMode, share.RandomBlobNamespace(), tmrand.Bytes(blobSize))
+	return c.PostData(account, broadcastMode, share.RandomBlobNamespace(), random.Bytes(blobSize))
 }
 
 // HeightForTimestamp returns the block height for the first block after a

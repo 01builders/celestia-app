@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -155,7 +154,7 @@ func TestPrepareProposalFiltering(t *testing.T) {
 		infos[3:4],
 		blobfactory.NestedBlobs(
 			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 4000),
+			testfactory.RandomBlobNamespaces(random.New(), 4000),
 			[][]int{repeat(4000, 1)},
 		),
 	)[0]

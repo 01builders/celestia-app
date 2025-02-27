@@ -118,5 +118,5 @@ func TestMaliciousTestNode(t *testing.T) {
 
 	goodDah, err := da.NewDataAvailabilityHeader(goodEds)
 	require.NoError(t, err)
-	require.NotEqual(t, block.Block.DataHash.Bytes(), goodDah.Hash())
+	require.NotEqual(t, block.Block.DataRootHash.Bytes(), goodDah.Hash())
 }

@@ -3,6 +3,7 @@ package app_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func TestProcessProposal(t *testing.T) {
 		t, enc.TxConfig, kr, testutil.ChainID, accounts[:4], infos[:4],
 		blobfactory.NestedBlobs(
 			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 4),
+			testfactory.RandomBlobNamespaces(random.New(), 4),
 			[][]int{{100}, {1000}, {420}, {300}},
 		),
 	)
@@ -90,7 +91,7 @@ func TestProcessProposal(t *testing.T) {
 		infos[3:4],
 		blobfactory.NestedBlobs(
 			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 4000),
+			testfactory.RandomBlobNamespaces(random.New(), 4000),
 			[][]int{repeat(4000, 1)},
 		),
 	)[0]
@@ -164,7 +165,7 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				index := 4
-				transaction, b := blobfactory.IndexWrappedTxWithInvalidNamespace(t, tmrand.NewRand(), signer, uint32(index))
+				transaction, b := blobfactory.IndexWrappedTxWithInvalidNamespace(t, random.New(), signer, uint32(index))
 				blobTx, err := tx.MarshalBlobTx(transaction, b)
 				require.NoError(t, err)
 

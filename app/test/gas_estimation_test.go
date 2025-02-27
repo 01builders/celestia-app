@@ -2,12 +2,12 @@ package app
 
 import (
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -61,7 +61,7 @@ func TestEstimateGasPrice(t *testing.T) {
 			defer wg.Done()
 			// ensure that it is greater than the min gas price
 			gasPrice := float64(rand.Intn(1000)+1) * appconsts.DefaultMinGasPrice
-			blobs := blobfactory.ManyBlobs(tmrand.NewRand(), []share.Namespace{share.RandomBlobNamespace()}, []int{100})
+			blobs := blobfactory.ManyBlobs(random.New(), []share.Namespace{share.RandomBlobNamespace()}, []int{100})
 			resp, err := txClient.BroadcastPayForBlobWithAccount(
 				cctx.GoContext(),
 				accName,
@@ -170,7 +170,7 @@ func TestEstimateGasUsed(t *testing.T) {
 
 	// create a PFB
 	blobSize := 100
-	blobs := blobfactory.ManyRandBlobs(tmrand.NewRand(), blobSize)
+	blobs := blobfactory.ManyRandBlobs(random.New(), blobSize)
 	pfbTx, _, err := txClient.Signer().CreatePayForBlobs(
 		"test",
 		blobs,

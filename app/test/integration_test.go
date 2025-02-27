@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"os"
 	"testing"
 
@@ -72,7 +73,7 @@ func (s *IntegrationTestSuite) TestMaxBlockSize() {
 	singleBlobTxGen := func(c client.Context) []coretypes.Tx {
 		return blobfactory.RandBlobTxsWithAccounts(
 			s.ecfg,
-			tmrand.NewRand(),
+			random.New(),
 			s.cctx.Keyring,
 			c.GRPCClient,
 			600*kibibyte,
@@ -87,7 +88,7 @@ func (s *IntegrationTestSuite) TestMaxBlockSize() {
 	multiBlobTxGen := func(c client.Context) []coretypes.Tx {
 		return blobfactory.RandBlobTxsWithAccounts(
 			s.ecfg,
-			tmrand.NewRand(),
+			random.New(),
 			s.cctx.Keyring,
 			c.GRPCClient,
 			200*kibibyte,
@@ -100,7 +101,7 @@ func (s *IntegrationTestSuite) TestMaxBlockSize() {
 	randomTxGen := func(c client.Context) []coretypes.Tx {
 		return blobfactory.RandBlobTxsWithAccounts(
 			s.ecfg,
-			tmrand.NewRand(),
+			random.New(),
 			s.cctx.Keyring,
 			c.GRPCClient,
 			50*kibibyte,
@@ -183,7 +184,7 @@ func (s *IntegrationTestSuite) TestUnwrappedPFBRejection() {
 
 	blobTx := blobfactory.RandBlobTxsWithAccounts(
 		s.ecfg,
-		tmrand.NewRand(),
+		random.New(),
 		s.cctx.Keyring,
 		s.cctx.GRPCClient,
 		int(100000),
@@ -205,7 +206,7 @@ func (s *IntegrationTestSuite) TestShareInclusionProof() {
 
 	txs := blobfactory.RandBlobTxsWithAccounts(
 		s.ecfg,
-		tmrand.NewRand(),
+		random.New(),
 		s.cctx.Keyring,
 		s.cctx.GRPCClient,
 		100*kibibyte,

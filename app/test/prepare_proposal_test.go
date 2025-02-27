@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"crypto/rand"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"strings"
 	"testing"
 	"time"
@@ -99,7 +100,7 @@ func TestPrepareProposalFiltering(t *testing.T) {
 		infos[:3],
 		blobfactory.NestedBlobs(
 			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 3),
+			testfactory.RandomBlobNamespaces(random.New(), 3),
 			[][]int{{100}, {1000}, {420}},
 		),
 	)

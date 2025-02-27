@@ -58,9 +58,6 @@ func GenerateRawSendTx(signer *user.Signer, amount int64) []byte {
 
 // GenerateRandomAmount generates a random amount for a Send transaction.
 func GenerateRandomAmount(r *rand.Rand) int64 {
-	if r == nil {
-		r = rand.New(rand.NewSource(1))
-	}
 	n := r.Int63()
 	if n < 0 {
 		return -n

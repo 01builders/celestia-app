@@ -3,7 +3,6 @@ package blobfactory
 import (
 	"bytes"
 	"context"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"testing"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )

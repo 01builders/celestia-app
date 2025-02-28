@@ -3,7 +3,6 @@ package testnode
 import (
 	"context"
 	"encoding/hex"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"net"
 	"os"
 	"path"
@@ -20,6 +19,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 

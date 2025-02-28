@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,6 +23,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )
 

@@ -1,12 +1,12 @@
 package malicious
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
 	"time"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/stretchr/testify/require"
 
 	square "github.com/celestiaorg/go-square/v2"
 	"github.com/celestiaorg/go-square/v2/share"
@@ -15,6 +15,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/wrapper"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )

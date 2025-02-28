@@ -3,12 +3,12 @@ package testfactory
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 
 	"github.com/celestiaorg/go-square/v2/share"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 )
 
 func GenerateRandomlySizedBlobs(count, maxBlobSize int) []*share.Blob {

@@ -1,7 +1,6 @@
 package blobfactory_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 
 	"github.com/cometbft/cometbft/types"
@@ -11,6 +10,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"sync"
 	"testing"
@@ -22,6 +21,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"

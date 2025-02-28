@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"os"
 	"path/filepath"
 	"time"
@@ -33,6 +32,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )

@@ -2,7 +2,6 @@ package types_test
 
 import (
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )

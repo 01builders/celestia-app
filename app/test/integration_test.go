@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"os"
 	"testing"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"

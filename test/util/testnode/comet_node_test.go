@@ -2,7 +2,6 @@ package testnode
 
 import (
 	"fmt"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 

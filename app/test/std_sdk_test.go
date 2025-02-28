@@ -1,7 +1,6 @@
 package app_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"sync"
 	"testing"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"

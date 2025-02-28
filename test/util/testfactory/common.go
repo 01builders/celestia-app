@@ -2,7 +2,6 @@ package testfactory
 
 import (
 	"bytes"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"sort"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -12,6 +11,8 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/celestiaorg/go-square/v2/share"
+
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 )
 
 const (

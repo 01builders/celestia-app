@@ -2,7 +2,6 @@ package user_test
 
 import (
 	"context"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )
 

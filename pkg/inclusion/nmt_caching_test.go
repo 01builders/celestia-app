@@ -2,7 +2,6 @@ package inclusion
 
 import (
 	"bytes"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"sort"
 	"testing"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/wrapper"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 )
 
 func TestWalkCachedSubTreeRoot(t *testing.T) {

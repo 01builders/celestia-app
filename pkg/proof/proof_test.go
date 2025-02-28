@@ -2,7 +2,6 @@ package proof_test
 
 import (
 	"bytes"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"strings"
 	"testing"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/proof"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )

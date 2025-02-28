@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"testing"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 

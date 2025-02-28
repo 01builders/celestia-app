@@ -3,7 +3,6 @@ package types_test
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	"github.com/celestiaorg/celestia-app/v4/x/blob/types"

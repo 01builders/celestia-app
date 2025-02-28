@@ -1,11 +1,12 @@
 package testfactory
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"slices"
 
 	"github.com/celestiaorg/go-square/v2/share"
+
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 )
 
 // RandomBlobNamespaceIDWithPRG returns a random blob namespace ID using the supplied Pseudo-Random number Generator (PRG).

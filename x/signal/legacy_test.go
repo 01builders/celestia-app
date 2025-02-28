@@ -1,7 +1,6 @@
 package signal_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,6 +11,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )
 

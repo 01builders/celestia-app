@@ -1,7 +1,6 @@
 package ante_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,6 +15,7 @@ import (
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	ante "github.com/celestiaorg/celestia-app/v4/x/blob/ante"

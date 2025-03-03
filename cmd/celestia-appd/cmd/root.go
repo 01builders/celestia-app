@@ -8,6 +8,7 @@ import (
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/01builders/nova"
 	"github.com/01builders/nova/abci"
+	"github.com/01builders/nova/appd"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
@@ -131,13 +132,18 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		server.InPlaceTestnetCreator(NewAppServer),
 	)
 
+	v3, err := appd.New("v3", nil /* uses default celestia */)
+	if err != nil {
+		panic(fmt.Errorf("failed to create celestia-appd v3: %w", err))
+	}
+
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
 	server.AddCommandsWithStartCmdOptions(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, server.StartCmdOptions{
 		AddFlags: addStartFlags,
-		StartCommandHandler: nova.NewNova(map[string]abci.Version{
+		StartCommandHandler: nova.New(abci.Versions{
 			"v3": {
-				Height:      300,
-				GRPCAddress: "localhost:10001",
+				Appd:        v3,
+				UntilHeight: 300,
 			},
 		}), // multiplexer
 	})

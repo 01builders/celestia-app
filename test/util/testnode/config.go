@@ -2,22 +2,23 @@ package testnode
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/server"
 	"io"
 	"time"
 
 	"cosmossdk.io/log"
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 	tmconfig "github.com/cometbft/cometbft/config"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
 )
 
 const (
@@ -85,7 +86,8 @@ func (c *Config) WithSuppressLogs(sl bool) *Config {
 // WithTimeoutCommit sets the timeout commit in the cometBFT config and returns
 // the Config.
 func (c *Config) WithTimeoutCommit(d time.Duration) *Config {
-	return c.WithAppCreator(DefaultAppCreator(WithTimeoutCommit(d)))
+	c.TmConfig.Consensus.TimeoutCommit = d
+	return c
 }
 
 // WithFundedAccounts sets the genesis accounts and returns the Config.
@@ -130,9 +132,9 @@ func DefaultConfig() *Config {
 				WithConsensusParams(DefaultConsensusParams()),
 		).
 		WithTendermintConfig(DefaultTendermintConfig()).
+		WithAppCreator(DefaultAppCreator()).
 		WithAppConfig(DefaultAppConfig()).
 		WithAppOptions(DefaultAppOptions()).
-		WithTimeoutCommit(time.Millisecond * 30).
 		WithSuppressLogs(true)
 }
 
@@ -160,12 +162,6 @@ func DefaultTendermintConfig() *tmconfig.Config {
 
 type AppCreationOptions func(app *app.App)
 
-func WithTimeoutCommit(d time.Duration) AppCreationOptions {
-	return func(app *app.App) {
-		// TODO: Update the timeout commit in the cometBFT config.
-	}
-}
-
 func DefaultAppCreator(opts ...AppCreationOptions) srvtypes.AppCreator {
 	return func(_ log.Logger, _ dbm.DB, _ io.Writer, appOptions srvtypes.AppOptions) srvtypes.Application {
 		baseAppOptions := server.DefaultBaseappOptions(appOptions)
@@ -192,7 +188,7 @@ func DefaultAppCreator(opts ...AppCreationOptions) srvtypes.AppCreator {
 // Returns a function that initializes the app.
 func CustomAppCreator(appOptions ...func(*baseapp.BaseApp)) srvtypes.AppCreator {
 	return func(log.Logger, dbm.DB, io.Writer, srvtypes.AppOptions) srvtypes.Application {
-		app := app.New(
+		return app.New(
 			log.NewNopLogger(),
 			dbm.NewMemDB(),
 			nil, // trace store
@@ -200,7 +196,6 @@ func CustomAppCreator(appOptions ...func(*baseapp.BaseApp)) srvtypes.AppCreator 
 			simtestutil.EmptyAppOptions{},
 			appOptions...,
 		)
-		return app
 	}
 }
 

@@ -6,18 +6,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	"github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/pkg/user"
-	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	"github.com/celestiaorg/celestia-app/v4/x/minfee"
-	signal "github.com/celestiaorg/celestia-app/v4/x/signal/types"
-	"github.com/celestiaorg/go-square/v2/share"
 	abci "github.com/cometbft/cometbft/abci/types"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -36,6 +24,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/celestiaorg/go-square/v2/share"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
+	signal "github.com/celestiaorg/celestia-app/v4/x/signal/types"
 )
 
 func TestStandardSDKIntegrationTestSuite(t *testing.T) {
@@ -63,7 +65,7 @@ func (s *StandardSDKIntegrationTestSuite) SetupSuite() {
 
 	accounts := make([]string, 35)
 	for i := 0; i < len(accounts); i++ {
-		accounts[i] = tmrand.Str(9)
+		accounts[i] = random.Str(9)
 	}
 
 	s.cfg = testnode.DefaultConfig().WithFundedAccounts(accounts...)

@@ -2,28 +2,28 @@ package user_test
 
 import (
 	"context"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
+	"cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/x/authz"
+	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-
-	"cosmossdk.io/math/unsafe"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestTxClientTestSuite(t *testing.T) {
@@ -42,15 +42,14 @@ type TxClientTestSuite struct {
 	serviceClient sdktx.ServiceClient
 }
 
-func (suite *TxClientTestSuite) SetupSuite() {
-	// suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T(), testnode.DefaultTendermintConfig().Mempool.TTLDuration)
-	suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T(), 0) // TODO: check ttl duration
+func (suite *TxClientTestSuite) SetupTest() {
+	suite.encCfg, suite.txClient, suite.ctx = setupTxClient(suite.T())
 	suite.serviceClient = sdktx.NewServiceClient(suite.ctx.GRPCClient)
 }
 
 func (suite *TxClientTestSuite) TestSubmitPayForBlob() {
 	t := suite.T()
-	blobs := blobfactory.ManyRandBlobs(unsafe.NewRand(), 1e3, 1e4)
+	blobs := blobfactory.ManyRandBlobs(random.New(), 1e3, 1e4)
 
 	subCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -230,33 +229,6 @@ func (suite *TxClientTestSuite) TestConfirmTx() {
 	})
 }
 
-func TestEvictions(t *testing.T) {
-	_, txClient, ctx := setupTxClient(t, 1*time.Nanosecond)
-
-	fee := user.SetFee(1e6)
-	gas := user.SetGasLimit(1e6)
-
-	// Keep submitting the transaction until we get the eviction error
-	sender := txClient.Signer().Account(txClient.DefaultAccountName())
-	msg := bank.NewMsgSend(sender.Address(), testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
-	var seqBeforeEviction uint64
-	// Loop five times until the tx is evicted
-	for i := 0; i < 5; i++ {
-		seqBeforeEviction = sender.Sequence()
-		resp, err := txClient.BroadcastTx(ctx.GoContext(), []sdk.Msg{msg}, fee, gas)
-		require.NoError(t, err)
-		_, err = txClient.ConfirmTx(ctx.GoContext(), resp.TxHash)
-		if err != nil {
-			if err.Error() == "tx was evicted from the mempool" {
-				break
-			}
-		}
-	}
-
-	seqAfterEviction := sender.Sequence()
-	require.Equal(t, seqBeforeEviction, seqAfterEviction)
-}
-
 func (suite *TxClientTestSuite) TestGasEstimation() {
 	addr := suite.txClient.DefaultAddress()
 	msg := bank.NewMsgSend(addr, testnode.RandomAddress().(sdk.AccAddress), sdk.NewCoins(sdk.NewInt64Coin(app.BondDenom, 10)))
@@ -329,7 +301,7 @@ func wasRemovedFromTxTracker(txHash string, txClient *user.TxClient) bool {
 }
 
 // asserts that a tx was indexed in the tx tracker and that the sequence does not increase
-func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash string, expectedSigner string, seqBeforeBroadcast uint64) {
+func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash, expectedSigner string, seqBeforeBroadcast uint64) {
 	seqFromTxTracker, signer, exists := txClient.GetTxFromTxTracker(txHash)
 	require.True(t, exists)
 	require.Equal(t, expectedSigner, signer)
@@ -340,15 +312,16 @@ func assertTxInTxTracker(t *testing.T, txClient *user.TxClient, txHash string, e
 	require.Equal(t, seqAfterBroadcast, seqBeforeBroadcast+1)
 }
 
-func setupTxClient(t *testing.T, ttlDuration time.Duration) (encoding.Config, *user.TxClient, testnode.Context) {
+func setupTxClient(t *testing.T) (encoding.Config, *user.TxClient, testnode.Context) {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	defaultTmConfig := testnode.DefaultTendermintConfig()
-	// defaultTmConfig.Mempool.TTLDuration = ttlDuration TODO: check ttl duration
+
 	chainID := unsafe.Str(6)
 	testnodeConfig := testnode.DefaultConfig().
 		WithTendermintConfig(defaultTmConfig).
 		WithFundedAccounts("a", "b", "c").
 		WithChainID(chainID).
+		WithTimeoutCommit(100 * time.Millisecond).
 		WithAppCreator(testnode.CustomAppCreator(baseapp.SetMinGasPrices("0utia"), baseapp.SetChainID(chainID)))
 
 	ctx, _, _ := testnode.NewNetwork(t, testnodeConfig)

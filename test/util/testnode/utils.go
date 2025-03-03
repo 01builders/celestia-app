@@ -8,11 +8,6 @@ import (
 	"path"
 
 	"cosmossdk.io/math"
-	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -20,6 +15,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 
 func TestAddress() sdk.AccAddress {
@@ -64,7 +65,7 @@ func NewKeyring(accounts ...string) (keyring.Keyring, []sdk.AccAddress) {
 }
 
 func RandomAddress() sdk.Address {
-	name := tmrand.Str(6)
+	name := random.Str(6)
 	_, addresses := NewKeyring(name)
 	return addresses[0]
 }
@@ -88,7 +89,7 @@ func FundKeyringAccounts(accounts ...string) (keyring.Keyring, []banktypes.Balan
 func GenerateAccounts(count int) []string {
 	accs := make([]string, count)
 	for i := 0; i < count; i++ {
-		accs[i] = tmrand.Str(20)
+		accs[i] = random.Str(20)
 	}
 	return accs
 }

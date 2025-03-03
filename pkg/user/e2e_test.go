@@ -8,14 +8,16 @@ import (
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
+	"github.com/cometbft/cometbft/config"
+	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2/share"
+
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/cometbft/cometbft/config"
-	"github.com/stretchr/testify/require"
 )
 
 func TestConcurrentTxSubmission(t *testing.T) {
@@ -24,7 +26,7 @@ func TestConcurrentTxSubmission(t *testing.T) {
 	}
 
 	// Iterate over all mempool versions
-	mempools := []string{config.MempoolTypeFlood, config.MempoolTypeFlood} //TODO: add CAT
+	mempools := []string{config.MempoolTypeFlood, config.MempoolTypeFlood} // TODO: add CAT
 	for _, mempool := range mempools {
 		t.Run(fmt.Sprintf("mempool %s", mempool), func(t *testing.T) {
 			// Setup network
@@ -41,7 +43,7 @@ func TestConcurrentTxSubmission(t *testing.T) {
 
 			// Pregenerate all the blobs
 			numTxs := 100
-			blobs := blobfactory.ManyRandBlobs(tmrand.NewRand(), blobfactory.Repeat(2048, numTxs)...)
+			blobs := blobfactory.ManyRandBlobs(random.New(), blobfactory.Repeat(2048, numTxs)...)
 
 			// Prepare transactions
 			var (

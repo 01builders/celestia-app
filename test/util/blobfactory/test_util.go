@@ -1,15 +1,16 @@
 package blobfactory
 
 import (
-	"math/rand/v2"
+	"math/rand"
 
 	"cosmossdk.io/math"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/pkg/user"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 
 func DefaultTxOpts() []user.TxOption {
@@ -56,8 +57,8 @@ func GenerateRawSendTx(signer *user.Signer, amount int64) []byte {
 }
 
 // GenerateRandomAmount generates a random amount for a Send transaction.
-func GenerateRandomAmount() int64 {
-	n := rand.Int64()
+func GenerateRandomAmount(r *rand.Rand) int64 {
+	n := r.Int63()
 	if n < 0 {
 		return -n
 	}
@@ -65,16 +66,16 @@ func GenerateRandomAmount() int64 {
 }
 
 // GenerateRandomRawSendTx generates a random raw send tx.
-func GenerateRandomRawSendTx(signer *user.Signer) (rawTx []byte) {
-	amount := GenerateRandomAmount()
+func GenerateRandomRawSendTx(rand *rand.Rand, signer *user.Signer) (rawTx []byte) {
+	amount := GenerateRandomAmount(rand)
 	return GenerateRawSendTx(signer, amount)
 }
 
 // GenerateManyRandomRawSendTxsSameSigner  generates count many random raw send txs.
-func GenerateManyRandomRawSendTxsSameSigner(signer *user.Signer, count int) []coretypes.Tx {
+func GenerateManyRandomRawSendTxsSameSigner(rand *rand.Rand, signer *user.Signer, count int) []coretypes.Tx {
 	txs := make([]coretypes.Tx, count)
 	for i := 0; i < count; i++ {
-		txs[i] = GenerateRandomRawSendTx(signer)
+		txs[i] = GenerateRandomRawSendTx(rand, signer)
 	}
 	return txs
 }

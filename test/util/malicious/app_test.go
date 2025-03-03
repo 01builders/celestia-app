@@ -3,18 +3,21 @@ package malicious
 import (
 	"math/rand"
 	"testing"
+	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/stretchr/testify/require"
+
+	square "github.com/celestiaorg/go-square/v2"
+	"github.com/celestiaorg/go-square/v2/share"
+
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/wrapper"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	square "github.com/celestiaorg/go-square/v2"
-	"github.com/celestiaorg/go-square/v2/share"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestOutOfOrderNMT tests that the malicious NMT implementation is able to
@@ -70,7 +73,8 @@ func TestMaliciousTestNode(t *testing.T) {
 	}
 	accounts := testfactory.RandomAccountNames(5)
 	cfg := OutOfOrderNamespaceConfig(5).
-		WithFundedAccounts(accounts...)
+		WithFundedAccounts(accounts...).
+		WithTimeoutCommit(100 * time.Millisecond)
 
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	_, err := cctx.WaitForHeight(6)
@@ -81,7 +85,7 @@ func TestMaliciousTestNode(t *testing.T) {
 	// malicious square builder.
 	client, err := testnode.NewTxClientFromContext(cctx)
 	require.NoError(t, err)
-	blobs := blobfactory.ManyRandBlobs(tmrand.NewRand(), 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000)
+	blobs := blobfactory.ManyRandBlobs(random.New(), 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000)
 	txres, err := client.SubmitPayForBlob(cctx.GoContext(), blobs, blobfactory.DefaultTxOpts()...)
 	require.NoError(t, err)
 	require.Equal(t, abci.CodeTypeOK, txres.Code)
@@ -102,7 +106,7 @@ func TestMaliciousTestNode(t *testing.T) {
 
 	dah, err := da.NewDataAvailabilityHeader(eds)
 	require.NoError(t, err)
-	require.Equal(t, block.Block.DataHash.Bytes(), dah.Hash())
+	require.Equal(t, block.Block.DataRootHash.Bytes(), dah.Hash())
 
 	correctSquare, err := square.Construct(block.Block.Txs.ToSliceOfBytes(),
 		appconsts.DefaultSquareSizeUpperBound,
@@ -115,5 +119,5 @@ func TestMaliciousTestNode(t *testing.T) {
 
 	goodDah, err := da.NewDataAvailabilityHeader(goodEds)
 	require.NoError(t, err)
-	require.NotEqual(t, block.Block.DataHash.Bytes(), goodDah.Hash())
+	require.NotEqual(t, block.Block.DataRootHash.Bytes(), goodDah.Hash())
 }

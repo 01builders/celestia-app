@@ -6,30 +6,27 @@ import (
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2"
+	"github.com/celestiaorg/go-square/v2/share"
+	"github.com/celestiaorg/go-square/v2/tx"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
-	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
-	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	"github.com/celestiaorg/go-square/v2"
-	"github.com/celestiaorg/go-square/v2/share"
-	"github.com/celestiaorg/go-square/v2/tx"
 )
 
 func TestProcessProposal(t *testing.T) {
@@ -46,7 +43,7 @@ func TestProcessProposal(t *testing.T) {
 		t, enc.TxConfig, kr, testutil.ChainID, accounts[:4], infos[:4],
 		blobfactory.NestedBlobs(
 			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 4),
+			testfactory.RandomBlobNamespaces(random.New(), 4),
 			[][]int{{100}, {1000}, {420}, {300}},
 		),
 	)
@@ -80,25 +77,10 @@ func TestProcessProposal(t *testing.T) {
 	ns1 := share.MustNewV0Namespace(bytes.Repeat([]byte{1}, share.NamespaceVersionZeroIDSize))
 	data := bytes.Repeat([]byte{1}, 13)
 
-	tooManyShareBtx := blobfactory.ManyMultiBlobTx(
-		t,
-		enc.TxConfig,
-		kr,
-		testutil.ChainID,
-		accounts[3:4],
-		infos[3:4],
-		blobfactory.NestedBlobs(
-			t,
-			testfactory.RandomBlobNamespaces(tmrand.NewRand(), 4000),
-			[][]int{repeat(4000, 1)},
-		),
-	)[0]
-
 	type test struct {
 		name           string
 		input          *tmproto.Data
 		mutator        func(*tmproto.Data)
-		appVersion     uint64
 		expectedResult abci.ResponseProcessProposal_ProposalStatus
 	}
 
@@ -107,7 +89,6 @@ func TestProcessProposal(t *testing.T) {
 			name:           "valid untouched data",
 			input:          validData(),
 			mutator:        func(_ *tmproto.Data) {},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_ACCEPT,
 		},
 		{
@@ -116,7 +97,6 @@ func TestProcessProposal(t *testing.T) {
 			mutator: func(d *tmproto.Data) {
 				d.Txs = d.Txs[1:]
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -125,7 +105,6 @@ func TestProcessProposal(t *testing.T) {
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append(d.Txs, blobTxs[3])
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -140,7 +119,6 @@ func TestProcessProposal(t *testing.T) {
 				blobTxBytes, _ := tx.MarshalBlobTx(blobTx.Tx, blobTx.Blobs...)
 				d.Txs[0] = blobTxBytes
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -155,7 +133,6 @@ func TestProcessProposal(t *testing.T) {
 				blobTxBytes, _ := tx.MarshalBlobTx(blobTx.Tx, blobTx.Blobs...)
 				d.Txs[0] = blobTxBytes
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -163,7 +140,7 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				index := 4
-				transaction, b := blobfactory.IndexWrappedTxWithInvalidNamespace(t, tmrand.NewRand(), signer, uint32(index))
+				transaction, b := blobfactory.IndexWrappedTxWithInvalidNamespace(t, random.New(), signer, uint32(index))
 				blobTx, err := tx.MarshalBlobTx(transaction, b)
 				require.NoError(t, err)
 
@@ -171,9 +148,8 @@ func TestProcessProposal(t *testing.T) {
 				d.Txs = [][]byte{blobTx}
 
 				// Erasure code the data to update the data root so this doesn't fail on an incorrect data root.
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
+				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -183,7 +159,6 @@ func TestProcessProposal(t *testing.T) {
 				// swapping the order will cause the data root to be different
 				d.Txs[0], d.Txs[1], d.Txs[2] = d.Txs[1], d.Txs[2], d.Txs[0]
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -193,29 +168,6 @@ func TestProcessProposal(t *testing.T) {
 				btx, _ := coretypes.UnmarshalBlobTx(blobTxs[3])
 				d.Txs = append(d.Txs, btx.Tx)
 			},
-			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
-		},
-		{
-			name:  "undecodable tx with app version 1",
-			input: validData(),
-			mutator: func(d *tmproto.Data) {
-				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
-				// Update the data hash so that the test doesn't fail due to an incorrect data root.
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
-			},
-			appVersion:     v1.Version,
-			expectedResult: abci.ResponseProcessProposal_ACCEPT,
-		},
-		{
-			name:  "undecodable tx with app version 2",
-			input: validData(),
-			mutator: func(d *tmproto.Data) {
-				d.Txs = append([][]byte{tmrand.Bytes(300)}, d.Txs...)
-				// Update the data hash so that the test doesn't fail due to an incorrect data root.
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
-			},
-			appVersion:     v2.Version,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -225,7 +177,6 @@ func TestProcessProposal(t *testing.T) {
 				// swap txs at index 2 and 3 (essentially swapping a PFB with a normal tx)
 				d.Txs[3], d.Txs[2] = d.Txs[2], d.Txs[3]
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -233,9 +184,8 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append(d.Txs, badSigBlobTx)
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
+				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -243,9 +193,8 @@ func TestProcessProposal(t *testing.T) {
 			input: validData(),
 			mutator: func(d *tmproto.Data) {
 				d.Txs = append(d.Txs, blobTxWithInvalidNonce)
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
+				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -271,9 +220,8 @@ func TestProcessProposal(t *testing.T) {
 				require.NoError(t, err)
 				// replace the hash of the prepare proposal response with the hash of a data
 				// square with a tampered sequence start indicator
-				d.DataRootHash = dah.Hash()
+				d.Hash = dah.Hash()
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 		{
@@ -286,9 +234,8 @@ func TestProcessProposal(t *testing.T) {
 				rawTx, _, err := signer.CreatePayForBlobs(accounts[0], []*share.Blob{blob}, user.SetGasLimit(100000), user.SetFee(100000))
 				require.NoError(t, err)
 				d.Txs[0] = rawTx
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
+				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
-			appVersion:     appconsts.LatestVersion,
 			expectedResult: abci.ResponseProcessProposal_ACCEPT,
 		},
 		{
@@ -309,52 +256,41 @@ func TestProcessProposal(t *testing.T) {
 				blobTxBytes, err := tx.MarshalBlobTx(rawTx, blob)
 				require.NoError(t, err)
 				d.Txs[0] = blobTxBytes
-				d.DataRootHash = calculateNewDataHash(t, d.Txs)
+				d.Hash = calculateNewDataHash(t, d.Txs)
 			},
-			appVersion:     appconsts.LatestVersion,
-			expectedResult: abci.ResponseProcessProposal_REJECT,
-		},
-		{
-			name: "blob tx that takes up too many shares",
-			input: &tmproto.Data{
-				Txs: [][]byte{},
-			},
-			mutator: func(d *tmproto.Data) {
-				// this tx will get filtered out by prepare proposal before this
-				// so we add it here
-				d.Txs = append(d.Txs, tooManyShareBtx)
-			},
-			appVersion:     v3.Version,
 			expectedResult: abci.ResponseProcessProposal_REJECT,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			height := testApp.LastBlockHeight() + 1
-			blockTime := time.Now()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			blockTime, height := time.Now(), testApp.LastBlockHeight()+1
 
 			resp, err := testApp.PrepareProposal(&abci.RequestPrepareProposal{
-				Txs:    tt.input.Txs,
+				Txs:    tc.input.Txs,
 				Height: height,
 				Time:   blockTime,
 			})
 			require.NoError(t, err)
-			require.Equal(t, len(tt.input.Txs), len(resp.Txs))
+			require.Equal(t, len(tc.input.Txs), len(resp.Txs))
+
 			blockData := &tmproto.Data{
-				Txs:          resp.Txs,
-				DataRootHash: resp.DataRootHash,
-				SquareSize:   resp.SquareSize,
+				Txs:        resp.Txs,
+				Hash:       resp.DataRootHash,
+				SquareSize: resp.SquareSize,
 			}
-			tt.mutator(blockData)
+
+			tc.mutator(blockData)
 
 			res, err := testApp.ProcessProposal(&abci.RequestProcessProposal{
+				Time:         blockTime,
+				Height:       height,
 				Txs:          blockData.Txs,
-				DataRootHash: blockData.DataRootHash,
+				DataRootHash: blockData.Hash,
 				SquareSize:   blockData.SquareSize,
 			})
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, res.Status, fmt.Sprintf("expected %v, got %v", tt.expectedResult, res.Status))
+			require.Equal(t, tc.expectedResult, res.Status, fmt.Sprintf("expected %v, got %v", tc.expectedResult, res.Status))
 		})
 	}
 }

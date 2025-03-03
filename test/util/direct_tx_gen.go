@@ -5,21 +5,22 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	tmrand "cosmossdk.io/math/unsafe"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/pkg/user"
-	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
-	"github.com/celestiaorg/go-square/v2/tx"
 	coretypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2/tx"
+
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 
 // RandBlobTxsWithAccounts will create random blob transactions using the
@@ -69,7 +70,7 @@ func RandBlobTxsWithAccounts(
 			}
 		}
 
-		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), addr.String(), randomizedSize, randomizedBlobCount)
+		_, blobs := blobfactory.RandMsgPayForBlobsWithSigner(random.New(), addr.String(), randomizedSize, randomizedBlobCount)
 		tx, _, err := signer.CreatePayForBlobs(account.Name(), blobs, opts...)
 		require.NoError(t, err)
 		txs[i] = tx
@@ -126,7 +127,7 @@ func RandBlobTxsWithManualSequence(
 			}
 		}
 
-		msg, blobs := blobfactory.RandMsgPayForBlobsWithSigner(tmrand.NewRand(), addr.String(), randomizedSize, randomizedBlobCount)
+		msg, blobs := blobfactory.RandMsgPayForBlobsWithSigner(random.New(), addr.String(), randomizedSize, randomizedBlobCount)
 		transaction, _, err := signer.CreateTx([]sdk.Msg{msg}, opts...)
 		require.NoError(t, err)
 		if invalidSignature {

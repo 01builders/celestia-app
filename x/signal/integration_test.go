@@ -3,16 +3,18 @@ package signal_test
 import (
 	"testing"
 
+	"cosmossdk.io/core/header"
 	"cosmossdk.io/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/x/signal/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestUpgradeIntegration uses the real application including the upgrade keeper (and staking keeper). It
@@ -27,7 +29,7 @@ func TestUpgradeIntegration(t *testing.T) {
 			App: v2.Version,
 		},
 		ChainID: appconsts.TestChainID,
-	}, false, log.NewNopLogger())
+	}, false, log.NewNopLogger()).WithHeaderInfo(header.Info{ChainID: appconsts.TestChainID})
 
 	res, err := app.SignalKeeper.VersionTally(ctx, &types.QueryVersionTallyRequest{
 		Version: 3,

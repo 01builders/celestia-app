@@ -5,22 +5,21 @@ import (
 	"strings"
 	"testing"
 
-	tmrand "cosmossdk.io/math/unsafe"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-
-	"github.com/celestiaorg/celestia-app/v4/pkg/da"
-	"github.com/celestiaorg/celestia-app/v4/pkg/proof"
-	square "github.com/celestiaorg/go-square/v2"
-
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/go-square/v2/share"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	square "github.com/celestiaorg/go-square/v2"
+	"github.com/celestiaorg/go-square/v2/share"
+
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/da"
+	"github.com/celestiaorg/celestia-app/v4/pkg/proof"
+	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 )
 
 func TestNewTxInclusionProof(t *testing.T) {
@@ -29,7 +28,7 @@ func TestNewTxInclusionProof(t *testing.T) {
 	signer, err := testnode.NewOfflineSigner()
 	require.NoError(t, err)
 
-	blockTxs = append(blockTxs, blobfactory.RandBlobTxs(signer, tmrand.NewRand(), 50, 1, 500).ToSliceOfBytes()...)
+	blockTxs = append(blockTxs, blobfactory.RandBlobTxs(signer, random.New(), 50, 1, 500).ToSliceOfBytes()...)
 	require.Len(t, blockTxs, 100)
 
 	type test struct {

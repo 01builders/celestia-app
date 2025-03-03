@@ -8,9 +8,6 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
-	tmrand "cosmossdk.io/math/unsafe"
-	"github.com/celestiaorg/go-square/v2"
-	"github.com/celestiaorg/go-square/v2/share"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -25,6 +22,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/spf13/cobra"
 
+	"github.com/celestiaorg/go-square/v2"
+	"github.com/celestiaorg/go-square/v2/share"
+
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
@@ -32,6 +32,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/genesis"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
@@ -77,7 +78,7 @@ func main() {
 				BlockInterval: blockInterval,
 				ExistingDir:   existingDir,
 				Namespace:     namespace,
-				ChainID:       tmrand.Str(6),
+				ChainID:       random.Str(6),
 				UpToTime:      upToTime,
 				AppVersion:    appVersion,
 			}
@@ -510,9 +511,9 @@ func generateSquareRoutine(
 
 		select {
 		case dataCh <- &tmproto.Data{
-			Txs:          txs,
-			DataRootHash: dah.Hash(),
-			SquareSize:   uint64(dataSquare.Size()),
+			Txs:        txs,
+			Hash:       dah.Hash(),
+			SquareSize: uint64(dataSquare.Size()),
 		}:
 		case <-ctx.Done():
 			return ctx.Err()

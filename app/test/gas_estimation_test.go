@@ -7,22 +7,24 @@ import (
 	"testing"
 	"time"
 
-	tmrand "cosmossdk.io/math/unsafe"
+	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2/share"
+
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util/blobfactory"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
-	"github.com/celestiaorg/go-square/v2/share"
-	abci "github.com/cometbft/cometbft/abci/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEstimateGasPrice(t *testing.T) {
@@ -32,9 +34,9 @@ func TestEstimateGasPrice(t *testing.T) {
 
 	// test setup: create a test chain, submit a few PFBs to it, keep track of their gas
 	// price, then test the gas estimator API.
-	accountNames := testfactory.GenerateAccounts(150) // using 150 to have 2 pages of txs
-	cfg := testnode.DefaultConfig().WithFundedAccounts(accountNames...).
-		WithTimeoutCommit(10 * time.Second) // to have all the transactions in just a few blocks
+	accountNames := testfactory.GenerateAccounts(150)                                                       // using 150 to have 2 pages of txs
+	cfg := testnode.DefaultConfig().WithFundedAccounts(accountNames...).WithTimeoutCommit(10 * time.Second) // to have all the transactions in just a few blocks
+
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	require.NoError(t, cctx.WaitForNextBlock())
 
@@ -59,7 +61,7 @@ func TestEstimateGasPrice(t *testing.T) {
 			defer wg.Done()
 			// ensure that it is greater than the min gas price
 			gasPrice := float64(rand.Intn(1000)+1) * appconsts.DefaultMinGasPrice
-			blobs := blobfactory.ManyBlobs(tmrand.NewRand(), []share.Namespace{share.RandomBlobNamespace()}, []int{100})
+			blobs := blobfactory.ManyBlobs(random.New(), []share.Namespace{share.RandomBlobNamespace()}, []int{100})
 			resp, err := txClient.BroadcastPayForBlobWithAccount(
 				cctx.GoContext(),
 				accName,
@@ -168,7 +170,7 @@ func TestEstimateGasUsed(t *testing.T) {
 
 	// create a PFB
 	blobSize := 100
-	blobs := blobfactory.ManyRandBlobs(tmrand.NewRand(), blobSize)
+	blobs := blobfactory.ManyRandBlobs(random.New(), blobSize)
 	pfbTx, _, err := txClient.Signer().CreatePayForBlobs(
 		"test",
 		blobs,

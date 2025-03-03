@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"encoding/hex"
+	"github.com/celestiaorg/celestia-app/v4/test/util/random"
 	"math/rand"
 	"sort"
 	"sync"
@@ -56,6 +57,7 @@ func (s *PriorityTestSuite) SetupSuite() {
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	s.cctx = cctx
 	s.ecfg = encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
+	s.rand = random.New()
 
 	require.NoError(t, cctx.WaitForNextBlock())
 
@@ -81,7 +83,7 @@ func (s *PriorityTestSuite) TestPriorityByGasPrice() {
 		go func() {
 			defer wg.Done()
 			// ensure that it is greater than the min gas price
-			gasPrice := float64(rand.Intn(1000)+1) * appconsts.DefaultMinGasPrice
+			gasPrice := float64(s.rand.Intn(1000)+1) * appconsts.DefaultMinGasPrice
 			blobs := blobfactory.ManyBlobs(s.rand, []share.Namespace{share.RandomBlobNamespace()}, []int{100})
 			resp, err := s.txClient.BroadcastPayForBlobWithAccount(
 				s.cctx.GoContext(),

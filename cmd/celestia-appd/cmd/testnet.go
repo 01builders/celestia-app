@@ -129,7 +129,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	}
 	iterator.Close()
 
-	// Remove all valdiators from last validators store
+	// Remove all validators from last validators store
 	iterator, err = app.StakingKeeper.LastValidatorsIterator(ctx)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())

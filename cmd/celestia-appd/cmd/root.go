@@ -7,8 +7,6 @@ import (
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/01builders/nova"
-	"github.com/01builders/nova/abci"
-	"github.com/01builders/nova/appd"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
@@ -114,6 +112,8 @@ func NewRootCmd() *cobra.Command {
 
 // initRootCommand performs a bunch of side-effects on the root command.
 func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
+	versions := Versions()
+
 	rootCommand.AddCommand(
 		genutilcli.InitCmd(capp.BasicManager, app.DefaultNodeHome),
 		genutilcli.Commands(capp.GetTxConfig(), capp.BasicManager, app.DefaultNodeHome),
@@ -130,22 +130,13 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		keys.Commands(),
 		snapshot.Cmd(NewAppServer),
 		server.InPlaceTestnetCreator(NewAppServer),
+		nova.NewPassthroughCmd(versions),
 	)
-
-	v3, err := appd.New("v3", nil /* uses default celestia */)
-	if err != nil {
-		panic(fmt.Errorf("failed to create celestia-appd v3: %w", err))
-	}
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.
 	server.AddCommandsWithStartCmdOptions(rootCommand, app.DefaultNodeHome, NewAppServer, appExporter, server.StartCmdOptions{
-		AddFlags: addStartFlags,
-		StartCommandHandler: nova.New(abci.Versions{
-			"v3": {
-				Appd:        v3,
-				UntilHeight: 300,
-			},
-		}), // multiplexer
+		AddFlags:            addStartFlags,
+		StartCommandHandler: nova.New(versions), // multiplexer
 	})
 
 	// find start command

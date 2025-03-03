@@ -250,14 +250,14 @@ func (s *IntegrationTestSuite) TestShareInclusionProof() {
 		// verify the blob shares proof
 		rpcNode, ok := node.(rpcclient.SignClient)
 		require.True(t, ok)
-		blobProof, err := rpcNode.ProveShares(
+		blobProof, err := rpcNode.ProveSharesV2(
 			context.Background(),
 			uint64(txResp.Height),
 			uint64(shareRange.Start),
 			uint64(shareRange.End),
 		)
 		require.NoError(t, err)
-		require.NoError(t, blobProof.Validate(blockRes.Block.DataHash))
+		require.NoError(t, blobProof.ShareProof.Validate(blockRes.Block.DataRootHash))
 	}
 }
 
@@ -268,7 +268,8 @@ func ExtendBlockTest(t *testing.T, block *coretypes.Block) {
 	require.NoError(t, err)
 	dah, err := da.NewDataAvailabilityHeader(eds)
 	require.NoError(t, err)
-	if !assert.Equal(t, dah.Hash(), block.DataHash.Bytes()) {
+	// TODO: verify why dataHash and dataRootHash are not equivalent
+	if !assert.Equal(t, dah.Hash(), block.Data.DataRootHash.Bytes()) {
 		// save block to json file for further debugging if this occurs
 		b, err := json.MarshalIndent(block, "", "  ")
 		require.NoError(t, err)

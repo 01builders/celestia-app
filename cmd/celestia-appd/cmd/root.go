@@ -128,6 +128,7 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		txCommand(capp.BasicManager),
 		keys.Commands(),
 		snapshot.Cmd(NewAppServer),
+		server.InPlaceTestnetCreator(NewAppServer),
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.

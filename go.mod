@@ -2,8 +2,6 @@ module github.com/celestiaorg/celestia-app/v4
 
 go 1.24.0
 
-replace github.com/01builders/nova => ../nova
-
 require (
 	cosmossdk.io/api v0.7.6
 	cosmossdk.io/client/v2 v2.0.0-beta.6
@@ -18,7 +16,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/tx v0.13.7
 	cosmossdk.io/x/upgrade v0.1.4
-	github.com/01builders/nova v0.0.0-20250303225555-b311937329cb
+	github.com/01builders/nova v0.0.0-20250304004619-d50a70744b00
 	github.com/celestiaorg/go-square v1.1.1
 	github.com/celestiaorg/go-square/v2 v2.1.0
 	github.com/celestiaorg/knuu v0.16.2

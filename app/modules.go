@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/x/upgrade"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
+	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -162,6 +163,7 @@ func (app *App) setModuleOrder() {
 		upgradetypes.ModuleName,
 		circuittypes.ModuleName,
 		hyperlanetypes.ModuleName,
+		warptypes.ModuleName,
 	)
 }
 
@@ -189,5 +191,6 @@ func allStoreKeys() []string {
 		consensustypes.StoreKey,   // added in v4
 		circuittypes.StoreKey,     // added in v4
 		hyperlanetypes.ModuleName, // added in v4
+		warptypes.ModuleName,      // added in v4
 	}
 }

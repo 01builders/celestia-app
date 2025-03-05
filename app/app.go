@@ -23,6 +23,9 @@ import (
 	hyperlanecore "github.com/bcp-innovations/hyperlane-cosmos/x/core"
 	hyperlanekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
 	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
+	warp "github.com/bcp-innovations/hyperlane-cosmos/x/warp"
+	warpkeeper "github.com/bcp-innovations/hyperlane-cosmos/x/warp/keeper"
+	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -182,6 +185,7 @@ type App struct {
 	BlobKeeper          blobkeeper.Keeper
 	CircuitKeeper       circuitkeeper.Keeper
 	HyperlaneKeeper     hyperlanekeeper.Keeper
+	WarpKeeper          warpkeeper.Keeper
 
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
@@ -383,6 +387,7 @@ func New(
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	app.HyperlaneKeeper = hyperlanekeeper.NewKeeper(encodingConfig.Codec, encodingConfig.AddressCodec, runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]), govModuleAddr, app.BankKeeper)
+	app.WarpKeeper = warpkeeper.NewKeeper(encodingConfig.Codec, encodingConfig.AddressCodec, runtime.NewKVStoreService(keys[warptypes.ModuleName]), govModuleAddr, app.BankKeeper, &app.HyperlaneKeeper, nil)
 
 	/****  Module Options ****/
 
@@ -412,8 +417,9 @@ func New(
 		// ensure the light client module types are registered.
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
-		circuitModule{circuit.NewAppModule(app.encodingConfig.Codec, app.CircuitKeeper)},
+		circuitModule{circuit.NewAppModule(encodingConfig.Codec, app.CircuitKeeper)},
 		hyperlanecore.NewAppModule(encodingConfig.Codec, &app.HyperlaneKeeper),
+		warp.NewAppModule(encodingConfig.Codec, app.WarpKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,

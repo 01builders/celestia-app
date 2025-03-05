@@ -20,6 +20,9 @@ import (
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	hyperlanecore "github.com/bcp-innovations/hyperlane-cosmos/x/core"
+	hyperlanekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
+	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -178,6 +181,7 @@ type App struct {
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	BlobKeeper          blobkeeper.Keeper
 	CircuitKeeper       circuitkeeper.Keeper
+	HyperlaneKeeper     hyperlanekeeper.Keeper
 
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
@@ -378,6 +382,8 @@ func New(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(app.ICAHostKeeper)) // Add ICA route
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.HyperlaneKeeper = hyperlanekeeper.NewKeeper(encodingConfig.Codec, encodingConfig.AddressCodec, runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]), govModuleAddr, app.BankKeeper)
+
 	/****  Module Options ****/
 
 	// NOTE: Modules can't be modified or else must be passed by reference to the module manager
@@ -407,6 +413,7 @@ func New(
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
 		circuitModule{circuit.NewAppModule(app.encodingConfig.Codec, app.CircuitKeeper)},
+		hyperlanecore.NewAppModule(encodingConfig.Codec, &app.HyperlaneKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,

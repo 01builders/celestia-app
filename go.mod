@@ -2,6 +2,8 @@ module github.com/celestiaorg/celestia-app/v4
 
 go 1.24.0
 
+replace github.com/01builders/nova => ../nova
+
 require (
 	cosmossdk.io/api v0.7.6
 	cosmossdk.io/client/v2 v2.0.0-beta.6

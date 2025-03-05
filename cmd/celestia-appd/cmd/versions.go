@@ -16,7 +16,7 @@ func Versions() abci.Versions {
 	return abci.Versions{
 		"v3": {
 			Appd:        v3,
-			UntilHeight: 300,
+			UntilHeight: 5,
 		},
 	}
 }

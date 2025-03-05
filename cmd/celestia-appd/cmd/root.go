@@ -114,11 +114,14 @@ func NewRootCmd() *cobra.Command {
 func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 	versions := Versions()
 
+	debugCmd := debug.Cmd()
+	debugCmd.AddCommand(NewInPlaceTestnetCmd())
+
 	rootCommand.AddCommand(
 		genutilcli.InitCmd(capp.BasicManager, app.DefaultNodeHome),
 		genutilcli.Commands(capp.GetTxConfig(), capp.BasicManager, app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCommand, true),
-		debug.Cmd(),
+		debugCmd,
 		confixcmd.ConfigCommand(),
 		commands.CompactGoLevelDBCmd,
 		addrbookCommand(),
@@ -129,7 +132,6 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		txCommand(capp.BasicManager),
 		keys.Commands(),
 		snapshot.Cmd(NewAppServer),
-		server.InPlaceTestnetCreator(NewAppServer),
 		nova.NewPassthroughCmd(versions),
 	)
 

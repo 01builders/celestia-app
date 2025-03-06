@@ -31,4 +31,6 @@ jobs:
           go mod tidy
 
       - name: Run tests in Celestia-App
-        run: go test -v ./...
+        run: |
+          cd celestia-app
+          go test -v ./...

@@ -30,10 +30,11 @@ jobs:
           go mod edit -replace github.com/01builders/nova=../nova
           go mod tidy
 
-      - name: Install Celestia-App
+      - name: Build Celestia-App
         run: |
           cd celestia-app
-          make install
+          make build
+          chmod +x build/celestia-appd
           mv build/celestia-appd /usr/local/bin/celestia-appd
 
       - name: Verify Binary Installation

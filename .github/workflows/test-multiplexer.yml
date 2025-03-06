@@ -30,6 +30,11 @@ jobs:
           go mod edit -replace github.com/01builders/nova=../nova
           go mod tidy
 
+      - name: Install Celestia-App
+        run: |
+          make install
+          echo "$(which celestia-appd)"
+
       - name: Run tests in Celestia-App
         run: |
           cd celestia-app

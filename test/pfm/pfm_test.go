@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -20,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 )
 
 type PacketMetadata struct {
@@ -54,6 +56,11 @@ func SetupTest(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain,
 	}
 
 	celestiaChain := ibctesting.NewTestChain(t, coordinator, ibctesting.GetChainID(1))
+
+	// NOTE: this is workaround to bypass minfee as we cannot override to 0 in genesis
+	minFeeSubspace, found := celestiaChain.App.(*app.App).ParamsKeeper.GetSubspace(minfee.ModuleName)
+	require.True(t, found)
+	minFeeSubspace.SetParamSet(celestiaChain.GetContext(), &minfee.Params{NetworkMinGasPrice: math.LegacyNewDec(0)})
 
 	// modify the testing package to return the pfm app which does not have a token filter wired up on subsequent
 	// NewTestChain calls.

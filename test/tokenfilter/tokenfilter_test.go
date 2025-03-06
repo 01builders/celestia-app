@@ -18,6 +18,7 @@ import (
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/test/pfm"
+	"github.com/celestiaorg/celestia-app/v4/x/minfee"
 )
 
 type TokenFilterTestSuite struct {
@@ -47,6 +48,11 @@ func (suite *TokenFilterTestSuite) SetupTest() {
 	}
 
 	suite.celestiaChain = ibctesting.NewTestChain(suite.T(), suite.coordinator, ibctesting.GetChainID(1))
+
+	// NOTE: this is workaround to bypass minfee as we cannot override to 0 in genesis
+	minFeeSubspace, found := suite.celestiaChain.App.(*app.App).ParamsKeeper.GetSubspace(minfee.ModuleName)
+	suite.Require().True(found)
+	minFeeSubspace.SetParamSet(suite.celestiaChain.GetContext(), &minfee.Params{NetworkMinGasPrice: math.LegacyNewDec(0)})
 
 	ibctesting.DefaultTestingAppInit = pfm.SetupTestingApp
 

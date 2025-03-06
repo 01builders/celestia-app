@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -20,10 +22,10 @@ func TestCelestiaAppBinaryIsAvailable(t *testing.T) {
 }
 
 func TestMultiplexerSetup(t *testing.T) {
-	// Find the celestia-appd binary
+	// TODO: assumes that a make install has been run prior to test execution
 	celestiaBin := "celestia-appd"
-	// Get the Celestia home directory
-	celestiaHome := execCommand(t, celestiaBin, "config", "home")
+	celestiaHome := strings.TrimSpace(execCommand(t, celestiaBin, "config", "home"))
+	t.Logf("celestia home: %s", celestiaHome)
 
 	// Set up Celestia config
 	execCommand(t, celestiaBin, "config", "set", "client", "chain-id", "local_devnet")
@@ -34,13 +36,27 @@ func TestMultiplexerSetup(t *testing.T) {
 	execCommand(t, celestiaBin, "keys", "add", "alice")
 
 	genesisPath := getTestFilePath("multi-plexer-genesis.json")
+	require.FileExists(t, genesisPath, "multi-plexer-genesis.json file does not exist.")
 
 	targetGenesisPath := filepath.Join(celestiaHome, "config", "genesis.json")
-	require.NoError(t, copyFile(genesisPath, targetGenesisPath), "failed to copy genesis file")
+	t.Logf("target genesis path: %s", targetGenesisPath)
+
+	err := copyFile(genesisPath, targetGenesisPath)
+	require.NoError(t, err, "failed to copy genesis file from %s to %s: %w", genesisPath, targetGenesisPath, err)
 
 	execCommand(t, celestiaBin, "passthrough", "v3", "add-genesis-account", "alice", "5000000000utia", "--keyring-backend", "test")
 	execCommand(t, celestiaBin, "passthrough", "v3", "gentx", "alice", "1000000utia", "--chain-id", "local_devnet")
 	execCommand(t, celestiaBin, "passthrough", "v3", "collect-gentxs")
+
+	// TODO: start via the multi plexer root command.
+}
+
+// getTestFilePath constructs an absolute path to a testdata file
+// within the same directory as the test file.
+func getTestFilePath(filename string) string {
+	_, currentFile, _, _ := runtime.Caller(0) // Get the current test file's path
+	testDir := filepath.Dir(currentFile)      // Get the directory of the test file
+	return filepath.Join(testDir, "testdata", filename)
 }
 
 // execCommand runs a command and returns stdout/stderr.
@@ -49,7 +65,6 @@ func execCommand(t *testing.T, cmd string, args ...string) string {
 	var out bytes.Buffer
 	command := exec.Command(cmd, args...)
 	command.Stdout = &out
-	command.Stderr = &out
 	err := command.Run()
 	require.NoError(t, err, "command failed: %s\nOutput: %s", cmd, out.String())
 	return out.String()
@@ -61,10 +76,5 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, input, 0644)
-}
-
-// getTestFilePath constructs the absolute path for test data.
-func getTestFilePath(filename string) string {
-	return filepath.Join("testdata", filename)
+	return os.WriteFile(dst, input, 0777)
 }

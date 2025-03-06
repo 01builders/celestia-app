@@ -11,10 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	shares "github.com/celestiaorg/go-square/shares"
-	square "github.com/celestiaorg/go-square/square"
-	squarev2 "github.com/celestiaorg/go-square/v2"
-	sharev2 "github.com/celestiaorg/go-square/v2/share"
+	"github.com/celestiaorg/go-square/v2"
+	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
@@ -132,37 +130,19 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.RequestProcess
 
 	}
 
-	var dataSquareBytes [][]byte
-
-	switch appVersion {
-	case v4, v3:
-		var dataSquare squarev2.Square
-		dataSquare, err = squarev2.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), subtreeRootThreshold)
-		dataSquareBytes = sharev2.ToBytes(dataSquare)
-		// Assert that the square size stated by the proposer is correct
-		if uint64(dataSquare.Size()) != req.SquareSize {
-			logInvalidPropBlock(app.Logger(), blockHeader, "proposed square size differs from calculated square size")
-			return reject(), nil
-		}
-	case v2, v1:
-		var dataSquare square.Square
-		dataSquare, err = square.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), subtreeRootThreshold)
-		dataSquareBytes = shares.ToBytes(dataSquare)
-		// Assert that the square size stated by the proposer is correct
-		if uint64(dataSquare.Size()) != req.SquareSize {
-			logInvalidPropBlock(app.Logger(), blockHeader, "proposed square size differs from calculated square size")
-			return reject(), nil
-		}
-	default:
-		logInvalidPropBlock(app.Logger(), blockHeader, "unsupported app version")
-		return reject(), nil
-	}
+	dataSquare, err := square.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), subtreeRootThreshold)
 	if err != nil {
 		logInvalidPropBlockError(app.Logger(), blockHeader, "failure to compute data square from transactions:", err)
 		return reject(), nil
 	}
 
-	eds, err := da.ExtendShares(dataSquareBytes)
+	// Assert that the square size stated by the proposer is correct
+	if uint64(dataSquare.Size()) != req.SquareSize {
+		logInvalidPropBlock(app.Logger(), blockHeader, "proposed square size differs from calculated square size")
+		return reject(), nil
+	}
+
+	eds, err := da.ExtendShares(share.ToBytes(dataSquare))
 	if err != nil {
 		logInvalidPropBlockError(app.Logger(), blockHeader, "failure to erasure the data square", err)
 		return reject(), nil
@@ -173,6 +153,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.RequestProcess
 		logInvalidPropBlockError(app.Logger(), blockHeader, "failure to create new data availability header", err)
 		return reject(), nil
 	}
+
 	// by comparing the hashes we know the computed IndexWrappers (with the share indexes of the PFB's blobs)
 	// are identical and that square layout is consistent. This also means that the share commitment rules
 	// have been followed and thus each blobs share commitment should be valid

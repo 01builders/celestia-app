@@ -1,6 +1,7 @@
 name: Test Multiplexer
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -26,9 +27,7 @@ jobs:
           path: celestia-app
 
       - name: Download latest Celestia-App Linux tarball
-        run: |
-          mkdir -p nova/appd
-          curl -Lo https://github.com/celestiaorg/celestia-app/releases/download/v3.4.0/celestia-app_Linux_x86_64.tar.gz nova/appd/celestia-app_Linux_x86_64.tar.gz
+        run: curl -Lo https://github.com/celestiaorg/celestia-app/releases/download/v3.4.0/celestia-app_Linux_x86_64.tar.gz nova/appd/celestia-app_Linux_x86_64.tar.gz
 
       - name: Update go.mod in Celestia-App to use local Nova module
         run: |

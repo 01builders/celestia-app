@@ -33,4 +33,4 @@ jobs:
       - name: Run tests in Celestia-App
         run: |
           cd celestia-app
-          go test -v ./...
+          make test-multi-plexer

@@ -157,7 +157,7 @@ lint-fix: fmt
 ## test: Run tests.
 test:
 	@echo "--> Running tests"
-	@go test -timeout 30m ./...
+	@go test -tags !nova -timeout 30m ./...
 .PHONY: test
 
 ## test-short: Run tests in short mode.
@@ -171,6 +171,10 @@ test-e2e:
 	@echo "--> Running end to end tests"
 	go run ./test/e2e $(filter-out $@,$(MAKECMDGOALS))
 .PHONY: test-e2e
+
+test-multi-plexer:
+	@echo "--> Running multi-plexer tests"
+	go test -tags nova -v ./test/nova/...
 
 ## test-race: Run tests in race mode.
 test-race:

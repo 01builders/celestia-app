@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 01builders/celestia-app
-          ref: cian/add-basic-nova-e2e # TODO: change before merging to be the feature branch.
+          ref: sdk-v0.50.x # TODO: remove once branch is merged.
           path: celestia-app
 
       - name: Download v3.4.0 Celestia-App Linux tarball

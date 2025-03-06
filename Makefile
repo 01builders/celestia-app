@@ -175,6 +175,7 @@ test-e2e:
 test-multi-plexer:
 	@echo "--> Running multi-plexer tests"
 	go test -tags nova -v ./test/nova/...
+.PHONY: test-multi-plexer
 
 ## test-race: Run tests in race mode.
 test-race:

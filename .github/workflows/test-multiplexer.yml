@@ -32,6 +32,7 @@ jobs:
 
       - name: Install Celestia-App
         run: |
+          cd celestia-app
           make install
           echo "$(which celestia-appd)"
 

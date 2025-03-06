@@ -117,6 +117,11 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 	debugCmd := debug.Cmd()
 	debugCmd.AddCommand(NewInPlaceTestnetCmd())
 
+	passthroughCmd, err := nova.NewPassthroughCmd(versions)
+	if err != nil {
+		panic(fmt.Errorf("failed to create nova passthrough command: %w", err))
+	}
+
 	rootCommand.AddCommand(
 		genutilcli.InitCmd(capp.BasicManager, app.DefaultNodeHome),
 		genutilcli.Commands(capp.GetTxConfig(), capp.BasicManager, app.DefaultNodeHome),
@@ -132,7 +137,7 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 		txCommand(capp.BasicManager),
 		keys.Commands(),
 		snapshot.Cmd(NewAppServer),
-		nova.NewPassthroughCmd(versions),
+		passthroughCmd,
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback.

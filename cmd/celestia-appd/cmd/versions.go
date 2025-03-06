@@ -14,7 +14,8 @@ func Versions() abci.Versions {
 	}
 
 	return abci.Versions{
-		"v3": {
+		{
+			Name:        "v3",
 			Appd:        v3,
 			UntilHeight: -1, // disable nova for now.
 		},

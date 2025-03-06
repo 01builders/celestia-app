@@ -34,7 +34,10 @@ jobs:
         run: |
           cd celestia-app
           make install
-          echo "$(which celestia-appd)"
+          echo "$(pwd)/build" >> $GITHUB_PATH
+
+      - name: Verify Binary Installation
+        run: which celestia-appd && celestia-appd version
 
       - name: Run tests in Celestia-App
         run: |

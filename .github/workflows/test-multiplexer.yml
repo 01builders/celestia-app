@@ -1,5 +1,4 @@
-name: Test Multiplexer
-
+name: test-multiplexer
 on:
   workflow_dispatch:
   pull_request:
@@ -21,7 +20,7 @@ jobs:
           ref: cian/add-basic-nova-e2e # TODO: change before merging to be the feature branch.
           path: celestia-app
 
-      - name: Download latest Celestia-App Linux tarball
+      - name: Download v3.4.0 Celestia-App Linux tarball
         run: curl -Lo nova/appd/celestia-app_Linux_x86_64.tar.gz https://github.com/celestiaorg/celestia-app/releases/download/v3.4.0/celestia-app_Linux_x86_64.tar.gz
 
       - name: Update go.mod in Celestia-App to use local Nova module
@@ -40,7 +39,7 @@ jobs:
       - name: Verify Binary Installation
         run: which celestia-appd && celestia-appd version
 
-      - name: Run tests in Celestia-App
+      - name: Run Multiplexer tests
         run: |
           cd celestia-app
           make test-multi-plexer

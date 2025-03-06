@@ -54,14 +54,6 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.RequestProcess
 	)
 	blockHeader := ctx.BlockHeader()
 
-	appVersion, err := app.AppVersion(ctx)
-	if err != nil {
-		logInvalidPropBlockError(app.Logger(), blockHeader, "failure to get app version", err)
-		return reject(), nil
-	}
-
-	subtreeRootThreshold := appconsts.SubtreeRootThreshold(appVersion)
-
 	// iterate over all txs and ensure that all blobTxs are valid, PFBs are correctly signed and non
 	// blobTxs have no PFBs present
 	for idx, rawTx := range req.Txs {
@@ -116,7 +108,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.RequestProcess
 		// - that the sizes match
 		// - that the namespaces match between blob and PFB
 		// - that the share commitment is correct
-		if err := blobtypes.ValidateBlobTx(app.encodingConfig.TxConfig, blobTx, subtreeRootThreshold, appVersion); err != nil {
+		if err := blobtypes.ValidateBlobTx(app.encodingConfig.TxConfig, blobTx, appconsts.DefaultSubtreeRootThreshold, appconsts.LatestVersion); err != nil {
 			logInvalidPropBlockError(app.Logger(), blockHeader, fmt.Sprintf("invalid blob tx %d", idx), err)
 			return reject(), nil
 		}
@@ -130,7 +122,7 @@ func (app *App) ProcessProposalHandler(ctx sdk.Context, req *abci.RequestProcess
 
 	}
 
-	dataSquare, err := square.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), subtreeRootThreshold)
+	dataSquare, err := square.Construct(req.Txs, app.MaxEffectiveSquareSize(ctx), appconsts.DefaultSubtreeRootThreshold)
 	if err != nil {
 		logInvalidPropBlockError(app.Logger(), blockHeader, "failure to compute data square from transactions:", err)
 		return reject(), nil

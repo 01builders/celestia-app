@@ -41,13 +41,8 @@ func (app *App) PrepareProposalHandler(ctx sdk.Context, req *abci.RequestPrepare
 
 	// Build the square from the set of valid and prioritised transactions.
 	// The txs returned are the ones used in the square and block.
-	appVersion, err := app.AppVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var dataSquare square.Square
-	dataSquare, txs, err = square.Build(txs, app.MaxEffectiveSquareSize(ctx), appconsts.SubtreeRootThreshold(appVersion))
+	dataSquare, txs, err := square.Build(txs, app.MaxEffectiveSquareSize(ctx), appconsts.DefaultSubtreeRootThreshold)
 	if err != nil {
 		panic(err)
 	}

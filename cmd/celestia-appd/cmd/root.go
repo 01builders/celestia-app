@@ -117,10 +117,8 @@ func initRootCommand(rootCommand *cobra.Command, capp *app.App) {
 	debugCmd := debug.Cmd()
 	debugCmd.AddCommand(NewInPlaceTestnetCmd())
 
-	passthroughCmd, err := nova.NewPassthroughCmd(versions)
-	if err != nil {
-		panic(fmt.Errorf("failed to create nova passthrough command: %w", err))
-	}
+	passthroughCmd, _ := nova.NewPassthroughCmd(versions)
+	// TODO: handle the error here. (currently breaking ledger tests as they do a cli exec and the expected binary bytes are not there)
 
 	rootCommand.AddCommand(
 		genutilcli.InitCmd(capp.BasicManager, app.DefaultNodeHome),

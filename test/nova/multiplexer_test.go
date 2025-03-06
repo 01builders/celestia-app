@@ -3,9 +3,11 @@
 package nova
 
 import (
+	"bytes"
 	"github.com/01builders/nova/appd"
 	"github.com/stretchr/testify/require"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -19,7 +21,7 @@ func TestCelestiaAppBinaryIsAvailable(t *testing.T) {
 
 func TestMultiplexerSetup(t *testing.T) {
 	// Find the celestia-appd binary
-	celestiaBin, err := "celestia-appd"
+	celestiaBin := "celestia-appd"
 	// Get the Celestia home directory
 	celestiaHome := execCommand(t, celestiaBin, "config", "home")
 
@@ -31,12 +33,7 @@ func TestMultiplexerSetup(t *testing.T) {
 	// Add Alice's key
 	execCommand(t, celestiaBin, "keys", "add", "alice")
 
-	// Determine which genesis file to use
-	scriptDir, err := os.Getwd()
-	require.NoError(t, err, "failed to get script directory")
-
-	genesisPath, err := getTestFilePath("multi-plexer-genesis.json")
-	require.NoError(t, err, "failed fetching genesis path")
+	genesisPath := getTestFilePath("multi-plexer-genesis.json")
 
 	targetGenesisPath := filepath.Join(celestiaHome, "config", "genesis.json")
 	require.NoError(t, copyFile(genesisPath, targetGenesisPath), "failed to copy genesis file")

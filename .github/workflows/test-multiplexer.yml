@@ -2,12 +2,7 @@ name: Test Multiplexer
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   test-multiplexer:

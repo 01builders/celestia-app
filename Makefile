@@ -56,37 +56,50 @@ mod-verify: mod
 ###############################################################################
 ###                                Protobuf                                 ###
 ###############################################################################
+BUF_VERSION=v1.50.0
+GOLANG_PROTOBUF_VERSION=1.28.1
+GRPC_GATEWAY_VERSION=1.16.0
+GRPC_GATEWAY_PROTOC_GEN_OPENAPIV2_VERSION=2.20.0
 
-protoVer=0.14.0
-protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
 #? proto-all: Format, lint and generate Protobuf files
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-deps proto-format proto-lint proto-gen
+
+#? proto-deps: Install Protobuf local dependencies
+proto-deps:
+	@echo "Installing proto deps"
+	@go install github.com/bufbuild/buf/cmd/buf@$(BUF_VERSION)
+	@go install github.com/cosmos/cosmos-proto/cmd/protoc-gen-go-pulsar@latest
+	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
+	@go install github.com/cosmos/gogoproto/protoc-gen-gogo@latest
+	@go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v$(GRPC_GATEWAY_VERSION)
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v$(GRPC_GATEWAY_PROTOC_GEN_OPENAPIV2_VERSION)
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@v$(GOLANG_PROTOBUF_VERSION)
 
 #? proto-gen: Generate Protobuf files
 proto-gen:
 	@echo "Generating Protobuf files"
-	@$(protoImage) sh ./scripts/protocgen.sh
+	@sh ./scripts/protocgen.sh
 
 #? proto-format: Format Protobuf files
 proto-format:
-	@$(protoImage) find ./ -name "*.proto" -exec clang-format -i {} \;
+	@find ./ -name "*.proto" -exec clang-format -i {} \;
 
 #? proto-lint: Lint Protobuf files
 proto-lint:
-	@$(protoImage) buf lint --error-format=json
+	@buf lint --error-format=json
 
 #? proto-check-breaking: Check if Protobuf file contains breaking changes
 proto-check-breaking:
-	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
+	@buf breaking --against $(HTTPS_GIT)#branch=main
 
 #? proto-update-deps: Update Protobuf dependencies
 proto-update-deps:
 	@echo "Updating Protobuf dependencies"
-	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(protoImageName) buf mod update
+	@cd proto && buf dep update
 
-.PHONY: proto-all proto-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-deps proto-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
 build-docker:
 	@echo "--> Building Docker image"

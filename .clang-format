@@ -1,6 +1,5 @@
 ---
 Language: Proto
-# BasedOnStyle:  LLVM
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: true

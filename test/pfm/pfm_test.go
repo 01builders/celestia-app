@@ -56,11 +56,7 @@ func SetupTest(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain,
 	}
 
 	celestiaChain := ibctesting.NewTestChain(t, coordinator, ibctesting.GetChainID(1))
-
-	// NOTE: this is workaround to bypass minfee as we cannot override to 0 in genesis
-	minFeeSubspace, found := celestiaChain.App.(*app.App).ParamsKeeper.GetSubspace(minfee.ModuleName)
-	require.True(t, found)
-	minFeeSubspace.SetParamSet(celestiaChain.GetContext(), &minfee.Params{NetworkMinGasPrice: math.LegacyNewDec(0)})
+	setMinFeeToZero(t, celestiaChain)
 
 	// modify the testing package to return the pfm app which does not have a token filter wired up on subsequent
 	// NewTestChain calls.
@@ -73,6 +69,18 @@ func SetupTest(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain,
 	coordinator.Chains[ibctesting.GetChainID(2)] = chainA
 	coordinator.Chains[ibctesting.GetChainID(3)] = chainB
 	return coordinator, chainA, celestiaChain, chainB
+}
+
+// setMinFeeToZero updates the network minimum gas price to zero.
+// This is a workaround as overriding at genesis will fail in minfee.ValidateGenesis
+func setMinFeeToZero(t *testing.T, celestiaChain *ibctesting.TestChain) {
+	celestiaApp, ok := celestiaChain.App.(*app.App)
+	require.True(t, ok)
+
+	minFeeSubspace, found := celestiaApp.ParamsKeeper.GetSubspace(minfee.ModuleName)
+	require.True(t, found)
+
+	minFeeSubspace.SetParamSet(celestiaChain.GetContext(), &minfee.Params{NetworkMinGasPrice: math.LegacyNewDec(0)})
 }
 
 func NewTransferPaths(chain1, chain2, chain3 *ibctesting.TestChain) (*ibctesting.Path, *ibctesting.Path) {

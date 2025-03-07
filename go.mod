@@ -1,6 +1,8 @@
 module github.com/celestiaorg/celestia-app/v4
 
-go 1.24.0
+go 1.23.1
+
+toolchain go1.24.0
 
 // replace github.com/01builders/nova => ../nova
 

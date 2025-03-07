@@ -13,7 +13,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/params"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
@@ -47,10 +47,10 @@ func SetSlashingParams(codec codec.Codec, parans slashingtypes.Params) Modifier 
 func ImmediateProposals(codec codec.Codec) Modifier {
 	return func(state map[string]json.RawMessage) map[string]json.RawMessage {
 		gs := v1.DefaultGenesisState()
-		gs.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(app.BondDenom, math.NewInt(1)))
+		gs.Params.MinDeposit = sdk.NewCoins(sdk.NewCoin(params.BondDenom, math.NewInt(1)))
 		gs.Params.Quorum = "0.000001"
 		gs.Params.Threshold = "0.000001"
-		vp := time.Second * 5
+		vp := time.Second * 10
 		gs.Params.VotingPeriod = &vp
 		state[govtypes.ModuleName] = codec.MustMarshalJSON(gs)
 		return state

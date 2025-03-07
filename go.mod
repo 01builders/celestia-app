@@ -18,8 +18,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/tx v0.13.8
 	cosmossdk.io/x/upgrade v0.1.4
-	github.com/01builders/nova v0.0.0-20250305111054-81278f8d003f
-	github.com/celestiaorg/go-square v1.1.1
+	github.com/01builders/nova v0.0.0-20250306093605-7ac80b4d39dc
 	github.com/celestiaorg/go-square/v2 v2.1.0
 	github.com/celestiaorg/knuu v0.16.2
 	github.com/celestiaorg/nmt v0.23.0
@@ -261,7 +260,7 @@ require (
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
@@ -289,7 +288,7 @@ replace (
 	cosmossdk.io/x/upgrade => github.com/01builders/cosmos-sdk/x/upgrade v0.0.0-20250212120257-926f94b828d0
 	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250303123948-a2b8ce5ddfe5
 	// Celestia SDK fork: https://github.com/01builders/cosmos-sdk/tree/release/v0.50.x-celestia
-	github.com/cosmos/cosmos-sdk => github.com/01builders/cosmos-sdk v0.0.0-20250303135731-f63bc089816c
+	github.com/cosmos/cosmos-sdk => github.com/01builders/cosmos-sdk v0.0.0-20250305130717-630a3c965f8a
 
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

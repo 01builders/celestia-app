@@ -262,7 +262,6 @@ func _Msg_PayForBlobs_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "celestia.blob.v1.Msg",
 	HandlerType: (*MsgServer)(nil),

@@ -201,7 +201,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TxClient interface {
-	// TxStatus returns the status of a transaction. There are four possible states:
+	// TxStatus returns the status of a transaction. There are four possible
+	// states:
 	// - Committed
 	// - Pending
 	// - Evicted
@@ -228,7 +229,8 @@ func (c *txClient) TxStatus(ctx context.Context, in *TxStatusRequest, opts ...gr
 
 // TxServer is the server API for Tx service.
 type TxServer interface {
-	// TxStatus returns the status of a transaction. There are four possible states:
+	// TxStatus returns the status of a transaction. There are four possible
+	// states:
 	// - Committed
 	// - Pending
 	// - Evicted
@@ -266,7 +268,6 @@ func _Tx_TxStatus_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-var Tx_serviceDesc = _Tx_serviceDesc
 var _Tx_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "celestia.core.v1.tx.Tx",
 	HandlerType: (*TxServer)(nil),

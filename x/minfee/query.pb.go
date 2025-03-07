@@ -31,7 +31,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryNetworkMinGasPrice is the request type for the Query/NetworkMinGasPrice RPC method.
+// QueryNetworkMinGasPrice is the request type for the Query/NetworkMinGasPrice
+// RPC method.
 type QueryNetworkMinGasPrice struct {
 }
 
@@ -68,7 +69,8 @@ func (m *QueryNetworkMinGasPrice) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryNetworkMinGasPrice proto.InternalMessageInfo
 
-// QueryNetworkMinGasPriceResponse is the response type for  Query/NetworkMinGasPrice RPC method.
+// QueryNetworkMinGasPriceResponse is the response type for
+// Query/NetworkMinGasPrice RPC method.
 type QueryNetworkMinGasPriceResponse struct {
 	NetworkMinGasPrice cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=network_min_gas_price,json=networkMinGasPrice,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"network_min_gas_price"`
 }
@@ -208,7 +210,6 @@ func _Query_NetworkMinGasPrice_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "celestia.minfee.v1.Query",
 	HandlerType: (*QueryServer)(nil),

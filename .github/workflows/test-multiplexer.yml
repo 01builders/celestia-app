@@ -18,8 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 01builders/celestia-app
-          ref: cian/add-basic-nova-e2e
-#         ref: sdk-v0.50.x # TODO: remove once branch is merged.
+          ref: sdk-v0.50.x # TODO: remove once merged to main.
           path: celestia-app
 
       - name: Update go.mod in Celestia-App to use local Nova module

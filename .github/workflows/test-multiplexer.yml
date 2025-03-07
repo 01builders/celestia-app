@@ -21,7 +21,7 @@ jobs:
         run: |
           make build
           chmod +x build/celestia-appd
-          sudo mv build/celestia-appd /usr/local/bin/celestia-appd
+          mv build/celestia-appd /usr/local/bin/celestia-appd
 
       - name: Verify Binary Installation
         run: |

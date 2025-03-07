@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/01builders/nova/abci"
 	"github.com/01builders/nova/appd"
-	embedding "github.com/celestiaorg/celestia-app/v4/internal/emedding"
+	embedding "github.com/celestiaorg/celestia-app/v4/internal/embedding"
 )
 
 func Versions() abci.Versions {

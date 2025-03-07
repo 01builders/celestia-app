@@ -15,7 +15,7 @@ jobs:
           ref: cian/move-binaries-to-celestia-app # TODO: testing for workflow on this PR.
 
       - name: Download v3 Celestia Binary
-        run: curl -oL internal/embedding/celestia-app_Linux_x86_64.tar.gz https://github.com/celestiaorg/celestia-app/releases/download/v3.4.0/celestia-app_Linux_x86_64.tar.gz
+        run: curl -L -o internal/embedding/celestia-app_Linux_x86_64.tar.gz https://github.com/celestiaorg/celestia-app/releases/download/v3.4.0/celestia-app_Linux_x86_64.tar.gz
 
       - name: Build Celestia-App
         run: |

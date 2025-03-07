@@ -51,7 +51,6 @@ func ValidateTxFee(ctx sdk.Context, tx sdk.Tx, paramKeeper params.Keeper) (sdk.C
 	}
 
 	// Ensure that the provided fee meets a network minimum threshold.
-	// Network minimum fee only applies to app versions greater than one.
 	subspace, exists := paramKeeper.GetSubspace(minfee.ModuleName)
 	if !exists {
 		return nil, 0, errors.Wrap(sdkerror.ErrInvalidRequest, "minfee is not a registered subspace")

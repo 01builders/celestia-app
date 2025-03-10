@@ -2,6 +2,7 @@ package ante
 
 import (
 	"encoding/hex"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 
 	"cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -15,8 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-
-	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 var (
@@ -139,5 +138,5 @@ func isIncompleteSignature(data signing.SignatureData) bool {
 // consumeGasForTxSize consumes gas based on the size of the transaction.
 // It uses different parameters depending on the app version.
 func consumeGasForTxSize(ctx sdk.Context, txBytes uint64) {
-	ctx.GasMeter().ConsumeGas(appv4.TxSizeCostPerByte*txBytes, "txSize")
+	ctx.GasMeter().ConsumeGas(appconsts.DefaultTxSizeCostPerByte*txBytes, "txSize")
 }

@@ -353,7 +353,7 @@ func New(
 	var transferStack ibcporttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(transferStack, app.PacketForwardKeeper,
-		0, // retries on timeout
+		0,                                                                // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
 
@@ -520,24 +520,6 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 	}
 
 	return app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState)
-}
-
-func (app *App) OfferSnapshot(req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-	app.Logger().Info("offering snapshot", "height", req.Snapshot.Height, "app_version", req.AppVersion)
-	if req.AppVersion != 0 {
-		if !isSupportedAppVersion(req.AppVersion) {
-			app.Logger().Info("rejecting snapshot because unsupported app version", "app_version", req.AppVersion)
-			return &abci.ResponseOfferSnapshot{
-				Result: abci.ResponseOfferSnapshot_REJECT,
-			}, nil
-		}
-	}
-
-	return app.BaseApp.OfferSnapshot(req)
-}
-
-func isSupportedAppVersion(appVersion uint64) bool {
-	return appVersion == v1 || appVersion == v2 || appVersion == v3 || appVersion == v4
 }
 
 // DefaultGenesis returns the default genesis state

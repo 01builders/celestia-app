@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 func TestUpgradeHeightDelay(t *testing.T) {
@@ -24,7 +23,7 @@ func TestUpgradeHeightDelay(t *testing.T) {
 		{
 			name:                       "the upgrade delay should be latest value",
 			chainID:                    "arabica-11",
-			expectedUpgradeHeightDelay: appv4.UpgradeHeightDelay,
+			expectedUpgradeHeightDelay: appconsts.DefaultUpgradeHeightDelay,
 		},
 	}
 

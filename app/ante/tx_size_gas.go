@@ -2,7 +2,6 @@ package ante
 
 import (
 	"encoding/hex"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 
 	"cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -16,6 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 )
 
 var (

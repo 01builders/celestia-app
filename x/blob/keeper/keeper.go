@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
@@ -38,7 +38,7 @@ func NewKeeper(
 // PayForBlobs consumes gas based on the blob sizes in the MsgPayForBlobs.
 func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*types.MsgPayForBlobsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	gasToConsume := types.GasToConsume(msg.BlobSizes, appv4.GasPerBlobByte)
+	gasToConsume := types.GasToConsume(msg.BlobSizes, appconsts.DefaultGasPerBlobByte)
 
 	ctx.GasMeter().ConsumeGas(gasToConsume, payForBlobGasDescriptor)
 

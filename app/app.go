@@ -99,6 +99,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	celestiatx "github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	"github.com/celestiaorg/celestia-app/v4/pkg/proof"
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
@@ -722,5 +723,5 @@ func (app *App) getTimeoutCommit(_ uint64) time.Duration {
 	if app.timeoutCommit != 0 {
 		return app.timeoutCommit
 	}
-	return appv4.TimeoutCommit
+	return appconsts.DefaultTimeoutCommit
 }

@@ -15,12 +15,6 @@ func TestUpgradeHeightDelay(t *testing.T) {
 		chainID                    string
 		expectedUpgradeHeightDelay int64
 	}{
-		// TODO: can this test case be removed?
-		{
-			name:                       "v2 upgrade delay on arabica",
-			chainID:                    "arabica-11",
-			expectedUpgradeHeightDelay: appconsts.DefaultUpgradeHeightDelay, // falls back to v3 because of arabica bug
-		},
 		{
 			name:                       "the upgrade delay for chainID 'test' should be 3",
 			chainID:                    appconsts.TestChainID,

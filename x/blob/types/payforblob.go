@@ -13,7 +13,6 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 const (
@@ -56,7 +55,7 @@ func NewMsgPayForBlobs(signer string, _ uint64, blobs ...*share.Blob) (*MsgPayFo
 		return nil, err
 	}
 
-	commitments, err := inclusion.CreateCommitments(blobs, merkle.HashFromByteSlices, appv4.SubtreeRootThreshold)
+	commitments, err := inclusion.CreateCommitments(blobs, merkle.HashFromByteSlices, appconsts.DefaultSubtreeRootThreshold)
 	if err != nil {
 		return nil, fmt.Errorf("creating commitments: %w", err)
 	}

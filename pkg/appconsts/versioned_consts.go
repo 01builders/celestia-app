@@ -18,6 +18,7 @@ var (
 	DefaultVersion              = v4.Version
 	DefaultTimeoutCommit        = v4.TimeoutCommit
 	DefaultUpgradeHeightDelay   = v4.UpgradeHeightDelay
+	DefaultMaxTxSize            = v4.MaxTxSize
 )
 
 func GetTimeoutCommit(_ uint64) time.Duration {

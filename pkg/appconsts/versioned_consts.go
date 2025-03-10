@@ -54,7 +54,7 @@ var (
 	DefaultGasPerBlobByte       = GasPerBlobByte(LatestVersion)
 )
 
-func GetTimeoutCommit(v uint64) time.Duration {
+func GetTimeoutCommit(_ uint64) time.Duration {
 	return v4.TimeoutCommit // TODO: remove this fn currently just used in tests, those tests should fail with this currently logic.
 }
 

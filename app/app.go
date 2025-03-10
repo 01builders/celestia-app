@@ -718,7 +718,7 @@ func (app *App) NewProposalContext(header tmproto.Header) sdk.Context {
 // on the app version.
 // TODO: is this still needed?
 // nolint:unused
-func (app *App) getTimeoutCommit(appVersion uint64) time.Duration {
+func (app *App) getTimeoutCommit(_ uint64) time.Duration {
 	if app.timeoutCommit != 0 {
 		return app.timeoutCommit
 	}

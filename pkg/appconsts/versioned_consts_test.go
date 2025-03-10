@@ -1,13 +1,13 @@
 package appconsts_test
 
 import (
-	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 func TestUpgradeHeightDelay(t *testing.T) {

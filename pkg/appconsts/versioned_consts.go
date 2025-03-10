@@ -4,9 +4,6 @@ import (
 	"strconv"
 	"time"
 
-	v1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
-	v2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
-	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
 	v4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
@@ -57,51 +54,21 @@ var (
 	DefaultGasPerBlobByte       = GasPerBlobByte(LatestVersion)
 )
 
-func GetTimeoutPropose(v uint64) time.Duration {
-	switch v {
-	case v1.Version:
-		return v1.TimeoutPropose
-	case v2.Version:
-		return v2.TimeoutPropose
-	case v3.Version:
-		return v3.TimeoutPropose
-	default:
-		return v4.TimeoutPropose
-	}
-}
-
 func GetTimeoutCommit(v uint64) time.Duration {
-	switch v {
-	case v1.Version:
-		return v1.TimeoutCommit
-	case v2.Version:
-		return v2.TimeoutCommit
-	case v3.Version:
-		return v3.TimeoutCommit
-	default:
-		return v4.TimeoutCommit
-	}
+	return v4.TimeoutCommit // TODO: remove this fn currently just used in tests, those tests should fail with this currently logic.
 }
 
 // UpgradeHeightDelay returns the delay in blocks after a quorum has been reached that the chain should upgrade to the new version.
-func UpgradeHeightDelay(chainID string, v uint64) int64 {
+func UpgradeHeightDelay(chainID string) int64 {
 	if chainID == TestChainID {
 		return 3
 	}
-	switch v {
-	case v1.Version:
-		return v1.UpgradeHeightDelay
-	case v2.Version:
+	// TODO: this check is the same as v4, does it need to be special cased still or can we just return v4.UpgradeHeightDelay
+	if chainID == ArabicaChainID {
 		// ONLY ON ARABICA: don't return the v2 value even when the app version is
 		// v2 on arabica. This is due to a bug that was shipped on arabica, where
 		// the next version was used.
-		if chainID == ArabicaChainID {
-			return v4.UpgradeHeightDelay
-		}
-		return v2.UpgradeHeightDelay
-	case v3.Version:
-		return v3.UpgradeHeightDelay
-	default:
 		return v4.UpgradeHeightDelay
 	}
+	return v4.UpgradeHeightDelay
 }

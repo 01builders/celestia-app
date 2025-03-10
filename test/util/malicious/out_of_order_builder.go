@@ -12,7 +12,7 @@ import (
 	"github.com/celestiaorg/go-square/v2/share"
 	blobtx "github.com/celestiaorg/go-square/v2/tx"
 
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 type ExportFn func(builder *square.Builder) (square.Square, error)
@@ -22,8 +22,8 @@ type ExportFn func(builder *square.Builder) (square.Square, error)
 // in the square and which have all PFBs trailing regular transactions. Note, this function does
 // not check the underlying validity of the transactions.
 // Errors should not occur and would reflect a violation in an invariant.
-func Build(txs [][]byte, appVersion uint64, maxSquareSize int, efn ExportFn) (square.Square, [][]byte, error) {
-	builder, err := square.NewBuilder(maxSquareSize, appconsts.SubtreeRootThreshold(appVersion))
+func Build(txs [][]byte, _ uint64, maxSquareSize int, efn ExportFn) (square.Square, [][]byte, error) {
+	builder, err := square.NewBuilder(maxSquareSize, appv4.SubtreeRootThreshold)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -50,8 +50,8 @@ func Build(txs [][]byte, appVersion uint64, maxSquareSize int, efn ExportFn) (sq
 // Construct takes the exact list of ordered transactions and constructs a
 // square. This mimics the functionality of the normal Construct function, but
 // acts maliciously by not following some of the block validity rules.
-func Construct(txs [][]byte, appVersion uint64, maxSquareSize int, efn ExportFn) (square.Square, error) {
-	builder, err := square.NewBuilder(maxSquareSize, appconsts.SubtreeRootThreshold(appVersion), txs...)
+func Construct(txs [][]byte, _ uint64, maxSquareSize int, efn ExportFn) (square.Square, error) {
+	builder, err := square.NewBuilder(maxSquareSize, appv4.SubtreeRootThreshold, txs...)
 	if err != nil {
 		return nil, err
 	}

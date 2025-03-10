@@ -21,6 +21,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 )
 
@@ -93,7 +94,7 @@ func TestConsumeGasForTxSize(t *testing.T) {
 			require.Nil(t, err, "Cannot marshal tx: %v", err)
 
 			// expected TxSizeCostPerByte is different for each version
-			txSizeCostPerByte := appconsts.TxSizeCostPerByte(tc.version)
+			txSizeCostPerByte := appv4.TxSizeCostPerByte
 			expectedGas := storetypes.Gas(len(txBytes)) * txSizeCostPerByte
 
 			// set suite.ctx with TxBytes manually

@@ -15,6 +15,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	ante "github.com/celestiaorg/celestia-app/v4/x/blob/ante"
 	blob "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
@@ -114,7 +115,7 @@ func TestPFBAnteHandler(t *testing.T) {
 				},
 			}
 			ctx := sdk.NewContext(nil, header, true, log.NewNopLogger()).
-				WithGasMeter(storetypes.NewGasMeter(uint64(tc.txGas(appconsts.GasPerBlobByte(appconsts.LatestVersion))))).
+				WithGasMeter(storetypes.NewGasMeter(uint64(tc.txGas(appv4.GasPerBlobByte)))).
 				WithIsCheckTx(true)
 
 			ctx.GasMeter().ConsumeGas(tc.gasConsumed, "test")

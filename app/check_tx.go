@@ -10,6 +10,7 @@ import (
 
 	apperr "github.com/celestiaorg/celestia-app/v4/app/errors"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
@@ -20,7 +21,7 @@ func (app *App) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error)
 	tx := req.Tx
 
 	// all txs must be less than or equal to the max tx size limit
-	maxTxSize := appconsts.MaxTxSize(appconsts.LatestVersion)
+	maxTxSize := appv4.MaxTxSize
 	currentTxSize := len(tx)
 	if currentTxSize > maxTxSize {
 		return responseCheckTxWithEvents(errors.Wrapf(apperr.ErrTxExceedsMaxSize, "tx size %d bytes is larger than the application's configured MaxTxSize of %d bytes for version %d", currentTxSize, maxTxSize, appconsts.LatestVersion), 0, 0, []abci.Event{}, false), nil

@@ -16,7 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
 var (
@@ -139,6 +139,5 @@ func isIncompleteSignature(data signing.SignatureData) bool {
 // consumeGasForTxSize consumes gas based on the size of the transaction.
 // It uses different parameters depending on the app version.
 func consumeGasForTxSize(ctx sdk.Context, txBytes uint64) {
-	txSizeCostPerByte := appconsts.TxSizeCostPerByte(ctx.BlockHeader().Version.App)
-	ctx.GasMeter().ConsumeGas(txSizeCostPerByte*txBytes, "txSize")
+	ctx.GasMeter().ConsumeGas(appv4.TxSizeCostPerByte*txBytes, "txSize")
 }

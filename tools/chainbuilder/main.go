@@ -28,6 +28,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	"github.com/celestiaorg/celestia-app/v4/pkg/da"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	"github.com/celestiaorg/celestia-app/v4/test/util"
@@ -493,7 +494,7 @@ func generateSquareRoutine(
 		dataSquare, txs, err := square.Build(
 			[][]byte{tx},
 			maxSquareSize,
-			appconsts.SubtreeRootThreshold(1),
+			appv4.SubtreeRootThreshold, // FIXME: used to be explicitly using the v1 value appconsts.SubtreeRootThreshold(1)
 		)
 		if err != nil {
 			return err

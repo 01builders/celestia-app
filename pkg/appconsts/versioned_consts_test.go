@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	v3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
 	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 )
 
@@ -16,10 +15,11 @@ func TestUpgradeHeightDelay(t *testing.T) {
 		chainID                    string
 		expectedUpgradeHeightDelay int64
 	}{
+		// TODO: can this test case be removed?
 		{
 			name:                       "v2 upgrade delay on arabica",
 			chainID:                    "arabica-11",
-			expectedUpgradeHeightDelay: v3.UpgradeHeightDelay, // falls back to v3 because of arabica bug
+			expectedUpgradeHeightDelay: appconsts.DefaultUpgradeHeightDelay, // falls back to v3 because of arabica bug
 		},
 		{
 			name:                       "the upgrade delay for chainID 'test' should be 3",

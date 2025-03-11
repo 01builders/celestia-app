@@ -12,7 +12,7 @@ func CelestiaAppV4() ([]byte, error) {
 		return nil, fmt.Errorf("no binary data available for platform %s", platform())
 	}
 
-	return v3binaryCompressed, nil
+	return v4binaryCompressed, nil
 }
 
 // CelestiaAppV3 returns the compressed platform specific Celestia binary.

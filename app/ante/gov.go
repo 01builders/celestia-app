@@ -8,17 +8,19 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
+// ParamFilter is a type alias for a filtering function which accepts an sdk.Msg and returns an error.
 type ParamFilter func(sdk.Msg) error
 
-// GovProposalDecorator ensures that a tx with a MsgSubmitProposal has at least one message in the proposal.
-// Additionally it replace the x/paramfilter module that existed in v3 and earlier versions.
-type GovProposalDecorator struct {
-	// paramFilters is a map of type_url to a list of parameter fields that cannot be changed via governance.
+// ParamFilterDecorator checks tx msgs for gov.MsgSubmitProposal and authz.MsgExec and ensures that param updates
+// within these conform to the rules defines in paramFilters. ParamFilters are keyed by MsgTypeURL.
+// NOTE: This replaces the param filter governance proposal handler from v3 and earlier.
+type ParamFilterDecorator struct {
 	paramFilters map[string]ParamFilter
 }
 
-func NewGovProposalDecorator(paramFilters map[string]ParamFilter) GovProposalDecorator {
-	return GovProposalDecorator{
+// NewGovProposalDecorator creates and returns a new ParamFilterDecorator to be used in the ante handler chain.
+func NewGovProposalDecorator(paramFilters map[string]ParamFilter) ParamFilterDecorator {
+	return ParamFilterDecorator{
 		paramFilters: paramFilters,
 	}
 }
@@ -26,7 +28,7 @@ func NewGovProposalDecorator(paramFilters map[string]ParamFilter) GovProposalDec
 // AnteHandle implements the AnteHandler interface.
 // It ensures that MsgSubmitProposal has at least one message
 // It ensures params are filtered within messages
-func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+func (d ParamFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	for _, m := range tx.GetMsgs() {
 		if msgSubmitProp, ok := m.(*govv1.MsgSubmitProposal); ok {
 			msgs, err := msgSubmitProp.GetMsgs()
@@ -60,7 +62,7 @@ func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 // 1. At least one message is included in the proposal.
 // 2. Recursively processes nested messages in case of `MsgExec` or `MsgSubmitProposal` types.
 // 3. Applies the provided parameter filters to relevant messages, checking if parameter changes are allowed.
-func (d GovProposalDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
+func (d ParamFilterDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
 		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "must include at least one message")
 	}

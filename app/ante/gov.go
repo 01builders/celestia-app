@@ -18,8 +18,8 @@ type ParamFilterDecorator struct {
 	paramFilters map[string]ParamFilter
 }
 
-// NewGovProposalDecorator creates and returns a new ParamFilterDecorator to be used in the ante handler chain.
-func NewGovProposalDecorator(paramFilters map[string]ParamFilter) ParamFilterDecorator {
+// NewParamFilterDecorator creates and returns a new ParamFilterDecorator to be used in the ante handler chain.
+func NewParamFilterDecorator(paramFilters map[string]ParamFilter) ParamFilterDecorator {
 	return ParamFilterDecorator{
 		paramFilters: paramFilters,
 	}

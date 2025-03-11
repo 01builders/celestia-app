@@ -141,7 +141,7 @@ func TestGovProposalDecorator_AnteHandle(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			anteHandler := ante.NewGovProposalDecorator(tc.paramFilters)
+			anteHandler := ante.NewParamFilterDecorator(tc.paramFilters)
 			_, err := anteHandler.AnteHandle(sdk.Context{}, mockTx(tc.msgs), false, nextAnteHandler)
 			if tc.expectedError != nil {
 				require.EqualError(t, err, tc.expectedError.Error())

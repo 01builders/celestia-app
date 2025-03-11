@@ -22,20 +22,23 @@ func (app *App) GovParamFilters() map[string]ante.ParamFilter {
 	}
 }
 
+// bankParamFilter checks if the parameters in the MsgUpdateParams ensures that only valid changes are allowed.
 func bankParamFilter(msg sdk.Msg) error {
 	msgUpdateParams, ok := msg.(*banktypes.MsgUpdateParams)
 	if !ok {
 		return errors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", (*banktypes.MsgUpdateParams)(nil), msg)
 	}
 
-	// Ensure SendEnabled is not modified
-	if len(msgUpdateParams.Params.SendEnabled) > 0 {
+	// ensure SendEnabled is not modified.
+	//nolint:staticcheck
+	if len(msgUpdateParams.Params.SendEnabled) > 0 || !msgUpdateParams.Params.DefaultSendEnabled {
 		return errors.Wrapf(sdkerrors.ErrUnauthorized, "modification of SendEnabled is not allowed")
 	}
 
 	return nil
 }
 
+// consensusParamstakingParamFilterFilter checks if the parameters in the MsgUpdateParams ensures that only valid changes are allowed.
 func stakingParamFilter(msg sdk.Msg) error {
 	msgUpdateParams, ok := msg.(*stakingtypes.MsgUpdateParams)
 	if !ok {
@@ -54,13 +57,14 @@ func stakingParamFilter(msg sdk.Msg) error {
 	return nil
 }
 
+// consensusParamFilter checks if the parameters in the MsgUpdateParams ensures that only valid changes are allowed.
 func consensusParamFilter(msg sdk.Msg) error {
 	msgUpdateParams, ok := msg.(*consensustypes.MsgUpdateParams)
 	if !ok {
 		return errors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", (*consensustypes.MsgUpdateParams)(nil), msg)
 	}
 
-	validatorParams := coretypes.DefaultValidatorParams()
+	validatorParams := coretypes.DefaultConsensusParams().ToProto().Validator
 	updateParams, err := msgUpdateParams.ToProtoConsensusParams()
 	if err != nil {
 		return err

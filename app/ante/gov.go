@@ -3,34 +3,12 @@ package ante
 import (
 	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type ParamFilter func(sdk.Msg) error
-
-var paramFilters = map[string]func(msg sdk.Msg) error{
-	sdk.MsgTypeURL((*stakingtypes.MsgUpdateParams)(nil)): func(msg sdk.Msg) error {
-		msgUpdateParams, ok := msg.(*stakingtypes.MsgUpdateParams)
-		if !ok {
-			return errors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", (*stakingtypes.MsgUpdateParams)(nil), msg)
-		}
-
-		defaultParams := stakingtypes.DefaultParams()
-		if msgUpdateParams.Params.BondDenom != defaultParams.BondDenom {
-			return errors.Wrapf(sdkerrors.ErrUnauthorized, "invalid bond denom: expected %s, got %s", defaultParams.BondDenom, msgUpdateParams.Params.BondDenom)
-		}
-
-		if msgUpdateParams.Params.UnbondingTime != defaultParams.UnbondingTime {
-			return errors.Wrapf(sdkerrors.ErrUnauthorized, "invalid unbonding time: expected %s, got %s", defaultParams.UnbondingTime, msgUpdateParams.Params.UnbondingTime)
-		}
-
-		return nil
-	},
-}
 
 // GovProposalDecorator ensures that a tx with a MsgSubmitProposal has at least one message in the proposal.
 // Additionally it replace the x/paramfilter module that existed in v3 and earlier versions.

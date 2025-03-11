@@ -24,7 +24,7 @@ func Versions() abci.Versions {
 		{
 			Name:        "v3",
 			Appd:        v3,
-			UntilHeight: -1, // disable v4 upgrade for now.
+			UntilHeight: -1, // disable v3 upgrade for now.
 		},
 		{
 			Name:        "v4",

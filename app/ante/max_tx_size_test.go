@@ -1,7 +1,6 @@
 package ante_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"testing"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -9,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/celestiaorg/celestia-app/v4/app/ante"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 )
 
 func TestMaxTxSizeDecorator(t *testing.T) {

@@ -36,7 +36,7 @@ func (d ParamFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				return ctx, err
 			}
 
-			if err := d.checkNestedMsgs(msgs); err != nil {
+			if err := d.validateMsgs(msgs); err != nil {
 				return ctx, err
 			}
 		}
@@ -48,7 +48,7 @@ func (d ParamFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				return ctx, err
 			}
 
-			if err := d.checkNestedMsgs(msgs); err != nil {
+			if err := d.validateMsgs(msgs); err != nil {
 				return ctx, err
 			}
 		}
@@ -57,12 +57,12 @@ func (d ParamFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	return next(ctx, tx, simulate)
 }
 
-// checkNestedMsgs validates the nested messages within a `MsgSubmitProposal` or `MsgExec`.
+// validateMsgs checks the nested messages within a `MsgSubmitProposal` or `MsgExec`.
 // It ensures that:
 // 1. At least one message is included in the proposal.
 // 2. Recursively processes nested messages in case of `MsgExec` or `MsgSubmitProposal` types.
 // 3. Applies the provided parameter filters to relevant messages, checking if parameter changes are allowed.
-func (d ParamFilterDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
+func (d ParamFilterDecorator) validateMsgs(msgs []sdk.Msg) error {
 	if len(msgs) == 0 {
 		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "must include at least one message")
 	}
@@ -75,7 +75,7 @@ func (d ParamFilterDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
 				return err
 			}
 
-			if err := d.checkNestedMsgs(nested); err != nil {
+			if err := d.validateMsgs(nested); err != nil {
 				return err
 			}
 		case *govv1.MsgSubmitProposal:
@@ -84,7 +84,7 @@ func (d ParamFilterDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
 				return err
 			}
 
-			if err := d.checkNestedMsgs(nested); err != nil {
+			if err := d.validateMsgs(nested); err != nil {
 				return err
 			}
 		default:

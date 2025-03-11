@@ -74,8 +74,7 @@ func NewAnteHandler(
 		// available to blob data in a data square. Only applies to app version
 		// >= 2.
 		blobante.NewBlobShareDecorator(blobKeeper),
-		// Ensure that tx's with a MsgSubmitProposal have at least one proposal
-		// message.
+		// Ensure that txs with MsgSubmitProposal/MsgExec have at least one message and param filters are applied.
 		NewParamFilterDecorator(paramFilters),
 		// Side effect: increment the nonce for all tx signers.
 		ante.NewIncrementSequenceDecorator(accountKeeper),

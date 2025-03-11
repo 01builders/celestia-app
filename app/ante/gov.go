@@ -2,24 +2,45 @@ package ante
 
 import (
 	"cosmossdk.io/errors"
-	gogoany "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	gogoproto "github.com/cosmos/gogoproto/proto"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+var paramFilters = map[string]func(msg sdk.Msg) error{
+	sdk.MsgTypeURL((*stakingtypes.MsgUpdateParams)(nil)): func(msg sdk.Msg) error {
+		msgUpdateParams, ok := msg.(*stakingtypes.MsgUpdateParams)
+		if !ok {
+			return errors.Wrapf(sdkerrors.ErrInvalidType, "expected %T, got %T", (*stakingtypes.MsgUpdateParams)(nil), msg)
+		}
+
+		defaultParams := stakingtypes.DefaultParams()
+		if msgUpdateParams.Params.BondDenom != defaultParams.BondDenom {
+			return errors.Wrapf(sdkerrors.ErrUnauthorized, "invalid bond denom: expected %s, got %s", defaultParams.BondDenom, msgUpdateParams.Params.BondDenom)
+		}
+
+		if msgUpdateParams.Params.UnbondingTime != defaultParams.UnbondingTime {
+			return errors.Wrapf(sdkerrors.ErrUnauthorized, "invalid unbonding time: expected %s, got %s", defaultParams.UnbondingTime, msgUpdateParams.Params.UnbondingTime)
+		}
+
+		return nil
+	},
+}
 
 // GovProposalDecorator ensures that a tx with a MsgSubmitProposal has at least one message in the proposal.
 // Additionally it replace the x/paramfilter module that existed in v3 and earlier versions.
 type GovProposalDecorator struct {
-	// forbiddenGovUpdateParams is a map of type_url to a list of parameter fields that cannot be changed via governance.
-	forbiddenGovUpdateParams map[string][]string
+	// paramFilters is a map of type_url to a list of parameter fields that cannot be changed via governance.
+	paramFilters map[string]func(msg sdk.Msg) error
 }
 
-func NewGovProposalDecorator(forbiddenParams map[string][]string) GovProposalDecorator {
-	return GovProposalDecorator{forbiddenParams}
+func NewGovProposalDecorator(paramFilters map[string]func(sdk.Msg) error) GovProposalDecorator {
+	return GovProposalDecorator{
+		paramFilters: paramFilters,
+	}
 }
 
 // AnteHandle implements the AnteHandler interface.
@@ -27,19 +48,29 @@ func NewGovProposalDecorator(forbiddenParams map[string][]string) GovProposalDec
 // It ensures params are filtered within messages
 func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	for _, m := range tx.GetMsgs() {
-		if proposal, ok := m.(*govv1.MsgSubmitProposal); ok {
-			if len(proposal.Messages) == 0 {
+		if msgSubmitProp, ok := m.(*govv1.MsgSubmitProposal); ok {
+			msgs, err := msgSubmitProp.GetMsgs()
+			if err != nil {
+				return ctx, err
+			}
+
+			if len(msgs) == 0 {
 				return ctx, errors.Wrapf(gov.ErrNoProposalMsgs, "must include at least one message in proposal")
 			}
 
-			if err := d.checkNestedMsgs(proposal.Messages); err != nil {
+			if err := d.checkNestedMsgs(msgs); err != nil {
 				return ctx, err
 			}
 		}
 
 		// we need to check if a gov proposal wasn't contained in a authz message
 		if msgExec, ok := m.(*authz.MsgExec); ok {
-			if err := d.checkNestedMsgs(msgExec.Msgs); err != nil {
+			msgs, err := msgExec.GetMessages()
+			if err != nil {
+				return ctx, err
+			}
+
+			if err := d.checkNestedMsgs(msgs); err != nil {
 				return ctx, err
 			}
 		}
@@ -48,48 +79,35 @@ func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	return next(ctx, tx, simulate)
 }
 
-func (d GovProposalDecorator) checkNestedMsgs(msgs []*gogoany.Any) error {
+func (d GovProposalDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
 	for _, msg := range msgs {
-		if msg.TypeUrl == "/"+gogoproto.MessageName((*authz.MsgExec)(nil)) {
-			// unmarshal the authz.MsgExec and check nested messages
-			exec := &authz.MsgExec{}
-			// todo unmarshal
-
-			if err := d.checkNestedMsgs(exec.Msgs); err != nil {
+		switch m := msg.(type) {
+		case *authz.MsgExec:
+			nested, err := m.GetMessages()
+			if err != nil {
 				return err
 			}
-		}
 
-		if msg.TypeUrl == "/"+gogoproto.MessageName((*govv1.MsgSubmitProposal)(nil)) {
-			// unmarshal the gov.MsgSubmitProposal and check nested messages
-			proposal := &govv1.MsgSubmitProposal{}
-			// todo unmarshal
-
-			if len(proposal.Messages) == 0 {
-				return errors.Wrapf(gov.ErrNoProposalMsgs, "must include at least one message in proposal")
-			}
-
-			if err := d.checkNestedMsgs(proposal.Messages); err != nil {
+			if err := d.checkNestedMsgs(nested); err != nil {
 				return err
 			}
-		}
+		case *govv1.MsgSubmitProposal:
+			nested, err := m.GetMsgs()
+			if err != nil {
+				return err
+			}
 
-		forbiddenParams, ok := d.forbiddenGovUpdateParams[msg.TypeUrl]
-		if !ok {
-			continue
-		}
-
-		if hasForbiddenParams(msg, msg.TypeUrl, forbiddenParams) {
-			return errors.Wrapf(proposal.ErrSettingParameter, "cannot update %s parameters via governance", msg.TypeUrl)
+			if err := d.checkNestedMsgs(nested); err != nil {
+				return err
+			}
+		default:
+			if paramFilter, found := d.paramFilters[sdk.MsgTypeURL(m)]; found {
+				if err := paramFilter(m); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
 	return nil
-}
-
-func hasForbiddenParams(_ sdk.Msg, _ string, _ []string) bool {
-	// unmarshal msg to go struct
-	// check if any forbidden param is present and different from the default value
-
-	return false
 }

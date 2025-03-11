@@ -76,7 +76,7 @@ func NewAnteHandler(
 		blobante.NewBlobShareDecorator(blobKeeper),
 		// Ensure that tx's with a MsgSubmitProposal have at least one proposal
 		// message.
-		NewGovProposalDecorator(forbiddenGovUpdateParams),
+		// NewGovProposalDecorator(forbiddenGovUpdateParams),
 		// Side effect: increment the nonce for all tx signers.
 		ante.NewIncrementSequenceDecorator(accountKeeper),
 		// Ensure that the tx is not an IBC packet or update message that has already been processed.

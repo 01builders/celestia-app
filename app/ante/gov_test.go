@@ -1,87 +1,203 @@
 package ante_test
 
-// import (
-// 	"testing"
+import (
+	"errors"
+	"fmt"
+	"testing"
 
-// 	"cosmossdk.io/math"
-// 	"github.com/cosmos/cosmos-sdk/types"
-// 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-// 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-// 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-// 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-// 	gogoproto "github.com/cosmos/gogoproto/proto"
-// 	"github.com/stretchr/testify/require"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/stretchr/testify/require"
 
-// 	"github.com/celestiaorg/celestia-app/v4/app"
-// 	"github.com/celestiaorg/celestia-app/v4/app/ante"
-// 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-// 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-// 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-// )
+	"github.com/celestiaorg/celestia-app/v4/app/ante"
+)
 
-// func TestGovDecorator(t *testing.T) {
-// 	blockedParams := map[string][]string{
-// 		gogoproto.MessageName(&banktypes.MsgUpdateParams{}):      {"send_enabled"},
-// 		gogoproto.MessageName(&stakingtypes.MsgUpdateParams{}):   {"params.bond_denom", "params.unbonding_time"},
-// 		gogoproto.MessageName(&consensustypes.MsgUpdateParams{}): {"validator"},
-// 	}
+func TestGovProposalDecorator_AnteHandle(t *testing.T) {
+	testCases := []struct {
+		name          string
+		msgs          []sdk.Msg
+		paramFilters  map[string]ante.ParamFilter
+		expectedError error
+	}{
+		{
+			name: "valid MsgSubmitProposal with allowed msg",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(&banktypes.MsgUpdateParams{}),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgUpdateParams{}): func(sdk.Msg) error {
+					return nil
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "invalid MsgSubmitProposal with disallowed msg",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(&banktypes.MsgUpdateParams{}),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgUpdateParams{}): func(sdk.Msg) error {
+					return fmt.Errorf("unauthorized message")
+				},
+			},
+			expectedError: fmt.Errorf("unauthorized message"),
+		},
+		{
+			name: "invalid MsgSubmitProposal with disallowed params",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(&authz.MsgGrant{}),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&authz.MsgGrant{}): func(sdk.Msg) error {
+					return errors.New("unauthorized message in proposal")
+				},
+			},
+			expectedError: errors.New("unauthorized message in proposal"),
+		},
+		{
+			name: "valid Msg outside of MsgSubmitProposal or Authz",
+			msgs: []sdk.Msg{
+				&banktypes.MsgSend{},
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgSend{}): func(sdk.Msg) error {
+					return errors.New("unauthorized message")
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "empty MsgSubmitProposal",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(),
+			},
+			paramFilters:  map[string]ante.ParamFilter{},
+			expectedError: errors.New("must include at least one message: invalid request"),
+		},
+		{
+			name: "invalid generic message",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(&authz.MsgRevoke{}),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&authz.MsgRevoke{}): func(sdk.Msg) error {
+					return errors.New("unauthorized message")
+				},
+			},
+			expectedError: errors.New("unauthorized message"),
+		},
+		{
+			name: "MsgSubmitProposal with mixed messages (valid and invalid)",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(&banktypes.MsgSend{}, &authz.MsgGrant{}),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgSend{}): func(sdk.Msg) error {
+					return nil
+				},
+				sdk.MsgTypeURL(&authz.MsgGrant{}): func(sdk.Msg) error {
+					return errors.New("unauthorized message in proposal")
+				},
+			},
+			expectedError: errors.New("unauthorized message in proposal"),
+		},
+		{
+			name: "empty AuthZ",
+			msgs: []sdk.Msg{
+				createAuthzMsgExec(),
+			},
+			paramFilters:  map[string]ante.ParamFilter{},
+			expectedError: errors.New("must include at least one message: invalid request"),
+		},
+		{
+			name: "nested governance proposal",
+			msgs: []sdk.Msg{
+				createMsgSubmitProposal(createMsgSubmitProposal(&banktypes.MsgUpdateParams{})),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgUpdateParams{}): func(sdk.Msg) error {
+					return fmt.Errorf("unauthorized message")
+				},
+			},
+			expectedError: fmt.Errorf("unauthorized message"),
+		},
+		{
+			name: "nested authz proposal",
+			msgs: []sdk.Msg{
+				createAuthzMsgExec(createAuthzMsgExec(&banktypes.MsgUpdateParams{})),
+			},
+			paramFilters: map[string]ante.ParamFilter{
+				sdk.MsgTypeURL(&banktypes.MsgUpdateParams{}): func(sdk.Msg) error {
+					return fmt.Errorf("unauthorized message")
+				},
+			},
+			expectedError: fmt.Errorf("unauthorized message"),
+		},
+	}
 
-// 	decorator := ante.NewGovProposalDecorator(blockedParams)
-// 	anteHandler := types.ChainAnteDecorators(decorator)
-// 	accountStr := testnode.RandomAddress().String()
-// 	coins := types.NewCoins(types.NewCoin(appconsts.BondDenom, math.NewInt(10)))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			anteHandler := ante.NewGovProposalDecorator(tc.paramFilters)
+			_, err := anteHandler.AnteHandle(sdk.Context{}, mockTx(tc.msgs), false, nextAnteHandler)
+			if tc.expectedError != nil {
+				require.EqualError(t, err, tc.expectedError.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
-// 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
-// 	from := testnode.RandomAddress().Bytes()
-// 	to := testnode.RandomAddress().Bytes()
-// 	msgSend := banktypes.NewMsgSend(from, to, coins)
+func mockTx(msgs []sdk.Msg) sdk.Tx {
+	return &mockTxImplementation{msgs: msgs}
+}
 
-// 	msgProposal, err := govtypes.NewMsgSubmitProposal(
-// 		[]types.Msg{msgSend}, coins, accountStr, "", "", "", false)
-// 	require.NoError(t, err)
-// 	msgEmptyProposal, err := govtypes.NewMsgSubmitProposal(
-// 		[]types.Msg{}, coins, accountStr, "do nothing", "", "", false)
-// 	require.NoError(t, err)
+type mockTxImplementation struct {
+	sdk.Tx
+	msgs []sdk.Msg
+}
 
-// 	testCases := []struct {
-// 		name   string
-// 		msg    []types.Msg
-// 		expErr bool
-// 	}{
-// 		{
-// 			name:   "good proposal; has at least one message",
-// 			msg:    []types.Msg{msgProposal},
-// 			expErr: false,
-// 		},
-// 		{
-// 			name:   "bad proposal; has no messages",
-// 			msg:    []types.Msg{msgEmptyProposal},
-// 			expErr: true,
-// 		},
-// 		{
-// 			name:   "good proposal; multiple messages in tx",
-// 			msg:    []types.Msg{msgProposal, msgSend},
-// 			expErr: false,
-// 		},
-// 		{
-// 			name:   "bad proposal; multiple messages in tx but proposal has no messages",
-// 			msg:    []types.Msg{msgEmptyProposal, msgSend},
-// 			expErr: true,
-// 		},
-// 	}
+func (m *mockTxImplementation) GetMsgs() []sdk.Msg {
+	return m.msgs
+}
 
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			ctx := types.Context{}
-// 			builder := enc.TxConfig.NewTxBuilder()
-// 			require.NoError(t, builder.SetMsgs(tc.msg...))
-// 			tx := builder.GetTx()
-// 			_, err := anteHandler(ctx, tx, false)
-// 			if tc.expErr {
-// 				require.Error(t, err)
-// 			} else {
-// 				require.NoError(t, err)
-// 			}
-// 		})
-// 	}
-// }
+func nextAnteHandler(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) {
+	return ctx, nil
+}
+
+// createAuthzMsgExec constructs an instance of authz.MsgExec containing the provided messages.
+func createAuthzMsgExec(msgs ...sdk.Msg) *authz.MsgExec {
+	anys := make([]*codectypes.Any, len(msgs))
+
+	for i, msg := range msgs {
+		anyMsg, err := codectypes.NewAnyWithValue(msg)
+		if err != nil {
+			panic(err)
+		}
+		anys[i] = anyMsg
+	}
+
+	return &authz.MsgExec{
+		Msgs: anys,
+	}
+}
+
+// createMsgSubmitProposal constructs an instance of govv1.MsgSubmitProposal containing the provided messages.
+func createMsgSubmitProposal(msgs ...sdk.Msg) *govv1.MsgSubmitProposal {
+	anys := make([]*codectypes.Any, len(msgs))
+	for i, msg := range msgs {
+		anyMsg, err := codectypes.NewAnyWithValue(msg)
+		if err != nil {
+			panic(err)
+		}
+		anys[i] = anyMsg
+	}
+
+	return &govv1.MsgSubmitProposal{
+		Messages: anys,
+	}
+}

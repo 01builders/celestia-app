@@ -3,8 +3,8 @@ package ante
 import (
 	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
@@ -34,10 +34,6 @@ func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 				return ctx, err
 			}
 
-			if len(msgs) == 0 {
-				return ctx, errors.Wrapf(gov.ErrNoProposalMsgs, "must include at least one message in proposal")
-			}
-
 			if err := d.checkNestedMsgs(msgs); err != nil {
 				return ctx, err
 			}
@@ -59,7 +55,16 @@ func (d GovProposalDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	return next(ctx, tx, simulate)
 }
 
+// checkNestedMsgs validates the nested messages within a `MsgSubmitProposal` or `MsgExec`.
+// It ensures that:
+// 1. At least one message is included in the proposal.
+// 2. Recursively processes nested messages in case of `MsgExec` or `MsgSubmitProposal` types.
+// 3. Applies the provided parameter filters to relevant messages, checking if parameter changes are allowed.
 func (d GovProposalDecorator) checkNestedMsgs(msgs []sdk.Msg) error {
+	if len(msgs) == 0 {
+		return errors.Wrapf(sdkerrors.ErrInvalidRequest, "must include at least one message")
+	}
+
 	for _, msg := range msgs {
 		switch m := msg.(type) {
 		case *authz.MsgExec:

@@ -10,6 +10,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+type ParamFilter func(sdk.Msg) error
+
 var paramFilters = map[string]func(msg sdk.Msg) error{
 	sdk.MsgTypeURL((*stakingtypes.MsgUpdateParams)(nil)): func(msg sdk.Msg) error {
 		msgUpdateParams, ok := msg.(*stakingtypes.MsgUpdateParams)
@@ -34,10 +36,10 @@ var paramFilters = map[string]func(msg sdk.Msg) error{
 // Additionally it replace the x/paramfilter module that existed in v3 and earlier versions.
 type GovProposalDecorator struct {
 	// paramFilters is a map of type_url to a list of parameter fields that cannot be changed via governance.
-	paramFilters map[string]func(msg sdk.Msg) error
+	paramFilters map[string]ParamFilter
 }
 
-func NewGovProposalDecorator(paramFilters map[string]func(sdk.Msg) error) GovProposalDecorator {
+func NewGovProposalDecorator(paramFilters map[string]ParamFilter) GovProposalDecorator {
 	return GovProposalDecorator{
 		paramFilters: paramFilters,
 	}

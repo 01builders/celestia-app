@@ -1,7 +1,6 @@
 package ante_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -116,13 +115,7 @@ func TestBlobShareDecorator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			kr, _ := testnode.NewKeyring(testfactory.TestAccName)
-			signer, err := user.NewSigner(
-				kr,
-				enc.TxConfig,
-				testfactory.ChainID,
-				appconsts.LatestVersion,
-				user.NewAccount(testfactory.TestAccName, 1, 0),
-			)
+			signer, err := user.NewSigner(kr, enc.TxConfig, testfactory.ChainID, user.NewAccount(testfactory.TestAccName, 1, 0))
 			require.NoError(t, err)
 
 			blobTx := blobfactory.RandBlobTxs(signer, rand, 1, tc.blobsPerPFB, tc.blobSize)

@@ -37,3 +37,9 @@ func (k Keeper) GovMaxSquareSize(ctx sdk.Context) (res uint64) {
 	k.legacySubspace.Get(ctx, types.KeyGovMaxSquareSize, &res)
 	return res
 }
+
+// SetParamsLegacy sets the params in the legacy store space.
+// TODO: this can be removed in versions after migrations have run.
+func (k Keeper) SetParamsLegacy(ctx sdk.Context, params types.Params) {
+	k.legacySubspace.SetParamSet(ctx, &params)
+}

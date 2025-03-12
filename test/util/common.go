@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	"testing"
 	"time"
 
@@ -362,6 +363,7 @@ func MakeAminoCodec() *codec.LegacyAmino {
 	sdk.RegisterLegacyAminoCodec(cdc)
 	ccodec.RegisterCrypto(cdc)
 	params.AppModule{}.RegisterLegacyAminoCodec(cdc)
+	blob.AppModule{}.RegisterLegacyAminoCodec(cdc)
 	return cdc
 }
 

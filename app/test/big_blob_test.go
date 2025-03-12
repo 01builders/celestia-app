@@ -46,7 +46,7 @@ func (s *BigBlobSuite) SetupSuite() {
 	cfg := testnode.DefaultConfig().
 		WithFundedAccounts(s.accounts...).
 		WithTendermintConfig(tmConfig).
-		WithConsensusParams(cParams)
+		WithConsensusParams(cParams).WithSuppressLogs(false)
 
 	cctx, _, _ := testnode.NewNetwork(t, cfg)
 	s.cctx = cctx

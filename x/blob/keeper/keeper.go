@@ -2,8 +2,8 @@ package keeper
 
 import (
 	"context"
-	"cosmossdk.io/errors"
 
+	"cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"

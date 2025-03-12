@@ -1,0 +1,19 @@
+syntax = "proto3";
+package celestia.minfee.v1;
+
+import "celestia/minfee/v1/params.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/celestiaorg/celestia-app/x/minfee";
+
+// MsgUpdateMinfeeParams
+message MsgUpdateMinfeeParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  // authority is the address of the governance account.
+  string authority = 1;
+  // params defines the minfee parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}

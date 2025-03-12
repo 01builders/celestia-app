@@ -27,15 +27,13 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // GasPerBlobByte returns the GasPerBlobByte param
-func (k Keeper) GasPerBlobByte(ctx sdk.Context) (res uint32) {
-	k.legacySubspace.Get(ctx, types.KeyGasPerBlobByte, &res)
-	return res
+func (k Keeper) GasPerBlobByte(ctx sdk.Context) uint32 {
+	return k.GetParams(ctx).GasPerBlobByte
 }
 
 // GovMaxSquareSize returns the GovMaxSquareSize param
-func (k Keeper) GovMaxSquareSize(ctx sdk.Context) (res uint64) {
-	k.legacySubspace.Get(ctx, types.KeyGovMaxSquareSize, &res)
-	return res
+func (k Keeper) GovMaxSquareSize(ctx sdk.Context) uint64 {
+	return k.GetParams(ctx).GovMaxSquareSize
 }
 
 // SetParamsLegacy sets the params in the legacy store space.

@@ -3,10 +3,6 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -16,7 +12,11 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	tmdb "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	proto "github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
@@ -114,6 +114,6 @@ func CreateKeeper(t *testing.T, version uint64) (*keeper.Keeper, store.CommitMul
 	// TODO: this should be changed to k.SetParams after migrations have been run.
 	k.SetParamsLegacy(ctx, types.DefaultParams())
 	// k.SetParams(ctx, types.DefaultParams())
-	
+
 	return k, stateStore, ctx
 }

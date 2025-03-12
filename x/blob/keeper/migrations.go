@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
 // MigrateParams handles the migration of blob module parameters stored in the legacy subspace to the new parameter store.

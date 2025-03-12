@@ -1,12 +1,13 @@
 package keeper_test
 
 import (
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
 	"testing"
 
-	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
+	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
 func TestMigrateParams(t *testing.T) {

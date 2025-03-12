@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	"testing"
 	"time"
 
@@ -44,6 +43,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	appparams "github.com/celestiaorg/celestia-app/v4/app/params"
+	"github.com/celestiaorg/celestia-app/v4/x/blob"
 )
 
 // TODO: This probably should be deleted.

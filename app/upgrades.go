@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	blobkeeper "github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
 
 	storetypes "cosmossdk.io/store/types"
 	circuittypes "cosmossdk.io/x/circuit/types"
@@ -80,6 +81,11 @@ func (app App) RegisterUpgradeHandlers() {
 
 			// migrate consensus params from the legacy params keeper to consensus params module
 			if err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusKeeper.ParamsStore); err != nil {
+				return nil, err
+			}
+
+			// migration to self managed params.
+			if err := blobkeeper.MigrateParams(sdkCtx, app.BlobKeeper); err != nil {
 				return nil, err
 			}
 

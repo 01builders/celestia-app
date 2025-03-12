@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"cosmossdk.io/errors"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -69,12 +70,12 @@ func (k Keeper) UpdateBlobParams(goCtx context.Context, msg *types.MsgUpdateBlob
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// ensure that the sender has the authority to update the parameters.
-	if msg.Authority != k.authority {
-		return nil, sdkerrors.ErrUnauthorized.Wrapf("invalid authority; expected: %s, got: %s", k.authority, msg.Authority)
+	if msg.Authority != k.GetAuthority() {
+		return nil, errors.Wrapf(sdkerrors.ErrUnauthorized, "invalid authority: expected: %s, got: %s", k.authority, msg.Authority)
 	}
 
 	if err := msg.Params.Validate(); err != nil {
-		return nil, sdkerrors.ErrInvalidRequest.Wrapf("invalid parameters: %s", err)
+		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid parameters: %s", err)
 	}
 
 	k.SetParams(ctx, msg.Params)

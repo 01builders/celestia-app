@@ -17,21 +17,24 @@ const (
 
 // Keeper handles all the state changes for the blob module.
 type Keeper struct {
-	cdc        codec.Codec
-	paramStore paramtypes.Subspace
+	cdc            codec.Codec
+	legacySubspace paramtypes.Subspace
+	authority      string
 }
 
 func NewKeeper(
 	cdc codec.Codec,
-	ps paramtypes.Subspace,
+	legacySubspace paramtypes.Subspace,
+	authority string,
 ) *Keeper {
-	if !ps.HasKeyTable() {
-		ps = ps.WithKeyTable(types.ParamKeyTable())
+	if !legacySubspace.HasKeyTable() {
+		legacySubspace = legacySubspace.WithKeyTable(types.ParamKeyTable())
 	}
 
 	return &Keeper{
-		cdc:        cdc,
-		paramStore: ps,
+		cdc:            cdc,
+		legacySubspace: legacySubspace,
+		authority:      authority,
 	}
 }
 
@@ -49,4 +52,9 @@ func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*
 	}
 
 	return &types.MsgPayForBlobsResponse{}, nil
+}
+
+// GetAuthority returns the client submodule's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }

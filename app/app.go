@@ -362,6 +362,7 @@ func New(
 	app.BlobKeeper = *blobkeeper.NewKeeper(
 		encodingConfig.Codec,
 		app.GetSubspace(blobtypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)

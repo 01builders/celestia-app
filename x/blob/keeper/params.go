@@ -19,21 +19,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return params
 }
 
-// SetParams sets the total set of blob parameters.
+// SetParams sets the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&params)
 	store.Set([]byte(types.ParamsKey), bz)
-}
-
-// GasPerBlobByte returns the GasPerBlobByte param
-func (k Keeper) GasPerBlobByte(ctx sdk.Context) uint32 {
-	return k.GetParams(ctx).GasPerBlobByte
-}
-
-// GovMaxSquareSize returns the GovMaxSquareSize param
-func (k Keeper) GovMaxSquareSize(ctx sdk.Context) uint64 {
-	return k.GetParams(ctx).GovMaxSquareSize
 }
 
 // SetParamsLegacy sets the params in the legacy store space.

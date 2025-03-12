@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	storetypes "cosmossdk.io/store/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -42,6 +43,11 @@ func NewKeeper(
 	}
 }
 
+// GetAuthority returns the client submodule's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
+}
+
 // PayForBlobs consumes gas based on the blob sizes in the MsgPayForBlobs.
 func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*types.MsgPayForBlobsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -58,7 +64,27 @@ func (k Keeper) PayForBlobs(goCtx context.Context, msg *types.MsgPayForBlobs) (*
 	return &types.MsgPayForBlobsResponse{}, nil
 }
 
-// GetAuthority returns the client submodule's authority.
-func (k Keeper) GetAuthority() string {
-	return k.authority
+// UpdateBlobParams updates blob module parameters.
+func (k Keeper) UpdateBlobParams(goCtx context.Context, msg *types.MsgUpdateBlobParams) (*types.MsgUpdateBlobParamsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// ensure that the sender has the authority to update the parameters.
+	if msg.Authority != k.authority {
+		return nil, sdkerrors.ErrUnauthorized.Wrapf("invalid authority; expected: %s, got: %s", k.authority, msg.Authority)
+	}
+
+	if err := msg.Params.Validate(); err != nil {
+		return nil, sdkerrors.ErrInvalidRequest.Wrapf("invalid parameters: %s", err)
+	}
+
+	k.SetParams(ctx, msg.Params)
+
+	// Emit an event indicating successful parameter update.
+	if err := ctx.EventManager().EmitTypedEvent(
+		types.NewUpdateBlobParamsEvent(msg.Authority, msg.Params),
+	); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateBlobParamsResponse{}, nil
 }

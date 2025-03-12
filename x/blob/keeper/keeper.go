@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,12 +19,14 @@ const (
 // Keeper handles all the state changes for the blob module.
 type Keeper struct {
 	cdc            codec.Codec
+	storeKey       storetypes.StoreKey
 	legacySubspace paramtypes.Subspace
 	authority      string
 }
 
 func NewKeeper(
 	cdc codec.Codec,
+	storeKey storetypes.StoreKey,
 	legacySubspace paramtypes.Subspace,
 	authority string,
 ) *Keeper {
@@ -33,6 +36,7 @@ func NewKeeper(
 
 	return &Keeper{
 		cdc:            cdc,
+		storeKey:       storeKey,
 		legacySubspace: legacySubspace,
 		authority:      authority,
 	}

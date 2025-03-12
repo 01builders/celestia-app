@@ -6,17 +6,24 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
-// GetParams gets all parameters as types.Params
+// GetParams returns the total set blob parameters.
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	return types.NewParams(
-		k.GasPerBlobByte(ctx),
-		k.GovMaxSquareSize(ctx),
-	)
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.ParamsKey))
+	if len(bz) == 0 {
+		return types.Params{}
+	}
+
+	var params types.Params
+	k.cdc.MustUnmarshal(bz, &params)
+	return params
 }
 
-// SetParams sets the params
+// SetParams sets the total set of blob parameters.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.legacySubspace.SetParamSet(ctx, &params)
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&params)
+	store.Set([]byte(types.ParamsKey), bz)
 }
 
 // GasPerBlobByte returns the GasPerBlobByte param

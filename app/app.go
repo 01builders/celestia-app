@@ -361,6 +361,7 @@ func New(
 
 	app.BlobKeeper = *blobkeeper.NewKeeper(
 		encodingConfig.Codec,
+		keys[blobtypes.StoreKey],
 		app.GetSubspace(blobtypes.ModuleName),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)

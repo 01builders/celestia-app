@@ -3,6 +3,8 @@ package keeper_test
 import (
 	"bytes"
 	"fmt"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -102,7 +104,9 @@ func CreateKeeper(t *testing.T, version uint64) (*keeper.Keeper, store.CommitMul
 	)
 	k := keeper.NewKeeper(
 		cdc,
+		storetypes.NewKVStoreKey(types.StoreKey),
 		paramsSubspace,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	k.SetParams(ctx, types.DefaultParams())
 

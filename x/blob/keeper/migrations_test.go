@@ -24,8 +24,8 @@ func TestMigrateParams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			k, _, ctx := CreateKeeper(t, appconsts.LatestVersion)
-
-			err := keeper.MigrateParams(ctx, *k)
+			migrator := keeper.NewMigrator(*k)
+			err := migrator.MigrateParams(ctx)
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedParams, k.GetParams(ctx))
 		})

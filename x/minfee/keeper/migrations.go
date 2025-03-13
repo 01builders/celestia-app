@@ -18,7 +18,7 @@ func NewMigrator(keeper *Keeper) Migrator {
 // MigrateParams handles the migration of minfee module parameters stored in the legacy subspace to the new parameter store.
 // It validates the existing parameters and sets them in the updated format using the Keeper's parameter store.
 func (m *Migrator) MigrateParams(ctx sdk.Context) error {
-	var params minfeetypes.LegacyParams
+	var params minfeetypes.Params
 	m.keeper.legacySubspace.GetParamSet(ctx, &params)
 	if err := params.Validate(); err != nil {
 		return err

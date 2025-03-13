@@ -20,5 +20,5 @@ func ValidateGenesis(genesis *GenesisState) error {
 		return fmt.Errorf("network min gas price cannot be negative or zero: %g", genesis.NetworkMinGasPrice)
 	}
 
-	return nil
+	return genesis.Params.Validate()
 }

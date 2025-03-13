@@ -53,3 +53,8 @@ func ValidateMinGasPrice(i interface{}) error {
 
 	return nil
 }
+
+// Validate validates the set of params
+func (p Params) Validate() error {
+	return ValidateMinGasPrice(p.NetworkMinGasPrice)
+}

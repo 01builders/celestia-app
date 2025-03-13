@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -12,7 +13,9 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, genState types.GenesisState) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// TODO: validate params
+	if err := genState.Params.Validate(); err != nil {
+		return fmt.Errorf("invalid minfee genesis state parameters: %w", err)
+	}
 
 	k.SetParams(sdkCtx, genState.Params)
 	return nil

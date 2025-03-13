@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -19,9 +18,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic = AppModule{}
-	_ module.AppModule      = AppModule{}
-	_ module.HasGenesis     = AppModule{}
+	_ module.AppModuleBasic   = AppModule{}
+	_ module.AppModule        = AppModule{}
+	_ module.HasGenesis       = AppModule{}
+	_ module.HasGenesisBasics = AppModule{}
 
 	_ appmodule.HasServices = AppModule{}
 	_ appmodule.AppModule   = AppModule{}
@@ -94,19 +94,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, gs json.RawM
 		panic(fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err))
 	}
 
-	subspace, exists := am.minfeeKeeper.GetParamsKeeper().GetSubspace(types.ModuleName)
-	if !exists {
-		panic(fmt.Errorf("minfee subspace not set"))
+	if err := am.minfeeKeeper.InitGenesis(ctx, genesisState); err != nil {
+		panic(fmt.Errorf("failed to initialize %s genesis state: %w", types.ModuleName, err))
 	}
-
-	subspace = types.RegisterMinFeeParamTable(subspace)
-
-	// Set the network min gas price initial value
-	networkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", genesisState.NetworkMinGasPrice))
-	if err != nil {
-		panic(fmt.Errorf("failed to convert NetworkMinGasPrice to "))
-	}
-	subspace.SetParamSet(sdk.UnwrapSDKContext(ctx), &types.Params{NetworkMinGasPrice: networkMinGasPriceDec})
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the minfee module.

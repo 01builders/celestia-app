@@ -1,6 +1,7 @@
 syntax = "proto3";
 package celestia.minfee.v1;
 
+import "celestia/minfee/v1/params.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 
@@ -13,4 +14,5 @@ message GenesisState {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
+  Params params = 2 [(gogoproto.nullable) = false];
 }

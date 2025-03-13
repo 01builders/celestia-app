@@ -14,7 +14,7 @@ func (k Keeper) InitGenesis(ctx context.Context, genState types.GenesisState) er
 
 	// TODO: validate params
 
-	k.SetParams(sdkCtx, types.Params(genState))
+	k.SetParams(sdkCtx, genState.Params)
 	return nil
 }
 

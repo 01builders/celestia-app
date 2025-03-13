@@ -25,6 +25,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
+	minfeekeeper "github.com/celestiaorg/celestia-app/v4/x/minfee/keeper"
 	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 )
 
@@ -47,7 +48,7 @@ func TestValidateTxFee(t *testing.T) {
 
 	feeAmount := int64(1000)
 
-	paramsKeeper, stateStore := setUp(t)
+	paramsKeeper, minFeeKeeper, stateStore := setUp(t)
 
 	testCases := []struct {
 		name      string
@@ -130,7 +131,11 @@ func TestValidateTxFee(t *testing.T) {
 			subspace = minfeetypes.RegisterMinFeeParamTable(subspace)
 			subspace.Set(ctx, minfeetypes.KeyNetworkMinGasPrice, networkMinGasPriceDec)
 
-			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper)
+			minFeeKeeper.SetParams(ctx, minfeetypes.Params{
+				NetworkMinGasPrice: networkMinGasPriceDec,
+			})
+
+			_, _, err = ante.ValidateTxFee(ctx, tx, minFeeKeeper)
 			if tc.expErr {
 				require.Error(t, err)
 			} else {
@@ -140,14 +145,16 @@ func TestValidateTxFee(t *testing.T) {
 	}
 }
 
-func setUp(t *testing.T) (paramkeeper.Keeper, storetypes.CommitMultiStore) {
+func setUp(t *testing.T) (paramkeeper.Keeper, *minfeekeeper.Keeper, storetypes.CommitMultiStore) {
 	storeKey := storetypes.NewKVStoreKey(paramtypes.StoreKey)
+	mfStoreKey := storetypes.NewKVStoreKey(minfeetypes.StoreKey)
 	tStoreKey := storetypes.NewTransientStoreKey(paramtypes.TStoreKey)
 
 	// Create the state store
 	db := dbm.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mfStoreKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(tStoreKey, storetypes.StoreTypeTransient, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())
 
@@ -155,6 +162,8 @@ func setUp(t *testing.T) (paramkeeper.Keeper, storetypes.CommitMultiStore) {
 
 	// Create a params keeper and set the network min gas price.
 	paramsKeeper := paramkeeper.NewKeeper(codec.NewProtoCodec(registry), codec.NewLegacyAmino(), storeKey, tStoreKey)
-	paramsKeeper.Subspace(minfeetypes.ModuleName)
-	return paramsKeeper, stateStore
+	subspace := paramsKeeper.Subspace(minfeetypes.ModuleName)
+
+	mfk := minfeekeeper.NewKeeper(encoding.MakeTestConfig(app.ModuleEncodingRegisters...).Codec, mfStoreKey, paramsKeeper, subspace, "")
+	return paramsKeeper, mfk, stateStore
 }

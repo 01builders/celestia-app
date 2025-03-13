@@ -453,7 +453,7 @@ func New(
 		encodingConfig.TxConfig.SignModeHandler(),
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
-		app.ParamsKeeper,
+		app.MinFeeKeeper,
 		&app.CircuitKeeper,
 		app.GovParamFilters(),
 	))

@@ -14,16 +14,18 @@ var _ types.QueryServer = &Keeper{}
 
 // NetworkMinGasPrice returns the network minimum gas price.
 func (k *Keeper) NetworkMinGasPrice(ctx context.Context, _ *types.QueryNetworkMinGasPrice) (*types.QueryNetworkMinGasPriceResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	var params types.Params
-	subspace, found := k.GetParamsKeeper().GetSubspace(types.ModuleName)
-	if !found {
-		return nil, status.Errorf(codes.NotFound, "subspace not found for minfee. Minfee is only active in app version 2 and onwards")
-	}
-	subspace.GetParamSet(sdkCtx, &params)
-	return &types.QueryNetworkMinGasPriceResponse{NetworkMinGasPrice: params.NetworkMinGasPrice}, nil
+	// delegate to the self managed params.
+	networkMinGasPrice := k.GetParams(sdk.UnwrapSDKContext(ctx)).NetworkMinGasPrice
+
+	// TODO: do we need to fallback to the subspace method for v3 and below?
+
+	return &types.QueryNetworkMinGasPriceResponse{NetworkMinGasPrice: networkMinGasPrice}, nil
 }
 
-func (q *Keeper) Params(ctx context.Context, request *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	panic("implement me")
+func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	return &types.QueryParamsResponse{Params: k.GetParams(ctx)}, nil
 }

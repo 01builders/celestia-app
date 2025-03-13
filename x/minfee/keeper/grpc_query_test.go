@@ -2,6 +2,8 @@ package keeper_test
 
 import (
 	sdkmath "cosmossdk.io/math"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,28 +42,69 @@ func TestQueryParams(t *testing.T) {
 }
 
 func TestMsgUpdateParams(t *testing.T) {
-	testApp, _, _ := testutil.NewTestAppWithGenesisSet(app.DefaultConsensusParams())
-	msgServer := testApp.MinFeeKeeper
-	sdkCtx := testApp.NewContext(false)
-
-	expectedMinGasPrice := sdkmath.LegacyMustNewDecFromStr("0.0005")
-	// Create a message to update params
-	newParams := types.Params{
-		NetworkMinGasPrice: expectedMinGasPrice,
+	tests := []struct {
+		name                string
+		authority           string
+		newParams           types.Params
+		expectedError       bool
+		expectedMinGasPrice sdkmath.LegacyDec
+	}{
+		{
+			name:      "valid update with default authority (gov)",
+			authority: "",
+			newParams: types.Params{
+				NetworkMinGasPrice: sdkmath.LegacyMustNewDecFromStr("0.0005"),
+			},
+			expectedError:       false,
+			expectedMinGasPrice: sdkmath.LegacyMustNewDecFromStr("0.0005"),
+		},
+		{
+			name:      "valid update with correct authority",
+			authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			newParams: types.Params{
+				NetworkMinGasPrice: sdkmath.LegacyMustNewDecFromStr("0.0005"),
+			},
+			expectedError:       false,
+			expectedMinGasPrice: sdkmath.LegacyMustNewDecFromStr("0.0005"),
+		},
+		{
+			name:      "invalid update with incorrect authority",
+			authority: "invalid-authority",
+			newParams: types.Params{
+				NetworkMinGasPrice: sdkmath.LegacyMustNewDecFromStr("0.0005"),
+			},
+			expectedError:       true,
+			expectedMinGasPrice: types.DefaultNetworkMinGasPrice, // should remain unchanged in case of error
+		},
 	}
 
-	msg := &types.MsgUpdateMinfeeParams{
-		Authority: testApp.MinFeeKeeper.GetAuthority(),
-		Params:    newParams,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testApp, _, _ := testutil.NewTestAppWithGenesisSet(app.DefaultConsensusParams())
+			msgServer := testApp.MinFeeKeeper
+			sdkCtx := testApp.NewContext(false)
+			if tc.authority == "" {
+				tc.authority = testApp.MinFeeKeeper.GetAuthority()
+			}
+
+			// Create a message to update params
+			msg := &types.MsgUpdateMinfeeParams{
+				Authority: tc.authority,
+				Params:    tc.newParams,
+			}
+
+			// Perform the update
+			_, err := msgServer.UpdateMinfeeParams(sdkCtx, msg)
+
+			if tc.expectedError {
+				require.Error(t, err)
+				params := testApp.MinFeeKeeper.GetParams(sdkCtx)
+				require.Equal(t, tc.expectedMinGasPrice, params.NetworkMinGasPrice)
+			} else {
+				require.NoError(t, err)
+				updatedParams := testApp.MinFeeKeeper.GetParams(sdkCtx)
+				require.Equal(t, tc.expectedMinGasPrice, updatedParams.NetworkMinGasPrice)
+			}
+		})
 	}
-
-	// Perform the update
-	_, err := msgServer.UpdateMinfeeParams(sdkCtx, msg)
-	require.NoError(t, err)
-
-	// Query the updated params
-	updatedParams := testApp.MinFeeKeeper.GetParams(sdkCtx)
-
-	// Check if the params have been updated correctly
-	require.Equal(t, expectedMinGasPrice, updatedParams.NetworkMinGasPrice)
 }

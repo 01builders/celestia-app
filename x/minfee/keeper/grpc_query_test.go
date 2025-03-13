@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	sdkmath "cosmossdk.io/math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,4 +37,31 @@ func TestQueryParams(t *testing.T) {
 	// Check the response
 	require.NotNil(t, resp)
 	require.Equal(t, testApp.MinFeeKeeper.GetParams(sdkCtx), resp.Params)
+}
+
+func TestMsgUpdateParams(t *testing.T) {
+	testApp, _, _ := testutil.NewTestAppWithGenesisSet(app.DefaultConsensusParams())
+	msgServer := testApp.MinFeeKeeper
+	sdkCtx := testApp.NewContext(false)
+
+	expectedMinGasPrice := sdkmath.LegacyMustNewDecFromStr("0.0005")
+	// Create a message to update params
+	newParams := types.Params{
+		NetworkMinGasPrice: expectedMinGasPrice,
+	}
+
+	msg := &types.MsgUpdateMinfeeParams{
+		Authority: testApp.MinFeeKeeper.GetAuthority(),
+		Params:    newParams,
+	}
+
+	// Perform the update
+	_, err := msgServer.UpdateMinfeeParams(sdkCtx, msg)
+	require.NoError(t, err)
+
+	// Query the updated params
+	updatedParams := testApp.MinFeeKeeper.GetParams(sdkCtx)
+
+	// Check if the params have been updated correctly
+	require.Equal(t, expectedMinGasPrice, updatedParams.NetworkMinGasPrice)
 }

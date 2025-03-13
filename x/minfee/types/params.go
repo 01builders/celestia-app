@@ -1,4 +1,4 @@
-package minfee
+package types
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 )
-
-const ModuleName = "minfee"
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
@@ -24,10 +22,6 @@ func init() {
 		panic(err)
 	}
 	DefaultNetworkMinGasPrice = DefaultNetworkMinGasPriceDec
-}
-
-type Params struct {
-	NetworkMinGasPrice math.LegacyDec
 }
 
 // RegisterMinFeeParamTable returns a subspace with a key table attached.

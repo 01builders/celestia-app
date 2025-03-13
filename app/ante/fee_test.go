@@ -25,7 +25,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testnode"
-	"github.com/celestiaorg/celestia-app/v4/x/minfee"
+	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 )
 
 func TestValidateTxFee(t *testing.T) {
@@ -126,9 +126,9 @@ func TestValidateTxFee(t *testing.T) {
 			networkMinGasPriceDec, err := sdkmath.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))
 			require.NoError(t, err)
 
-			subspace, _ := paramsKeeper.GetSubspace(minfee.ModuleName)
-			subspace = minfee.RegisterMinFeeParamTable(subspace)
-			subspace.Set(ctx, minfee.KeyNetworkMinGasPrice, networkMinGasPriceDec)
+			subspace, _ := paramsKeeper.GetSubspace(minfeetypes.ModuleName)
+			subspace = minfeetypes.RegisterMinFeeParamTable(subspace)
+			subspace.Set(ctx, minfeetypes.KeyNetworkMinGasPrice, networkMinGasPriceDec)
 
 			_, _, err = ante.ValidateTxFee(ctx, tx, paramsKeeper)
 			if tc.expErr {
@@ -155,6 +155,6 @@ func setUp(t *testing.T) (paramkeeper.Keeper, storetypes.CommitMultiStore) {
 
 	// Create a params keeper and set the network min gas price.
 	paramsKeeper := paramkeeper.NewKeeper(codec.NewProtoCodec(registry), codec.NewLegacyAmino(), storeKey, tStoreKey)
-	paramsKeeper.Subspace(minfee.ModuleName)
+	paramsKeeper.Subspace(minfeetypes.ModuleName)
 	return paramsKeeper, stateStore
 }

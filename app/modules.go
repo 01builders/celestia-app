@@ -44,6 +44,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
+	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
 	"github.com/celestiaorg/celestia-app/v4/x/signal"
 	signaltypes "github.com/celestiaorg/celestia-app/v4/x/signal/types"
@@ -99,7 +100,7 @@ func (app *App) setModuleOrder() {
 		paramstypes.ModuleName,
 		authz.ModuleName,
 		signaltypes.ModuleName,
-		minfee.ModuleName,
+		minfeetypes.ModuleName,
 		icatypes.ModuleName,
 		packetforwardtypes.ModuleName,
 	)
@@ -123,7 +124,7 @@ func (app *App) setModuleOrder() {
 		authz.ModuleName,
 		vestingtypes.ModuleName,
 		signaltypes.ModuleName,
-		minfee.ModuleName,
+		minfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 	)
@@ -146,7 +147,7 @@ func (app *App) setModuleOrder() {
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		ibcexported.ModuleName,
-		minfee.ModuleName,
+		minfeetypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -184,6 +185,7 @@ func allStoreKeys() []string {
 		icahosttypes.StoreKey,
 		signaltypes.StoreKey,
 		blobtypes.StoreKey,
+		minfeetypes.StoreKey,    // added in v4
 		consensustypes.StoreKey, // added in v4
 		circuittypes.StoreKey,   // added in v4
 	}

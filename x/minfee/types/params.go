@@ -9,7 +9,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 )
 
-var _ paramtypes.ParamSet = (*Params)(nil)
+var _ paramtypes.ParamSet = (*LegacyParams)(nil)
 
 var (
 	KeyNetworkMinGasPrice     = []byte("NetworkMinGasPrice")
@@ -32,13 +32,22 @@ func RegisterMinFeeParamTable(subspace paramtypes.Subspace) paramtypes.Subspace 
 	return subspace.WithKeyTable(ParamKeyTable())
 }
 
+type LegacyParams struct {
+	NetworkMinGasPrice math.LegacyDec `json:"network_min_gas_price" yaml:"network_min_gas_price"`
+}
+
+// Validate validates the set of params
+func (p LegacyParams) Validate() error {
+	return ValidateMinGasPrice(p.NetworkMinGasPrice)
+}
+
 // ParamKeyTable returns the param key table for the minfee module.
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&LegacyParams{})
 }
 
 // ParamSetPairs gets the param key-value pair
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+func (p *LegacyParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyNetworkMinGasPrice, &p.NetworkMinGasPrice, ValidateMinGasPrice),
 	}
@@ -57,4 +66,18 @@ func ValidateMinGasPrice(i interface{}) error {
 // Validate validates the set of params
 func (p Params) Validate() error {
 	return ValidateMinGasPrice(p.NetworkMinGasPrice)
+}
+
+// DefaultParams returns the default parameters for the module.
+func DefaultParams() Params {
+	return Params{
+		NetworkMinGasPrice: DefaultNetworkMinGasPrice,
+	}
+}
+
+// NewParams creates a new instance of Params with the provided NetworkMinGasPrice.
+func NewParams(networkMinGasPrice math.LegacyDec) Params {
+	return Params{
+		NetworkMinGasPrice: networkMinGasPrice,
+	}
 }

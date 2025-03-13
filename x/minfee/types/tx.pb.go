@@ -4,10 +4,15 @@
 package types
 
 import (
+	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/gogoproto/gogoproto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -24,7 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgUpdateMinfeeParams
+// MsgUpdateMinfeeParams defines a message for updating the minimum fee parameters.
 type MsgUpdateMinfeeParams struct {
 	// authority is the address of the governance account.
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
@@ -81,14 +86,52 @@ func (m *MsgUpdateMinfeeParams) GetParams() Params {
 	return Params{}
 }
 
+// MsgUpdateMinfeeParamsResponse is the UpdateMinfeeParams response.
+type MsgUpdateMinfeeParamsResponse struct {
+}
+
+func (m *MsgUpdateMinfeeParamsResponse) Reset()         { *m = MsgUpdateMinfeeParamsResponse{} }
+func (m *MsgUpdateMinfeeParamsResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateMinfeeParamsResponse) ProtoMessage()    {}
+func (*MsgUpdateMinfeeParamsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_eed93d8dae52d8fa, []int{1}
+}
+func (m *MsgUpdateMinfeeParamsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdateMinfeeParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateMinfeeParamsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdateMinfeeParamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateMinfeeParamsResponse.Merge(m, src)
+}
+func (m *MsgUpdateMinfeeParamsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdateMinfeeParamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateMinfeeParamsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdateMinfeeParamsResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgUpdateMinfeeParams)(nil), "celestia.minfee.v1.MsgUpdateMinfeeParams")
+	proto.RegisterType((*MsgUpdateMinfeeParamsResponse)(nil), "celestia.minfee.v1.MsgUpdateMinfeeParamsResponse")
 }
 
 func init() { proto.RegisterFile("celestia/minfee/v1/tx.proto", fileDescriptor_eed93d8dae52d8fa) }
 
 var fileDescriptor_eed93d8dae52d8fa = []byte{
-	// 251 bytes of a gzipped FileDescriptorProto
+	// 299 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4e, 0x4e, 0xcd, 0x49,
 	0x2d, 0x2e, 0xc9, 0x4c, 0xd4, 0xcf, 0xcd, 0xcc, 0x4b, 0x4b, 0x4d, 0xd5, 0x2f, 0x33, 0xd4, 0x2f,
 	0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x82, 0x49, 0xea, 0x41, 0x24, 0xf5, 0xca,
@@ -99,12 +142,98 @@ var fileDescriptor_eed93d8dae52d8fa = []byte{
 	0x19, 0x2e, 0xce, 0xc4, 0xd2, 0x92, 0x8c, 0xfc, 0xa2, 0xcc, 0x92, 0x4a, 0x09, 0x46, 0x05, 0x46,
 	0x0d, 0xce, 0x20, 0x84, 0x80, 0x90, 0x05, 0x17, 0x1b, 0xc4, 0x56, 0x09, 0x26, 0x05, 0x46, 0x0d,
 	0x6e, 0x23, 0x29, 0x3d, 0x4c, 0xb7, 0xea, 0x41, 0x4c, 0x72, 0x62, 0x39, 0x71, 0x4f, 0x9e, 0x21,
-	0x08, 0xaa, 0xde, 0x8a, 0xaf, 0xe9, 0xf9, 0x06, 0x2d, 0x84, 0x49, 0x4e, 0x3e, 0x27, 0x1e, 0xc9,
-	0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e,
-	0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0x65, 0x94, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97,
-	0x9c, 0x9f, 0xab, 0x0f, 0x33, 0x3d, 0xbf, 0x28, 0x1d, 0xce, 0xd6, 0x4d, 0x2c, 0x28, 0xd0, 0xaf,
-	0x80, 0x85, 0x43, 0x49, 0x65, 0x41, 0x6a, 0x71, 0x12, 0x1b, 0xd8, 0x57, 0xc6, 0x80, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x29, 0x52, 0x28, 0xe9, 0x58, 0x01, 0x00, 0x00,
+	0x08, 0xaa, 0xde, 0x8a, 0xaf, 0xe9, 0xf9, 0x06, 0x2d, 0x84, 0x49, 0x4a, 0xf2, 0x5c, 0xb2, 0x58,
+	0x1d, 0x10, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x6a, 0xd4, 0xc0, 0xc8, 0xc5, 0xec, 0x5b,
+	0x9c, 0x2e, 0x54, 0xc4, 0x25, 0x84, 0xc5, 0x99, 0x9a, 0xd8, 0x2c, 0xc6, 0x6a, 0xa0, 0x94, 0x21,
+	0xd1, 0x4a, 0x61, 0x76, 0x4b, 0xb1, 0x36, 0x3c, 0xdf, 0xa0, 0xc5, 0xe8, 0xe4, 0x73, 0xe2, 0x91,
+	0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1,
+	0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72, 0x0c, 0x51, 0x46, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x7a,
+	0xc9, 0xf9, 0xb9, 0xfa, 0x30, 0xd3, 0xf3, 0x8b, 0xd2, 0xe1, 0x6c, 0xdd, 0xc4, 0x82, 0x02, 0xfd,
+	0x0a, 0x58, 0x5c, 0x95, 0x54, 0x16, 0xa4, 0x16, 0x27, 0xb1, 0x81, 0x43, 0xde, 0x18, 0x10, 0x00,
+	0x00, 0xff, 0xff, 0x72, 0x09, 0xbd, 0xf8, 0xfc, 0x01, 0x00, 0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// MsgClient is the client API for Msg service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type MsgClient interface {
+	// UpdateMinfeeParams defines a rpc handler method for MsgUpdateMinfeeParams.
+	UpdateMinfeeParams(ctx context.Context, in *MsgUpdateMinfeeParams, opts ...grpc.CallOption) (*MsgUpdateMinfeeParamsResponse, error)
+}
+
+type msgClient struct {
+	cc grpc1.ClientConn
+}
+
+func NewMsgClient(cc grpc1.ClientConn) MsgClient {
+	return &msgClient{cc}
+}
+
+func (c *msgClient) UpdateMinfeeParams(ctx context.Context, in *MsgUpdateMinfeeParams, opts ...grpc.CallOption) (*MsgUpdateMinfeeParamsResponse, error) {
+	out := new(MsgUpdateMinfeeParamsResponse)
+	err := c.cc.Invoke(ctx, "/celestia.minfee.v1.Msg/UpdateMinfeeParams", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MsgServer is the server API for Msg service.
+type MsgServer interface {
+	// UpdateMinfeeParams defines a rpc handler method for MsgUpdateMinfeeParams.
+	UpdateMinfeeParams(context.Context, *MsgUpdateMinfeeParams) (*MsgUpdateMinfeeParamsResponse, error)
+}
+
+// UnimplementedMsgServer can be embedded to have forward compatible implementations.
+type UnimplementedMsgServer struct {
+}
+
+func (*UnimplementedMsgServer) UpdateMinfeeParams(ctx context.Context, req *MsgUpdateMinfeeParams) (*MsgUpdateMinfeeParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMinfeeParams not implemented")
+}
+
+func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
+	s.RegisterService(&_Msg_serviceDesc, srv)
+}
+
+func _Msg_UpdateMinfeeParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateMinfeeParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateMinfeeParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/celestia.minfee.v1.Msg/UpdateMinfeeParams",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateMinfeeParams(ctx, req.(*MsgUpdateMinfeeParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var Msg_serviceDesc = _Msg_serviceDesc
+var _Msg_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "celestia.minfee.v1.Msg",
+	HandlerType: (*MsgServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "UpdateMinfeeParams",
+			Handler:    _Msg_UpdateMinfeeParams_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "celestia/minfee/v1/tx.proto",
 }
 
 func (m *MsgUpdateMinfeeParams) Marshal() (dAtA []byte, err error) {
@@ -147,6 +276,29 @@ func (m *MsgUpdateMinfeeParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgUpdateMinfeeParamsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateMinfeeParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateMinfeeParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -170,6 +322,15 @@ func (m *MsgUpdateMinfeeParams) Size() (n int) {
 	}
 	l = m.Params.Size()
 	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgUpdateMinfeeParamsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	return n
 }
 
@@ -273,6 +434,56 @@ func (m *MsgUpdateMinfeeParams) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateMinfeeParamsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateMinfeeParamsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateMinfeeParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

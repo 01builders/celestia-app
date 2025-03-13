@@ -11,20 +11,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	grpc "google.golang.org/grpc"
 
 	"github.com/celestiaorg/celestia-app/v4/x/minfee/keeper"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 )
 
 var (
-	_ module.AppModuleBasic   = AppModule{}
-	_ module.AppModule        = AppModule{}
-	_ module.HasGenesis       = AppModule{}
-	_ module.HasGenesisBasics = AppModule{}
-
-	_ appmodule.HasServices = AppModule{}
-	_ appmodule.AppModule   = AppModule{}
+	_ module.AppModuleBasic      = AppModule{}
+	_ module.AppModule           = AppModule{}
+	_ module.HasGenesis          = AppModule{}
+	_ module.HasGenesisBasics    = AppModule{}
+	_ module.HasServices         = AppModule{}
+	_ module.HasConsensusVersion = AppModule{}
+	_ appmodule.AppModule        = AppModule{}
 )
 
 // AppModule implements the AppModule interface for the minfee module.
@@ -67,9 +66,13 @@ func (AppModule) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
 func (am AppModule) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {}
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
-	types.RegisterQueryServer(registrar, am.minfeeKeeper)
-	return nil
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.minfeeKeeper)
+
+	m := keeper.NewMigrator(am.minfeeKeeper)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.MigrateParams); err != nil {
+		panic(err)
+	}
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the minfee module.
@@ -106,4 +109,4 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) json.RawMe
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }

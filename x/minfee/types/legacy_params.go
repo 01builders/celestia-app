@@ -13,9 +13,7 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-var (
-	KeyNetworkMinGasPrice = []byte("NetworkMinGasPrice")
-)
+var KeyNetworkMinGasPrice = []byte("NetworkMinGasPrice")
 
 func init() {
 	DefaultNetworkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))

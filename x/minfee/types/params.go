@@ -8,9 +8,7 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 )
 
-var (
-	DefaultNetworkMinGasPrice math.LegacyDec
-)
+var DefaultNetworkMinGasPrice math.LegacyDec
 
 func init() {
 	DefaultNetworkMinGasPriceDec, err := math.LegacyNewDecFromStr(fmt.Sprintf("%f", appconsts.DefaultNetworkMinGasPrice))

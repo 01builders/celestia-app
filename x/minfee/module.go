@@ -59,8 +59,10 @@ func (AppModule) Name() string {
 // RegisterLegacyAminoCodec registers the blob module's types on the LegacyAmino codec.
 func (AppModule) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
-// RegisterInterfaces registers interfaces and implementations of the blob module.
-func (AppModule) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
+// RegisterInterfaces registers interfaces and implementations of the minfee module.
+func (AppModule) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (am AppModule) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {}

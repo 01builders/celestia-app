@@ -24,4 +24,16 @@ func TestQueryNetworkMinGasPrice(t *testing.T) {
 	require.Equal(t, appconsts.DefaultNetworkMinGasPrice, resp.NetworkMinGasPrice.MustFloat64())
 }
 
-// TODO: add test to query params
+func TestQueryParams(t *testing.T) {
+	testApp, _, _ := testutil.NewTestAppWithGenesisSet(app.DefaultConsensusParams())
+	queryServer := testApp.MinFeeKeeper
+	sdkCtx := testApp.NewContext(false)
+
+	// Perform a query for the params
+	resp, err := queryServer.Params(sdkCtx, &types.QueryParamsRequest{})
+	require.NoError(t, err)
+
+	// Check the response
+	require.NotNil(t, resp)
+	require.Equal(t, testApp.MinFeeKeeper.GetParams(sdkCtx), resp.Params)
+}

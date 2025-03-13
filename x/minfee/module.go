@@ -67,6 +67,7 @@ func (am AppModule) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.Serve
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), am.minfeeKeeper)
 	types.RegisterQueryServer(cfg.QueryServer(), am.minfeeKeeper)
 
 	m := keeper.NewMigrator(am.minfeeKeeper)

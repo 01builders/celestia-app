@@ -51,7 +51,7 @@ func E2ESimple(logger *log.Logger) error {
 	testnet.NoError("failed to create tx client", err)
 
 	logger.Println("Setting up testnets")
-	testnet.NoError("failed to setup testnets", testNet.Setup(ctx, testnet.WithPrometheus(false)))
+	testnet.NoError("failed to setup testnets", testNet.Setup(ctx, testnet.WithPrometheus(false))) // TODO: re-enable prometheus once fixed in comet
 
 	logger.Println("Starting testnets")
 	testnet.NoError("failed to start testnets", testNet.Start(ctx))

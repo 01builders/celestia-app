@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	txsimDockerSrcURL = "ghcr.io/celestiaorg/txsim"
+	//txsimDockerSrcURL = "ghcr.io/celestiaorg/txsim"
+	txsimDockerSrcURL = "ghcr.io/01builders/txsim"
 )
 
 func txsimDockerImageName(version string) string {

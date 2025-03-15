@@ -24,12 +24,20 @@ const (
 	// stabilize at. In practice, TargetInflationRate acts as a minimum so that
 	// the inflation rate doesn't decrease after reaching it.
 	TargetInflationRate = 0.015
+
+	// InitialInflationRateCip29 is the inflation rate specified in CIP-29.
+	InitialInflationRateCip29 = 0.0536
+	// DisinflationRateCip29 is the rate at which the inflation rate decreases each year (after CIP-29 was introduced).
+	DisinflationRateCip29 = 0.067
 )
 
 var (
 	initialInflationRateAsDec = math.LegacyNewDecWithPrec(InitialInflationRate*1000, 3)
 	disinflationRateAsDec     = math.LegacyNewDecWithPrec(DisinflationRate*1000, 3)
 	targetInflationRateAsDec  = math.LegacyNewDecWithPrec(TargetInflationRate*1000, 3)
+
+	initialInflationRateCip29AsDec = math.LegacyNewDecWithPrec(InitialInflationRateCip29*10000, 4)
+	disinflationRateCip29AsDec     = math.LegacyNewDecWithPrec(DisinflationRateCip29*1000, 3)
 )
 
 func InitialInflationRateAsDec() math.LegacyDec {
@@ -42,4 +50,12 @@ func DisinflationRateAsDec() math.LegacyDec {
 
 func TargetInflationRateAsDec() math.LegacyDec {
 	return targetInflationRateAsDec
+}
+
+func InitialInflationRateCip29AsDec() math.LegacyDec {
+	return initialInflationRateCip29AsDec
+}
+
+func DisinflationRateCip29AsDec() math.LegacyDec {
+	return disinflationRateCip29AsDec
 }

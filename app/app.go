@@ -71,7 +71,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -316,19 +315,16 @@ func New(
 	)
 	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
-	govRouter := govv1beta1.NewRouter()
-	govRouter.AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
-	govConfig := govtypes.DefaultConfig()
 	/*
 		Example of setting gov params:
 		govConfig.MaxMetadataLen = 10000
 	*/
 	app.GovKeeper = govkeeper.NewKeeper(
 		encodingConfig.Codec, runtime.NewKVStoreService(keys[govtypes.StoreKey]), app.AccountKeeper, app.BankKeeper,
-		app.StakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govConfig, govModuleAddr,
+		app.StakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govtypes.DefaultConfig(), govModuleAddr,
 	)
 	// Set legacy router for backwards compatibility with gov v1beta1
-	app.GovKeeper.SetLegacyRouter(govRouter)
+	app.GovKeeper.SetLegacyRouter(govv1beta1.NewRouter())
 
 	// Create packet forward keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(

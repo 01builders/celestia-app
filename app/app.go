@@ -78,7 +78,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
@@ -106,9 +105,6 @@ import (
 	"github.com/celestiaorg/celestia-app/v4/app/grpc/gasestimation"
 	celestiatx "github.com/celestiaorg/celestia-app/v4/app/grpc/tx"
 	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	appv1 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v1"
-	appv2 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v2"
-	appv3 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v3"
 	appv4 "github.com/celestiaorg/celestia-app/v4/pkg/appconsts/v4"
 	"github.com/celestiaorg/celestia-app/v4/pkg/proof"
 	"github.com/celestiaorg/celestia-app/v4/x/blob"
@@ -137,11 +133,7 @@ var maccPerms = map[string][]string{
 }
 
 const (
-	v1                    = appv1.Version
-	v2                    = appv2.Version
-	v3                    = appv3.Version
-	v4                    = appv4.Version
-	DefaultInitialVersion = v4
+	DefaultInitialVersion = appv4.Version
 )
 
 var (
@@ -377,7 +369,9 @@ func New(
 
 	app.BlobKeeper = *blobkeeper.NewKeeper(
 		encodingConfig.Codec,
+		keys[blobtypes.StoreKey],
 		app.GetSubspace(blobtypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -469,7 +463,7 @@ func New(
 		app.IBCKeeper,
 		app.ParamsKeeper,
 		&app.CircuitKeeper,
-		app.BlockedParamsGovernance(),
+		app.GovParamFilters(),
 	))
 
 	// TODO: migration related, delaying implemenation for now
@@ -533,24 +527,6 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 	}
 
 	return app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState)
-}
-
-func (app *App) OfferSnapshot(req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-	app.Logger().Info("offering snapshot", "height", req.Snapshot.Height, "app_version", req.AppVersion)
-	if req.AppVersion != 0 {
-		if !isSupportedAppVersion(req.AppVersion) {
-			app.Logger().Info("rejecting snapshot because unsupported app version", "app_version", req.AppVersion)
-			return &abci.ResponseOfferSnapshot{
-				Result: abci.ResponseOfferSnapshot_REJECT,
-			}, nil
-		}
-	}
-
-	return app.BaseApp.OfferSnapshot(req)
-}
-
-func isSupportedAppVersion(appVersion uint64) bool {
-	return appVersion == v1 || appVersion == v2 || appVersion == v3 || appVersion == v4
 }
 
 // DefaultGenesis returns the default genesis state
@@ -708,16 +684,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	return paramsKeeper
 }
 
-// BlockedParamsGovernance returns the params that require a hardfork to change, and
-// cannot be changed via governance.
-func (app *App) BlockedParamsGovernance() map[string][]string {
-	return map[string][]string{
-		proto.MessageName(&banktypes.MsgUpdateParams{}):      {"send_enabled"},
-		proto.MessageName(&stakingtypes.MsgUpdateParams{}):   {"params.bond_denom", "params.unbonding_time"},
-		proto.MessageName(&consensustypes.MsgUpdateParams{}): {"validator"},
-	}
-}
-
 // AutoCliOpts returns the autocli options for the app.
 func (app *App) AutoCliOpts() autocli.AppOptions {
 	modules := make(map[string]appmodule.AppModule, 0)
@@ -757,9 +723,9 @@ func (app *App) NewProposalContext(header tmproto.Header) sdk.Context {
 // on the app version.
 // TODO: is this still needed?
 // nolint:unused
-func (app *App) getTimeoutCommit(appVersion uint64) time.Duration {
+func (app *App) getTimeoutCommit(_ uint64) time.Duration {
 	if app.timeoutCommit != 0 {
 		return app.timeoutCommit
 	}
-	return appconsts.GetTimeoutCommit(appVersion)
+	return appconsts.DefaultTimeoutCommit
 }

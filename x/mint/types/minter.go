@@ -45,9 +45,8 @@ func (m Minter) Validate() error {
 func (m Minter) CalculateInflationRate(ctx sdk.Context, genesis time.Time) math.LegacyDec {
 	if ctx.ConsensusParams().Version.App <= 3 {
 		return calculateInflationRatePreCip29(ctx, genesis)
-	} else {
-		return calculateInflationRatePostCip29(ctx, genesis)
 	}
+	return calculateInflationRatePostCip29(ctx, genesis)
 }
 
 func calculateInflationRatePreCip29(ctx sdk.Context, genesis time.Time) math.LegacyDec {

@@ -61,10 +61,6 @@ func calculateInflationRatePreCip29(ctx sdk.Context, genesis time.Time) math.Leg
 }
 
 func calculateInflationRatePostCip29(ctx sdk.Context, genesis time.Time) math.LegacyDec {
-	if ctx.ConsensusParams().Version.App <= 3 {
-		panic("calculateInflationRatePostCip29 should not be called with AppVersion <= 3")
-	}
-
 	years := yearsSinceGenesis(genesis, ctx.BlockTime())
 	inflationRate := InitialInflationRateCip29AsDec().Mul(math.LegacyOneDec().Sub(DisinflationRateCip29AsDec()).Power(uint64(years)))
 	if inflationRate.LT(TargetInflationRateAsDec()) {

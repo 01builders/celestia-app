@@ -24,12 +24,12 @@ func Versions() abci.Versions {
 		{
 			Name:        "v3",
 			Appd:        v3,
-			UntilHeight: -1, // disable v3 upgrade for now.
+			UntilHeight: 1,
 		},
 		{
 			Name:        "v4",
 			Appd:        v4,
-			UntilHeight: 10, // use out of process v4 before switching to v4 in process
+			UntilHeight: 10, // use out of process v4 before switching to v4 in process to test things out
 		},
 	}
 }

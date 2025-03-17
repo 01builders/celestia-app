@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"cosmossdk.io/errors"
+	"github.com/celestiaorg/celestia-app/v4/app/params"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	coretypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -99,7 +101,10 @@ func TestStakingParamFilter(t *testing.T) {
 		{
 			name: "valid case: default params",
 			params: &stakingtypes.MsgUpdateParams{
-				Params: stakingtypes.DefaultParams(),
+				Params: stakingtypes.Params{
+					BondDenom:     params.BondDenom,
+					UnbondingTime: appconsts.DefaultUnbondingTime,
+				},
 			},
 			expectedErr: nil,
 		},
@@ -116,7 +121,7 @@ func TestStakingParamFilter(t *testing.T) {
 			name: "invalid case: invalid unbonding time",
 			params: &stakingtypes.MsgUpdateParams{
 				Params: stakingtypes.Params{
-					BondDenom:     stakingtypes.DefaultParams().BondDenom,
+					BondDenom:     params.BondDenom,
 					UnbondingTime: time.Hour * 48, // Different from default
 				},
 			},

@@ -39,6 +39,19 @@ install: check-bbr
 	@go install $(BUILD_FLAGS) ./cmd/celestia-appd
 .PHONY: install
 
+### build-no-multiplexer: Build the celestia-appd binary into the ./build directory without multiplexer support.
+build-no-multiplexer: check-bbr
+	@cd ./cmd/celestia-appd
+	@mkdir -p build/
+	@echo "--> Building build/celestia-appd"
+	@go build $(BUILD_FLAGS) -tags "disable_multiplexer" -o build/ ./cmd/celestia-appd
+
+## install-no-multiplexer: Build and install the celestia-appd binary into the $GOPATH/bin directory without multiplexer support.
+install-no-multiplexer: check-bbr
+	@echo "--> Installing celestia-appd"
+	@go install $(BUILD_FLAGS) -tags "disable_multiplexer" ./cmd/celestia-appd
+.PHONY: install-no-multiplexer
+
 ## mod: Update all go.mod files.
 mod:
 	@echo "--> Updating go.mod"

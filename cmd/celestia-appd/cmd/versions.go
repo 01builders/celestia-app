@@ -22,16 +22,16 @@ func Versions() abci.Versions {
 
 	return abci.Versions{
 		{
-			Name:              "v3",
-			ABCIClientVersion: abci.ABCIClientVersion1,
-			Appd:              v3,
-			UntilHeight:       10, // use out of process v3 until height 10
+			Name:        "v3",
+			ABCIVersion: abci.ABCIClientVersion1,
+			Appd:        v3,
+			UntilHeight: 10, // use out of process v3 until height 10
 		},
 		{
-			Name:              "v4",
-			ABCIClientVersion: abci.ABCIClientVersion2,
-			Appd:              v4,
-			UntilHeight:       20, // use out of process v4 before switching to v4 in process to test things out
+			Name:        "v4",
+			ABCIVersion: abci.ABCIClientVersion2,
+			Appd:        v4,
+			UntilHeight: 20, // use out of process v4 before switching to v4 in process to test things out
 		},
 	}
 }

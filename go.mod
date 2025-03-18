@@ -87,6 +87,7 @@ require (
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.2.0 // indirect
 	github.com/bits-and-blooms/bitset v1.17.0 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/bytedance/sonic v1.12.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
@@ -237,6 +238,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
+	github.com/tendermint/tendermint v0.0.0-00010101000000-000000000000 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
@@ -286,8 +288,7 @@ require (
 replace (
 	cosmossdk.io/x/upgrade => github.com/01builders/cosmos-sdk/x/upgrade v0.0.0-20250212120257-926f94b828d0
 	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250303123948-a2b8ce5ddfe5
-	// Celestia SDK fork: https://github.com/01builders/cosmos-sdk/tree/release/v0.50.x-celestia
 	github.com/cosmos/cosmos-sdk => github.com/01builders/cosmos-sdk v0.0.0-20250305130717-630a3c965f8a
-
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.45.0-tm-v0.34.35
 )

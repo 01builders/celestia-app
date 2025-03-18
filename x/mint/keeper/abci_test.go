@@ -21,7 +21,7 @@ var oneYear = time.Duration(minttypes.NanosecondsPerYear)
 
 func TestInflationRate(t *testing.T) {
 	app, _ := util.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-	ctx := sdk.NewContext(app.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
+	ctx := sdk.NewContext(app.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger()).WithConsensusParams(tmproto.ConsensusParams{Version: &tmproto.VersionParams{App: 3}})
 	genesisTime := app.MintKeeper.GetGenesisTime(ctx).GenesisTime
 
 	yearOneMinusOneSecond := genesisTime.Add(oneYear).Add(-time.Second)
@@ -83,7 +83,7 @@ func TestInflationRate(t *testing.T) {
 func TestAnnualProvisions(t *testing.T) {
 	t.Run("annual provisions are set when originally zero", func(t *testing.T) {
 		a, _ := util.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
+		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger()).WithConsensusParams(tmproto.ConsensusParams{Version: &tmproto.VersionParams{App: 3}})
 		genesisTime := a.MintKeeper.GetGenesisTime(ctx).GenesisTime
 		ctx = ctx.WithBlockTime(*genesisTime)
 
@@ -94,7 +94,7 @@ func TestAnnualProvisions(t *testing.T) {
 
 	t.Run("annual provisions are not updated more than once per year", func(t *testing.T) {
 		a, _ := util.SetupTestAppWithGenesisValSet(app.DefaultConsensusParams())
-		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger())
+		ctx := sdk.NewContext(a.CommitMultiStore(), tmproto.Header{}, false, log.NewNopLogger()).WithConsensusParams(tmproto.ConsensusParams{Version: &tmproto.VersionParams{App: 3}})
 		genesisTime := a.MintKeeper.GetGenesisTime(ctx).GenesisTime
 		ctx = ctx.WithBlockTime(*genesisTime)
 

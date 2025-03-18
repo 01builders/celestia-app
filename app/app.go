@@ -263,8 +263,8 @@ func New(
 
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(encodingConfig.Codec, runtime.NewKVStoreService(keys[feegrant.StoreKey]), app.AccountKeeper)
 
-	// the circuit keeper is used as a replacement of the gate message keeper
-	// in order to block upgrade msg proposals
+	// the circuit keeper is used as a replacement for the message gate keeper (used in v2 and v3)
+	// in order to block upgrade msg proposals.
 	app.CircuitKeeper = circuitkeeper.NewKeeper(encodingConfig.Codec, runtime.NewKVStoreService(keys[circuittypes.StoreKey]), govModuleAddr, app.AccountKeeper.AddressCodec())
 	app.BaseApp.SetCircuitBreaker(&app.CircuitKeeper)
 
@@ -315,10 +315,6 @@ func New(
 	)
 	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
-	/*
-		Example of setting gov params:
-		govConfig.MaxMetadataLen = 10000
-	*/
 	app.GovKeeper = govkeeper.NewKeeper(
 		encodingConfig.Codec, runtime.NewKVStoreService(keys[govtypes.StoreKey]), app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govtypes.DefaultConfig(), govModuleAddr,
@@ -376,8 +372,23 @@ func New(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(app.ICAHostKeeper)) // Add ICA route
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	app.HyperlaneKeeper = hyperlanekeeper.NewKeeper(encodingConfig.Codec, encodingConfig.AddressCodec, runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]), govModuleAddr, app.BankKeeper)
-	app.WarpKeeper = warpkeeper.NewKeeper(encodingConfig.Codec, encodingConfig.AddressCodec, runtime.NewKVStoreService(keys[warptypes.ModuleName]), govModuleAddr, app.BankKeeper, &app.HyperlaneKeeper, nil)
+	app.HyperlaneKeeper = hyperlanekeeper.NewKeeper(
+		encodingConfig.Codec,
+		encodingConfig.AddressCodec,
+		runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]),
+		govModuleAddr,
+		app.BankKeeper,
+	)
+
+	app.WarpKeeper = warpkeeper.NewKeeper(
+		encodingConfig.Codec,
+		encodingConfig.AddressCodec,
+		runtime.NewKVStoreService(keys[warptypes.ModuleName]),
+		govModuleAddr,
+		app.BankKeeper,
+		&app.HyperlaneKeeper,
+		[]int32{int32(warptypes.HYP_TOKEN_TYPE_COLLATERAL)},
+	)
 
 	/****  Module Options ****/
 

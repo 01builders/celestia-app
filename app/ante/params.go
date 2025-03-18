@@ -12,7 +12,7 @@ import (
 type ParamFilter func(sdk.Msg) error
 
 // ParamFilterDecorator checks tx msgs for gov.MsgSubmitProposal and authz.MsgExec and ensures that param updates
-// within these conform to the rules defines in paramFilters. ParamFilters are keyed by MsgTypeURL.
+// within these conform to the rules defined in paramFilters. ParamFilters are keyed by MsgTypeURL.
 // NOTE: This replaces the param filter governance proposal handler from v3 and earlier.
 type ParamFilterDecorator struct {
 	paramFilters map[string]ParamFilter
@@ -26,8 +26,8 @@ func NewParamFilterDecorator(paramFilters map[string]ParamFilter) ParamFilterDec
 }
 
 // AnteHandle implements the AnteHandler interface.
-// It ensures that MsgSubmitProposal has at least one message
-// It ensures params are filtered within messages
+// It ensures that MsgSubmitProposal has at least one message.
+// It ensures params are filtered within messages.
 func (d ParamFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	for _, m := range tx.GetMsgs() {
 		if msgSubmitProp, ok := m.(*govv1.MsgSubmitProposal); ok {

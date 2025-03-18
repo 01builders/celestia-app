@@ -29,7 +29,6 @@ const (
 
 var (
 	// DataCommitmentBlocksLimit is the maximum number of blocks that a data commitment can span
-	// DataCommitmentBlocksLimit = consts.DataCommitmentBlocksLimit
 	// DataCommitmentBlocksLimit is the limit to the number of blocks we can generate a data commitment for.
 	// Deprecated: this is no longer used as we're moving towards Blobstream X. However, we're leaving it
 	// here for backwards compatibility purpose until it's removed in the next breaking release.
@@ -37,7 +36,6 @@ var (
 
 	// NewBaseHashFunc is the base hash function used by NMT. Change accordingly
 	// if another hash.Hash should be used as a base hasher in the NMT.
-	// NewBaseHashFunc = consts.NewBaseHashFunc
 	NewBaseHashFunc = sha256.New
 
 	// hashLength is the length of a hash in bytes.

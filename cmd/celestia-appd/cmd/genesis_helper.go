@@ -12,7 +12,8 @@ func AppGenesisToCometGenesisConverterCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "convert-genesis",
 		Short: "Convert app genesis to comet genesis",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			serverCtx := server.GetServerContextFromCmd(cmd)
 
 			appGenesis, err := genutiltypes.AppGenesisFromFile(serverCtx.Config.GenesisFile())

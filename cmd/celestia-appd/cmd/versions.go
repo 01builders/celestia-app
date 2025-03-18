@@ -14,10 +14,10 @@ func Versions() abci.Versions {
 	v3, err := appd.New("v3", v3AppBinary)
 	_ = err // TODO: handle this error, explicitly ignoring this for now as ledger tests fail due to not having the binary
 
-	v4AppBinary, err := embedding.CelestiaAppV3()
+	v4AppBinary, err := embedding.CelestiaAppV4()
 	_ = err // TODO: handle this error, explicitly ignoring this for now as ledger tests fail due to not having the binary
 
-	v4, err := appd.New("v3", v4AppBinary)
+	v4, err := appd.New("v4", v4AppBinary)
 	_ = err // TODO: handle this error, explicitly ignoring this for now as ledger tests fail due to not having the binary
 
 	return abci.Versions{
@@ -29,7 +29,7 @@ func Versions() abci.Versions {
 		{
 			Name:        "v4",
 			Appd:        v4,
-			UntilHeight: 10, // use out of process v4 before switching to v4 in process to test things out
+			UntilHeight: 20, // use out of process v4 before switching to v4 in process to test things out
 		},
 	}
 }

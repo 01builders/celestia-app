@@ -20,6 +20,12 @@ import (
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	hyperlanecore "github.com/bcp-innovations/hyperlane-cosmos/x/core"
+	hyperlanekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
+	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
+	warp "github.com/bcp-innovations/hyperlane-cosmos/x/warp"
+	warpkeeper "github.com/bcp-innovations/hyperlane-cosmos/x/warp/keeper"
+	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -65,7 +71,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -170,6 +175,8 @@ type App struct {
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	BlobKeeper          blobkeeper.Keeper
 	CircuitKeeper       circuitkeeper.Keeper
+	HyperlaneKeeper     hyperlanekeeper.Keeper
+	WarpKeeper          warpkeeper.Keeper
 
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper // This keeper is public for test purposes
@@ -256,8 +263,8 @@ func New(
 
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(encodingConfig.Codec, runtime.NewKVStoreService(keys[feegrant.StoreKey]), app.AccountKeeper)
 
-	// the circuit keeper is used as a replacement of the gate message keeper
-	// in order to block upgrade msg proposals
+	// the circuit keeper is used as a replacement for the message gate keeper (used in v2 and v3)
+	// in order to block upgrade msg proposals.
 	app.CircuitKeeper = circuitkeeper.NewKeeper(encodingConfig.Codec, runtime.NewKVStoreService(keys[circuittypes.StoreKey]), govModuleAddr, app.AccountKeeper.AddressCodec())
 	app.BaseApp.SetCircuitBreaker(&app.CircuitKeeper)
 
@@ -308,19 +315,12 @@ func New(
 	)
 	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 
-	govRouter := govv1beta1.NewRouter()
-	govRouter.AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
-	govConfig := govtypes.DefaultConfig()
-	/*
-		Example of setting gov params:
-		govConfig.MaxMetadataLen = 10000
-	*/
 	app.GovKeeper = govkeeper.NewKeeper(
 		encodingConfig.Codec, runtime.NewKVStoreService(keys[govtypes.StoreKey]), app.AccountKeeper, app.BankKeeper,
-		app.StakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govConfig, govModuleAddr,
+		app.StakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govtypes.DefaultConfig(), govModuleAddr,
 	)
 	// Set legacy router for backwards compatibility with gov v1beta1
-	app.GovKeeper.SetLegacyRouter(govRouter)
+	app.GovKeeper.SetLegacyRouter(govv1beta1.NewRouter())
 
 	// Create packet forward keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
@@ -372,6 +372,24 @@ func New(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(app.ICAHostKeeper)) // Add ICA route
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.HyperlaneKeeper = hyperlanekeeper.NewKeeper(
+		encodingConfig.Codec,
+		encodingConfig.AddressCodec,
+		runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]),
+		govModuleAddr,
+		app.BankKeeper,
+	)
+
+	app.WarpKeeper = warpkeeper.NewKeeper(
+		encodingConfig.Codec,
+		encodingConfig.AddressCodec,
+		runtime.NewKVStoreService(keys[warptypes.ModuleName]),
+		govModuleAddr,
+		app.BankKeeper,
+		&app.HyperlaneKeeper,
+		[]int32{int32(warptypes.HYP_TOKEN_TYPE_COLLATERAL)},
+	)
+
 	/****  Module Options ****/
 
 	// NOTE: Modules can't be modified or else must be passed by reference to the module manager
@@ -400,7 +418,9 @@ func New(
 		// ensure the light client module types are registered.
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
-		circuitModule{circuit.NewAppModule(app.encodingConfig.Codec, app.CircuitKeeper)},
+		circuitModule{circuit.NewAppModule(encodingConfig.Codec, app.CircuitKeeper)},
+		hyperlanecore.NewAppModule(encodingConfig.Codec, &app.HyperlaneKeeper),
+		warp.NewAppModule(encodingConfig.Codec, app.WarpKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,

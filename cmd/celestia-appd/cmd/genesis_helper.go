@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/cosmos/cosmos-sdk/server"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/spf13/cobra"
 )
 
 // AppGenesisToCometGenesisConverterCmd returns a command that converts the app genesis to comet genesis.

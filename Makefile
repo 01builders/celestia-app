@@ -39,7 +39,7 @@ build-multiplexer: mod
 	@cd ./cmd/celestia-appd
 	@mkdir -p build/
 	@echo "--> Building build/celestia-appd with multiplexer enabled"
-	@go build $(BUILD_FLAGS_MULTIPLEXER) -o build/celestia-appd-multiplexer ./cmd/celestia-appd
+	@go build $(BUILD_FLAGS_MULTIPLEXER) -o build/celestia-appd ./cmd/celestia-appd
 .PHONY: build-multiplexer
 
 ## install: Build and install the celestia-appd binary into the $GOPATH/bin directory.

@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -247,6 +249,16 @@ func (k *Keeper) ShouldUpgrade(ctx sdk.Context) (isQuorumVersion bool, version u
 
 	hasUpgradeHeightBeenReached := ctx.BlockHeight() >= upgrade.UpgradeHeight
 	if hasUpgradeHeightBeenReached {
+		// set the upgrade on the upgrade keeper
+		// having a migration handler will be required for the next version
+		// to be able to migrate the state.
+		if err := k.upgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
+			Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
+			Height: upgrade.UpgradeHeight,
+		}); err != nil {
+			panic(fmt.Sprintf("failed to schedule upgrade: %v", err))
+		}
+
 		return true, upgrade.AppVersion
 	}
 	return false, 0

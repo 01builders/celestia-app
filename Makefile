@@ -193,7 +193,7 @@ test-e2e:
 .PHONY: test-e2e
 
 test-multi-plexer:
-	@echo "--> Running multi-plexer tests"
+	@echo "--> Running multiplexer tests"
 	go test -tags multiplexer -v ./test/multiplexer/...
 .PHONY: test-multi-plexer
 

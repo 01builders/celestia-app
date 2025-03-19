@@ -45,6 +45,9 @@ type Keeper struct {
 	// stakingKeeper is used to fetch validators to calculate the total power
 	// signalled to a version.
 	stakingKeeper StakingKeeper
+
+	// upgradeKeeper is used to fetch the upgrade plan.
+	upgradeKeeper UpgradeKeeper
 }
 
 // NewKeeper returns a signal keeper.
@@ -52,11 +55,13 @@ func NewKeeper(
 	binaryCodec codec.BinaryCodec,
 	storeKey storetypes.StoreKey,
 	stakingKeeper StakingKeeper,
+	upgradeKeeper UpgradeKeeper,
 ) Keeper {
 	return Keeper{
 		binaryCodec:   binaryCodec,
 		storeKey:      storeKey,
 		stakingKeeper: stakingKeeper,
+		upgradeKeeper: upgradeKeeper,
 	}
 }
 

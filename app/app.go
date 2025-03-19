@@ -164,7 +164,7 @@ type App struct {
 	MintKeeper          mintkeeper.Keeper
 	DistrKeeper         distrkeeper.Keeper
 	GovKeeper           *govkeeper.Keeper
-	UpgradeKeeper       *upgradekeeper.Keeper // This is included purely for the IBC Keeper. It is not used for upgrading
+	UpgradeKeeper       *upgradekeeper.Keeper // Upgrades are set via x/signal
 	SignalKeeper        signal.Keeper
 	ParamsKeeper        paramskeeper.Keeper
 	IBCKeeper           *ibckeeper.Keeper // IBCKeeper must be a pointer in the app, so we can SetRouter on it correctly
@@ -289,7 +289,12 @@ func New(
 		),
 	)
 
-	app.SignalKeeper = signal.NewKeeper(encodingConfig.Codec, keys[signaltypes.StoreKey], app.StakingKeeper)
+	app.SignalKeeper = signal.NewKeeper(
+		encodingConfig.Codec,
+		keys[signaltypes.StoreKey],
+		app.StakingKeeper,
+		app.UpgradeKeeper,
+	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		encodingConfig.Codec,

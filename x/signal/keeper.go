@@ -125,6 +125,17 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 			AppVersion:    version,
 			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID),
 		}
+
+		// set the upgrade on the upgrade keeper
+		// having a migration handler will be required for the next version
+		// to be able to migrate the state.
+		if err := k.upgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
+			Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
+			Height: upgrade.UpgradeHeight,
+		}); err != nil {
+			return nil, err
+		}
+
 		k.setUpgrade(sdkCtx, upgrade)
 	}
 	return &types.MsgTryUpgradeResponse{}, nil
@@ -249,16 +260,6 @@ func (k *Keeper) ShouldUpgrade(ctx sdk.Context) (isQuorumVersion bool, version u
 
 	hasUpgradeHeightBeenReached := ctx.BlockHeight() >= upgrade.UpgradeHeight
 	if hasUpgradeHeightBeenReached {
-		// set the upgrade on the upgrade keeper
-		// having a migration handler will be required for the next version
-		// to be able to migrate the state.
-		if err := k.upgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
-			Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
-			Height: upgrade.UpgradeHeight,
-		}); err != nil {
-			panic(fmt.Sprintf("failed to schedule upgrade: %v", err))
-		}
-
 		return true, upgrade.AppVersion
 	}
 	return false, 0
@@ -317,6 +318,7 @@ func (k *Keeper) getUpgrade(ctx sdk.Context) (upgrade types.Upgrade, ok bool) {
 }
 
 // setUpgrade sets the upgrade in the store.
+// It also schedules the upgrade with the upgrade keeper.
 func (k *Keeper) setUpgrade(ctx sdk.Context, upgrade types.Upgrade) {
 	store := ctx.KVStore(k.storeKey)
 	value := k.binaryCodec.MustMarshal(&upgrade)

@@ -6,8 +6,8 @@ const (
 	MainnetChainID = "celestia"
 	// TestChainID is the chain ID used for testing.
 	TestChainID = "test"
-	// Test2ChainID is another chain ID used for testing.
-	Test2ChainID = "local_devnet"
+	// LocalDevnetChainID is another chain ID used for testing.
+	LocalDevnetChainID = "local_devnet"
 )
 
 var PublicNetworks = []string{ArabicaChainID, MochaChainID, MainnetChainID}

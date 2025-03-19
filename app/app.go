@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -296,7 +297,6 @@ func New(
 		encodingConfig.Codec,
 		keys[signaltypes.StoreKey],
 		app.StakingKeeper,
-		app.UpgradeKeeper,
 	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -517,12 +517,25 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// use a signaling mechanism for upgrade
 	if shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx); shouldUpgrade {
 		// Version changes must be increasing. Downgrades are not permitted
-		if newVersion > currentVersion {
+		if newVersion.AppVersion > currentVersion {
 			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", newVersion)
-			if err := app.SetAppVersion(ctx, newVersion); err != nil {
+			if err := app.SetAppVersion(ctx, newVersion.AppVersion); err != nil {
 				return sdk.EndBlock{}, err
 			}
 			app.SignalKeeper.ResetTally(ctx)
+
+			planBz, err := app.AppCodec().Marshal(&upgradetypes.Plan{
+				Name:   fmt.Sprintf("%d", newVersion.AppVersion),
+				Height: newVersion.UpgradeHeight,
+			})
+			if err != nil {
+				return sdk.EndBlock{}, fmt.Errorf("failed to marshal upgrade plan: %v", err)
+			}
+
+			upgradeStore := runtime.NewKVStoreService(app.keys[upgradetypes.StoreKey]).OpenKVStore(ctx)
+			if err := upgradeStore.Set(upgradetypes.PlanKey(), planBz); err != nil {
+				return sdk.EndBlock{}, fmt.Errorf("failed to set upgrade plan: %v", err)
+			}
 		}
 	}
 

@@ -13,7 +13,6 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	dbm "github.com/cosmos/cosmos-db"
@@ -72,7 +71,7 @@ func TestGetVotingPowerThreshold(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			config := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 			stakingKeeper := newMockStakingKeeper(tc.validators)
-			k := signal.NewKeeper(config.Codec, nil, stakingKeeper, &mockUpgradeKeeper{})
+			k := signal.NewKeeper(config.Codec, nil, stakingKeeper)
 			got, err := k.GetVotingPowerThreshold(sdk.Context{})
 			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got, fmt.Sprintf("want %v, got %v", tc.want.String(), got.String()))
@@ -169,7 +168,7 @@ func TestTallyingLogic(t *testing.T) {
 	require.NoError(t, err)
 	shouldUpgrade, version := upgradeKeeper.ShouldUpgrade(ctx)
 	require.False(t, shouldUpgrade)
-	require.Equal(t, uint64(0), version)
+	require.Equal(t, uint64(0), version.AppVersion)
 
 	// we now have 101/120
 	_, err = upgradeKeeper.SignalVersion(ctx, &types.MsgSignalVersion{
@@ -183,13 +182,13 @@ func TestTallyingLogic(t *testing.T) {
 
 	shouldUpgrade, version = upgradeKeeper.ShouldUpgrade(ctx)
 	require.False(t, shouldUpgrade) // should be false because upgrade height hasn't been reached.
-	require.Equal(t, uint64(0), version)
+	require.Equal(t, uint64(0), version.AppVersion)
 
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + appconsts.UpgradeHeightDelay(appconsts.TestChainID))
 
 	shouldUpgrade, version = upgradeKeeper.ShouldUpgrade(ctx)
 	require.True(t, shouldUpgrade) // should be true because upgrade height has been reached.
-	require.Equal(t, v2.Version, version)
+	require.Equal(t, v2.Version, version.AppVersion)
 
 	upgradeKeeper.ResetTally(ctx)
 
@@ -484,7 +483,7 @@ func setup(t *testing.T) (signal.Keeper, sdk.Context, *mockStakingKeeper) {
 		},
 	)
 	config := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
-	upgradeKeeper := signal.NewKeeper(config.Codec, signalStore, mockStakingKeeper, &mockUpgradeKeeper{})
+	upgradeKeeper := signal.NewKeeper(config.Codec, signalStore, mockStakingKeeper)
 	return upgradeKeeper, mockCtx, mockStakingKeeper
 }
 
@@ -524,20 +523,4 @@ func (m *mockStakingKeeper) GetValidator(_ context.Context, addr sdk.ValAddress)
 		return stakingtypes.Validator{Status: stakingtypes.Bonded}, nil
 	}
 	return stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound
-}
-
-var _ signal.UpgradeKeeper = (*mockUpgradeKeeper)(nil)
-
-type mockUpgradeKeeper struct {
-	err error
-}
-
-// ApplyUpgrade implements signal.UpgradeKeeper.
-func (m *mockUpgradeKeeper) ApplyUpgrade(ctx context.Context, plan upgradetypes.Plan) error {
-	return m.err
-}
-
-// ScheduleUpgrade implements signal.UpgradeKeeper.
-func (m *mockUpgradeKeeper) ScheduleUpgrade(ctx context.Context, plan upgradetypes.Plan) error {
-	return m.err
 }

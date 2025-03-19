@@ -5,11 +5,9 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -47,9 +45,6 @@ type Keeper struct {
 	// stakingKeeper is used to fetch validators to calculate the total power
 	// signalled to a version.
 	stakingKeeper StakingKeeper
-
-	// upgradeKeeper is used to fetch the upgrade plan.
-	upgradeKeeper UpgradeKeeper
 }
 
 // NewKeeper returns a signal keeper.
@@ -57,13 +52,11 @@ func NewKeeper(
 	binaryCodec codec.BinaryCodec,
 	storeKey storetypes.StoreKey,
 	stakingKeeper StakingKeeper,
-	upgradeKeeper UpgradeKeeper,
 ) Keeper {
 	return Keeper{
 		binaryCodec:   binaryCodec,
 		storeKey:      storeKey,
 		stakingKeeper: stakingKeeper,
-		upgradeKeeper: upgradeKeeper,
 	}
 }
 
@@ -125,17 +118,6 @@ func (k *Keeper) TryUpgrade(ctx context.Context, _ *types.MsgTryUpgrade) (*types
 			AppVersion:    version,
 			UpgradeHeight: header.Height + appconsts.UpgradeHeightDelay(header.ChainID),
 		}
-
-		// set the upgrade on the upgrade keeper
-		// having a migration handler will be required for the next version
-		// to be able to migrate the state.
-		if err := k.upgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
-			Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
-			Height: upgrade.UpgradeHeight,
-		}); err != nil {
-			return nil, err
-		}
-
 		k.setUpgrade(sdkCtx, upgrade)
 	}
 	return &types.MsgTryUpgradeResponse{}, nil
@@ -252,17 +234,17 @@ func (k Keeper) GetVotingPowerThreshold(ctx sdk.Context) (math.Int, error) {
 // ShouldUpgrade returns whether the signalling mechanism has concluded that the
 // network is ready to upgrade and the version to upgrade to. It returns false
 // and 0 if no version has reached quorum.
-func (k *Keeper) ShouldUpgrade(ctx sdk.Context) (isQuorumVersion bool, version uint64) {
+func (k *Keeper) ShouldUpgrade(ctx sdk.Context) (isQuorumVersion bool, upgrade types.Upgrade) {
 	upgrade, ok := k.getUpgrade(ctx)
 	if !ok {
-		return false, 0
+		return false, types.Upgrade{}
 	}
 
 	hasUpgradeHeightBeenReached := ctx.BlockHeight() >= upgrade.UpgradeHeight
 	if hasUpgradeHeightBeenReached {
-		return true, upgrade.AppVersion
+		return true, upgrade
 	}
-	return false, 0
+	return false, types.Upgrade{}
 }
 
 // ResetTally resets the tally after a version change. It iterates over the
@@ -318,7 +300,6 @@ func (k *Keeper) getUpgrade(ctx sdk.Context) (upgrade types.Upgrade, ok bool) {
 }
 
 // setUpgrade sets the upgrade in the store.
-// It also schedules the upgrade with the upgrade keeper.
 func (k *Keeper) setUpgrade(ctx sdk.Context, upgrade types.Upgrade) {
 	store := ctx.KVStore(k.storeKey)
 	value := k.binaryCodec.MustMarshal(&upgrade)

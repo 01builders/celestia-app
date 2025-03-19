@@ -167,7 +167,7 @@ type App struct {
 	MintKeeper          mintkeeper.Keeper
 	DistrKeeper         distrkeeper.Keeper
 	GovKeeper           *govkeeper.Keeper
-	UpgradeKeeper       *upgradekeeper.Keeper // Upgrades are set via x/signal
+	UpgradeKeeper       *upgradekeeper.Keeper // Upgrades are set in endblock when signaled
 	SignalKeeper        signal.Keeper
 	MinFeeKeeper        *minfeekeeper.Keeper
 	ParamsKeeper        paramskeeper.Keeper
@@ -465,6 +465,7 @@ func New(
 	app.MountTransientStores(app.tkeys)
 
 	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.SetPrepareProposal(app.PrepareProposalHandler)
@@ -498,6 +499,11 @@ func New(
 // Name returns the name of the App
 func (app *App) Name() string { return app.BaseApp.Name() }
 
+// PreBlocker application updates every pre block
+func (app *App) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	return app.ModuleManager.PreBlock(ctx)
+}
+
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	return app.ModuleManager.BeginBlock(ctx)
@@ -515,27 +521,24 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	}
 
 	// use a signaling mechanism for upgrade
-	if shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx); shouldUpgrade {
+	shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx)
+	if shouldUpgrade {
 		// Version changes must be increasing. Downgrades are not permitted
 		if newVersion.AppVersion > currentVersion {
 			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", newVersion)
+
+			if err := app.UpgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
+				Name:   fmt.Sprintf("v%d", newVersion.AppVersion),
+				Height: newVersion.UpgradeHeight,
+			}); err != nil {
+				return sdk.EndBlock{}, fmt.Errorf("failed to schedule upgrade: %v", err)
+			}
+
 			if err := app.SetAppVersion(ctx, newVersion.AppVersion); err != nil {
 				return sdk.EndBlock{}, err
 			}
 			app.SignalKeeper.ResetTally(ctx)
 
-			planBz, err := app.AppCodec().Marshal(&upgradetypes.Plan{
-				Name:   fmt.Sprintf("%d", newVersion.AppVersion),
-				Height: newVersion.UpgradeHeight,
-			})
-			if err != nil {
-				return sdk.EndBlock{}, fmt.Errorf("failed to marshal upgrade plan: %v", err)
-			}
-
-			upgradeStore := runtime.NewKVStoreService(app.keys[upgradetypes.StoreKey]).OpenKVStore(ctx)
-			if err := upgradeStore.Set(upgradetypes.PlanKey(), planBz); err != nil {
-				return sdk.EndBlock{}, fmt.Errorf("failed to set upgrade plan: %v", err)
-			}
 		}
 	}
 

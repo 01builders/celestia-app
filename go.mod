@@ -284,10 +284,10 @@ require (
 )
 
 replace (
-	cosmossdk.io/x/upgrade => github.com/01builders/cosmos-sdk/x/upgrade v0.0.0-20250212120257-926f94b828d0
-	github.com/cometbft/cometbft => github.com/01builders/cometbft v0.0.0-20250303123948-a2b8ce5ddfe5
+	cosmossdk.io/x/upgrade => github.com/01builders/cosmos-sdk/x/upgrade v0.0.0-20250319133838-1b362cac2207
+	github.com/cometbft/cometbft => github.com/celestiaorg/celestia-core v0.38.11-0.20250320105812-ec71e5a427b1
 	// Celestia SDK fork: https://github.com/01builders/cosmos-sdk/tree/release/v0.50.x-celestia
-	github.com/cosmos/cosmos-sdk => github.com/01builders/cosmos-sdk v0.0.0-20250305130717-630a3c965f8a
+	github.com/cosmos/cosmos-sdk => github.com/01builders/cosmos-sdk v0.0.0-20250319133838-1b362cac2207
 
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )

@@ -38,7 +38,7 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 			"--api.swagger=false",
 			"--with-tendermint=false",
 			"--transport=grpc",
-			// "--v2-upgrade-height=0",
+			"--v2-upgrade-height=3",
 		},
 		abci.Version{
 			Appd:        v4,

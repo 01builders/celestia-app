@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"cosmossdk.io/client/v2/autocli"
@@ -45,6 +46,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -78,6 +80,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
@@ -488,6 +491,20 @@ func New(
 	// app.SetMigrateStoreFn(app.migrateCommitStore)
 	// app.SetMigrateModuleFn(app.migrateModules)
 
+	protoFiles, err := proto.MergedRegistry()
+	if err != nil {
+		panic(err)
+	}
+	err = msgservice.ValidateProtoAnnotations(protoFiles)
+	if err != nil {
+		// Once we switch to using protoreflect-based antehandlers, we might
+		// want to panic here instead of logging a warning.
+		_, err := fmt.Fprintln(os.Stderr, err.Error())
+		if err != nil {
+			fmt.Println("could not write to stderr")
+		}
+	}
+
 	app.encodingConfig = encodingConfig
 	if err := app.LoadLatestVersion(); err != nil {
 		panic(err)
@@ -515,6 +532,7 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	if err != nil {
 		return sdk.EndBlock{}, err
 	}
+
 	currentVersion, err := app.AppVersion(ctx)
 	if err != nil {
 		return sdk.EndBlock{}, err
@@ -542,9 +560,9 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		}
 	}
 
-	// TODO: check if needed, it is no more there
-	// res.Timeouts.TimeoutCommit = app.getTimeoutCommit(currentVersion)
-	// res.Timeouts.TimeoutPropose = appconsts.GetTimeoutPropose(currentVersion)
+	res.TimeoutInfo.TimeoutCommit = app.TimeoutCommit()
+	res.TimeoutInfo.TimeoutPropose = app.TimeoutPropose()
+
 	return res, nil
 }
 
@@ -554,12 +572,21 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		return nil, err
 	}
+
 	versionMap := app.ModuleManager.GetVersionMap()
 	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, versionMap); err != nil {
 		return nil, err
 	}
 
-	return app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState)
+	res, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState)
+	if err != nil {
+		return nil, err
+	}
+
+	res.TimeoutInfo.TimeoutCommit = app.TimeoutCommit()
+	res.TimeoutInfo.TimeoutPropose = app.TimeoutPropose()
+
+	return res, nil
 }
 
 // DefaultGenesis returns the default genesis state
@@ -751,14 +778,19 @@ func (app *App) NewProposalContext(header tmproto.Header) sdk.Context {
 	return ctx
 }
 
-// getTimeoutCommit returns the timeoutCommit if a user has overridden it via the
-// --timeout-commit flag. Otherwise, it returns the default timeout commit based
-// on the app version.
-// TODO: is this still needed?
-// nolint:unused
-func (app *App) getTimeoutCommit(_ uint64) time.Duration {
+// TimeoutCommit returns the timeout commit duration to be used on the next block.
+// It returns the user specified value as overridden by the --timeout-commit flag, otherwise
+// the default timeout commit value for the current app version.
+func (app *App) TimeoutCommit() time.Duration {
 	if app.timeoutCommit != 0 {
 		return app.timeoutCommit
 	}
-	return appconsts.DefaultTimeoutCommit
+
+	return appconsts.TimeoutCommit
+}
+
+// TimeoutPropose returns the timeout propose duration to be used on the next block.
+// It returns the default timeout propose value for the current app version.
+func (app *App) TimeoutPropose() time.Duration {
+	return appconsts.TimeoutPropose
 }

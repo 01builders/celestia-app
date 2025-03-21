@@ -18,7 +18,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=celestia-app \
 		  -X github.com/celestiaorg/celestia-app/v4/pkg/appconsts.OverrideSquareSizeUpperBoundStr=$(OVERRIDE_MAX_SQUARE_SIZE)
 
 BUILD_FLAGS := -tags "ledger" -ldflags '$(ldflags)'
-BUILD_FLAGS_MULTIPLEXER := -tags "ledger multiplexer" -ldflags '$(ldflags)'
+BUILD_FLAGS_MULTIPLEXER := -tags "multiplexer" -ldflags '$(ldflags)'
 
 ## help: Get more info on make commands.
 help: Makefile

@@ -28,6 +28,8 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+
+	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 )
 
 // UpgradeName defines the on-chain upgrade name from v3 to v4.
@@ -113,6 +115,7 @@ func (app App) RegisterUpgradeHandlers() {
 				circuittypes.StoreKey,
 				hyperlanetypes.ModuleName,
 				warptypes.ModuleName,
+				minfeetypes.StoreKey,
 			},
 			Deleted: []string{
 				crisistypes.StoreKey,

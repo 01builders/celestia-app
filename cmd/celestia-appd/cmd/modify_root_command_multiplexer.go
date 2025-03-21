@@ -28,24 +28,26 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 	v4, err := appd.New("v4", v4AppBinary)
 	_ = err // TODO: handle the error in this case.
 
-	versions, err := abci.NewVersions(abci.Version{
-		Appd:        v3,
-		ABCIVersion: abci.ABCIClientVersion1,
-		AppVersion:  3,
-		StartArgs: []string{
-			"--grpc.enable=true",
-			"--api.enable=true",
-			"--api.swagger=false",
-			"--with-tendermint=false",
-			"--transport=grpc",
-			"--v2-upgrade-height=3",
+	versions, err := abci.NewVersions(
+		abci.Version{
+			Appd:        v3,
+			ABCIVersion: abci.ABCIClientVersion1,
+			AppVersion:  3,
+			StartArgs: []string{
+				"--grpc.enable=true",
+				"--api.enable=true",
+				"--api.swagger=false",
+				"--with-tendermint=false",
+				"--transport=grpc",
+				"--v2-upgrade-height=3",
+			},
 		},
 		abci.Version{
 			Appd:        v4,
 			ABCIVersion: abci.ABCIClientVersion2,
 			AppVersion:  4,
 		},
-	})
+	)
 	_ = err // TODO: handle the error in this case.
 
 	rootCommand.AddCommand(

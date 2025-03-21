@@ -8,6 +8,7 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
 	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
+	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -107,8 +108,9 @@ func (app App) RegisterUpgradeHandlers() {
 	if upgradeInfo.Name == UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
-				circuittypes.StoreKey,
+				minfeetypes.StoreKey,
 				consensustypes.StoreKey,
+				circuittypes.StoreKey,
 				hyperlanetypes.ModuleName,
 				warptypes.ModuleName,
 			},

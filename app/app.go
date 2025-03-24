@@ -484,10 +484,6 @@ func New(
 		app.GovParamFilters(),
 	))
 
-	// TODO: migration related, delaying implemenation for now
-	// app.SetMigrateStoreFn(app.migrateCommitStore)
-	// app.SetMigrateModuleFn(app.migrateModules)
-
 	app.encodingConfig = encodingConfig
 	if err := app.LoadLatestVersion(); err != nil {
 		panic(err)

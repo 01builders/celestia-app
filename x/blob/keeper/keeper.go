@@ -32,10 +32,6 @@ func NewKeeper(
 	legacySubspace paramtypes.Subspace,
 	authority string,
 ) *Keeper {
-	if !legacySubspace.HasKeyTable() {
-		legacySubspace = legacySubspace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	return &Keeper{
 		cdc:            cdc,
 		storeKey:       storeKey,

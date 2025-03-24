@@ -26,7 +26,7 @@ func TestCalculateInflationRate(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		{0, 0.0536}, // note this value won't be used in production because celestia-app was on app version 3 in year 0.
+		{0, 0.0536}, // NOTE: this value won't be used in production because CIP-29 has been introduced after year 0 (see CIP-29 for details).
 		{1, 0.0500088},
 		{2, 0.0466582104},
 		{3, 0.0435321103032},

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -110,6 +111,8 @@ import (
 	blobkeeper "github.com/celestiaorg/celestia-app/v4/x/blob/keeper"
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 	"github.com/celestiaorg/celestia-app/v4/x/minfee"
+	minfeekeeper "github.com/celestiaorg/celestia-app/v4/x/minfee/keeper"
+	minfeetypes "github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 	"github.com/celestiaorg/celestia-app/v4/x/mint"
 	mintkeeper "github.com/celestiaorg/celestia-app/v4/x/mint/keeper"
 	minttypes "github.com/celestiaorg/celestia-app/v4/x/mint/types"
@@ -164,8 +167,9 @@ type App struct {
 	MintKeeper          mintkeeper.Keeper
 	DistrKeeper         distrkeeper.Keeper
 	GovKeeper           *govkeeper.Keeper
-	UpgradeKeeper       *upgradekeeper.Keeper // This is included purely for the IBC Keeper. It is not used for upgrading
+	UpgradeKeeper       *upgradekeeper.Keeper // Upgrades are set in endblock when signaled
 	SignalKeeper        signal.Keeper
+	MinFeeKeeper        *minfeekeeper.Keeper
 	ParamsKeeper        paramskeeper.Keeper
 	IBCKeeper           *ibckeeper.Keeper // IBCKeeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper      evidencekeeper.Keeper
@@ -289,7 +293,11 @@ func New(
 		),
 	)
 
-	app.SignalKeeper = signal.NewKeeper(encodingConfig.Codec, keys[signaltypes.StoreKey], app.StakingKeeper)
+	app.SignalKeeper = signal.NewKeeper(
+		encodingConfig.Codec,
+		keys[signaltypes.StoreKey],
+		app.StakingKeeper,
+	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		encodingConfig.Codec,
@@ -366,6 +374,8 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	app.MinFeeKeeper = minfeekeeper.NewKeeper(encodingConfig.Codec, keys[minfeetypes.StoreKey], app.ParamsKeeper, app.GetSubspace(minfeetypes.ModuleName), authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 	ibcRouter := ibcporttypes.NewRouter()                                                   // Create static IBC router
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)                          // Add transfer route
@@ -413,7 +423,7 @@ func New(
 		transfer.NewAppModule(app.TransferKeeper),
 		blob.NewAppModule(encodingConfig.Codec, app.BlobKeeper),
 		signal.NewAppModule(app.SignalKeeper),
-		minfee.NewAppModule(encodingConfig.Codec, app.ParamsKeeper),
+		minfee.NewAppModule(encodingConfig.Codec, app.MinFeeKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		// ensure the light client module types are registered.
 		ibctm.NewAppModule(),
@@ -455,6 +465,7 @@ func New(
 	app.MountTransientStores(app.tkeys)
 
 	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.SetPrepareProposal(app.PrepareProposalHandler)
@@ -468,7 +479,7 @@ func New(
 		encodingConfig.TxConfig.SignModeHandler(),
 		ante.DefaultSigVerificationGasConsumer,
 		app.IBCKeeper,
-		app.ParamsKeeper,
+		app.MinFeeKeeper,
 		&app.CircuitKeeper,
 		app.GovParamFilters(),
 	))
@@ -488,6 +499,11 @@ func New(
 // Name returns the name of the App
 func (app *App) Name() string { return app.BaseApp.Name() }
 
+// PreBlocker application updates every pre block
+func (app *App) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	return app.ModuleManager.PreBlock(ctx)
+}
+
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	return app.ModuleManager.BeginBlock(ctx)
@@ -505,14 +521,24 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	}
 
 	// use a signaling mechanism for upgrade
-	if shouldUpgrade, newVersion := app.SignalKeeper.ShouldUpgrade(ctx); shouldUpgrade {
+	shouldUpgrade, upgrade := app.SignalKeeper.ShouldUpgrade(ctx)
+	if shouldUpgrade {
 		// Version changes must be increasing. Downgrades are not permitted
-		if newVersion > currentVersion {
-			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", newVersion)
-			if err := app.SetAppVersion(ctx, newVersion); err != nil {
+		if upgrade.AppVersion > currentVersion {
+			app.BaseApp.Logger().Info("upgrading app version", "current version", currentVersion, "new version", upgrade.AppVersion)
+
+			if err := app.UpgradeKeeper.ScheduleUpgrade(ctx, upgradetypes.Plan{
+				Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
+				Height: upgrade.UpgradeHeight,
+			}); err != nil {
+				return sdk.EndBlock{}, fmt.Errorf("failed to schedule upgrade: %v", err)
+			}
+
+			if err := app.SetAppVersion(ctx, upgrade.AppVersion); err != nil {
 				return sdk.EndBlock{}, err
 			}
 			app.SignalKeeper.ResetTally(ctx)
+
 		}
 	}
 
@@ -685,7 +711,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(blobtypes.ModuleName)
-	paramsKeeper.Subspace(minfee.ModuleName)
+	paramsKeeper.Subspace(minfeetypes.ModuleName)
 	paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 
 	return paramsKeeper

@@ -5,8 +5,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	params "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/celestiaorg/celestia-app/v4/x/minfee/types"
 )
 
 type Keeper struct {
@@ -24,10 +22,6 @@ func NewKeeper(
 	legacySubspace paramtypes.Subspace,
 	authority string,
 ) *Keeper {
-	if !legacySubspace.HasKeyTable() {
-		legacySubspace = legacySubspace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	return &Keeper{
 		cdc:            cdc,
 		storeKey:       storeKey,

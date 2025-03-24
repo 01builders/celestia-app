@@ -98,7 +98,7 @@ func (s *IntegrationTestSuite) TestGetCmdQueryAnnualProvisions() {
 		},
 	}
 
-	expectedAnnualProvision := mint.InitialInflationRateCip29AsDec().MulInt(math.NewInt(testnode.DefaultInitialBalance))
+	expectedAnnualProvision := mint.InitialInflationRateAsDec().MulInt(math.NewInt(testnode.DefaultInitialBalance))
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			cmd := cli.GetCmdQueryAnnualProvisions()

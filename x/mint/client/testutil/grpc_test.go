@@ -16,7 +16,7 @@ import (
 func (s *IntegrationTestSuite) TestQueryGRPC() {
 	baseURL := s.cctx.APIAddress()
 	baseURL = strings.Replace(baseURL, "tcp", "http", 1)
-	expectedAnnualProvision := mint.InitialInflationRateCip29AsDec().MulInt(math.NewInt(testnode.DefaultInitialBalance))
+	expectedAnnualProvision := mint.InitialInflationRateAsDec().MulInt(math.NewInt(testnode.DefaultInitialBalance))
 	testCases := []struct {
 		name     string
 		url      string

@@ -9,6 +9,7 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
 	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
+	cmttypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -90,8 +91,13 @@ func (app App) RegisterUpgradeHandlers() {
 			sdkCtx.Logger().Info("running upgrade handler", "upgrade-name", UpgradeName, "start", start)
 
 			// migrate consensus params from the legacy params keeper to consensus params module
-			if err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusKeeper.ParamsStore); err != nil {
-				return nil, err
+			oldConsensusParams := baseapp.GetConsensusParams(sdkCtx, baseAppLegacySS)
+			if oldConsensusParams != nil {
+				if oldConsensusParams.Version == nil {
+					oldConsensusParams.Version = &cmttypes.VersionParams{}
+				}
+
+				app.ConsensusKeeper.ParamsStore.Set(ctx, *oldConsensusParams)
 			}
 
 			// block by default msg upgrade proposal from circuit breaker
@@ -111,7 +117,7 @@ func (app App) RegisterUpgradeHandlers() {
 				return nil, err
 			}
 
-			sdkCtx.Logger().Info("finished to upgrade", "upgrade-name", UpgradeName, "duration", time.Since(start))
+			sdkCtx.Logger().Info("finished to upgrade", "upgrade-name", UpgradeName, "duration-sec", time.Since(start).Seconds())
 
 			return vm, nil
 		},

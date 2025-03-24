@@ -525,7 +525,7 @@ func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 			plan := upgradetypes.Plan{
 				Name:   fmt.Sprintf("v%d", upgrade.AppVersion),
-				Height: upgrade.UpgradeHeight,
+				Height: upgrade.UpgradeHeight + 1, // next block is performing the upgrade.
 			}
 
 			if err := app.UpgradeKeeper.ScheduleUpgrade(ctx, plan); err != nil {

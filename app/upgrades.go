@@ -94,7 +94,9 @@ func (app App) RegisterUpgradeHandlers() {
 			oldConsensusParams := baseapp.GetConsensusParams(sdkCtx, baseAppLegacySS)
 			if oldConsensusParams != nil {
 				if oldConsensusParams.Version == nil {
-					oldConsensusParams.Version = &cmttypes.VersionParams{}
+					oldConsensusParams.Version = &cmttypes.VersionParams{
+						App: 3,
+					}
 				}
 
 				app.ConsensusKeeper.ParamsStore.Set(ctx, *oldConsensusParams)

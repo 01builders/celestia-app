@@ -7,6 +7,16 @@ import (
 	"runtime"
 )
 
+// CelestiaAppV4 returns the compressed platform specific Celestia binary.
+func CelestiaAppV4() ([]byte, error) {
+	// Check if we actually have binary data
+	if len(v4binaryCompressed) == 0 {
+		return nil, fmt.Errorf("no binary data available for platform %s", platform())
+	}
+
+	return v4binaryCompressed, nil
+}
+
 // CelestiaAppV3 returns the compressed platform specific Celestia binary.
 func CelestiaAppV3() ([]byte, error) {
 	// Check if we actually have binary data

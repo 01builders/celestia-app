@@ -99,7 +99,9 @@ func (app App) RegisterUpgradeHandlers() {
 					}
 				}
 
-				app.ConsensusKeeper.ParamsStore.Set(ctx, *oldConsensusParams)
+				if err := app.ConsensusKeeper.ParamsStore.Set(ctx, *oldConsensusParams); err != nil {
+					return nil, err
+				}
 			}
 
 			// block by default msg upgrade proposal from circuit breaker

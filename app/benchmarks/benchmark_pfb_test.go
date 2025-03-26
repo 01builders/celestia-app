@@ -172,7 +172,7 @@ func benchmarkPrepareProposalPFB(b *testing.B, count, size int) {
 
 	prepareProposalRequest := types.RequestPrepareProposal{
 		Txs:    rawTxs,
-		Height: 10,
+		Height: testApp.LastBlockHeight() + 1,
 	}
 
 	b.ResetTimer()
@@ -219,31 +219,32 @@ func BenchmarkProcessProposal_PFB_Multi(b *testing.B) {
 func benchmarkProcessProposalPFB(b *testing.B, count, size int) {
 	testApp, rawTxs := generatePayForBlobTransactions(b, count, size)
 
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalReq := types.RequestPrepareProposal{
 		Txs:    rawTxs,
-		Height: 10,
+		Height: testApp.LastBlockHeight() + 1,
 	}
 
-	prepareProposalResponse, err := testApp.PrepareProposal(&prepareProposalRequest)
+	prepareProposalResp, err := testApp.PrepareProposal(&prepareProposalReq)
 	require.NoError(b, err)
-	require.GreaterOrEqual(b, len(prepareProposalResponse.Txs), 1)
+	require.GreaterOrEqual(b, len(prepareProposalResp.Txs), 1)
 
-	processProposalRequest := types.RequestProcessProposal{
-		Txs:          prepareProposalResponse.Txs,
-		Height:       10,
-		DataRootHash: prepareProposalResponse.DataRootHash, // TODO: check if this is correct
+	processProposalReq := types.RequestProcessProposal{
+		Txs:          prepareProposalResp.Txs,
+		Height:       testApp.LastBlockHeight() + 1,
+		DataRootHash: prepareProposalResp.DataRootHash,
+		SquareSize:   prepareProposalResp.SquareSize,
 	}
 
 	b.ResetTimer()
-	resp, err := testApp.ProcessProposal(&processProposalRequest)
+	resp, err := testApp.ProcessProposal(&processProposalReq)
 	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Status)
 
 	b.ReportMetric(float64(b.Elapsed().Nanoseconds()), "process_proposal_time(ns)")
-	b.ReportMetric(float64(len(prepareProposalResponse.Txs)), "number_of_transactions")
+	b.ReportMetric(float64(len(prepareProposalResp.Txs)), "number_of_transactions")
 	b.ReportMetric(float64(len(rawTxs[0])), "transactions_size(byte)")
-	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResponse.Txs), "block_size(mb)")
+	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResp.Txs), "block_size(mb)")
 	b.ReportMetric(float64(calculateTotalGasUsed(testApp, rawTxs)), "total_gas_used")
 }
 
@@ -292,22 +293,24 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 			break
 		}
 
-		prepareProposalRequest := types.RequestPrepareProposal{
+		prepareProposalReq := types.RequestPrepareProposal{
 			Txs:    rawTxs[start:end],
-			Height: 10,
+			Height: testApp.LastBlockHeight() + 1,
 		}
-		prepareProposalResponse, err := testApp.PrepareProposal(&prepareProposalRequest)
-		require.NoError(b, err)
-		require.GreaterOrEqual(b, len(prepareProposalResponse.Txs), 1)
 
-		processProposalRequest := types.RequestProcessProposal{
-			Txs:          prepareProposalResponse.Txs,
-			Height:       10,
-			DataRootHash: prepareProposalResponse.DataRootHash, // TODO: check if this is correct
+		prepareProposalResp, err := testApp.PrepareProposal(&prepareProposalReq)
+		require.NoError(b, err)
+		require.GreaterOrEqual(b, len(prepareProposalResp.Txs), 1)
+
+		processProposalReq := types.RequestProcessProposal{
+			Txs:          prepareProposalResp.Txs,
+			Height:       testApp.LastBlockHeight() + 1,
+			DataRootHash: prepareProposalResp.DataRootHash,
+			SquareSize:   prepareProposalResp.SquareSize,
 		}
 
 		startTime := time.Now()
-		resp, err := testApp.ProcessProposal(&processProposalRequest)
+		resp, err := testApp.ProcessProposal(&processProposalReq)
 		require.NoError(b, err)
 		endTime := time.Now()
 		require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Status)
@@ -341,7 +344,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 					"processProposalTime(s)_%d_%d_%f",
 					end-start,
 					size,
-					calculateBlockSizeInMb(prepareProposalResponse.Txs[start:end]),
+					calculateBlockSizeInMb(prepareProposalResp.Txs[start:end]),
 				),
 			)
 		}

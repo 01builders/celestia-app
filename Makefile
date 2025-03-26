@@ -208,7 +208,7 @@ test-race:
 ## test-bench: Run unit tests in bench mode.
 test-bench:
 	@echo "--> Running tests in bench mode"
-	@go test -bench=. ./...
+	@go test -tags=benchmarks -bench=. ./app/benchmarks/...
 .PHONY: test-bench
 
 ## test-coverage: Generate test coverage.txt

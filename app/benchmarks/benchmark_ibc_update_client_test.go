@@ -1,4 +1,4 @@
-//go:build bench_abci_methods
+//go:build benchmarks
 
 package benchmarks_test
 
@@ -8,19 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celestiaorg/celestia-app/v4/app"
-	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v4/pkg/user"
-	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
-	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	crypto2 "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmprotoversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sm "github.com/cometbft/cometbft/state"
+	types0 "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	types3 "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -28,9 +25,12 @@ import (
 	types4 "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	sm "github.com/cometbft/cometbft/state"
-	types0 "github.com/cometbft/cometbft/types"
+	"github.com/celestiaorg/celestia-app/v4/app"
+	"github.com/celestiaorg/celestia-app/v4/app/encoding"
+	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v4/pkg/user"
+	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
+	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
 )
 
 func BenchmarkIBC_CheckTx_Update_Client_Multi(b *testing.B) {
@@ -482,7 +482,7 @@ func makeValidCommit(
 	sigs := make([]types0.CommitSig, 0)
 	for i := 0; i < vals.Size(); i++ {
 		_, val := vals.GetByIndex(int32(i))
-		vote, err := types0.MakeVote(height, blockID, vals, privVals[val.Address.String()], chainID, time.Now())
+		vote, err := types0.MakeVote(privVals[val.Address.String()], "chain-id", int32(i), height, 0, tmproto.PrecommitType, blockID, time.Now())
 		if err != nil {
 			return nil, err
 		}

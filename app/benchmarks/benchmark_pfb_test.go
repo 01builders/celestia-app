@@ -1,4 +1,4 @@
-//go:build bench_abci_methods
+//go:build benchmarks
 
 package benchmarks_test
 
@@ -8,18 +8,18 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/stretchr/testify/require"
+
+	"github.com/celestiaorg/go-square/v2/share"
+	blobtx "github.com/celestiaorg/go-square/v2/tx"
 
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/celestiaorg/celestia-app/v4/app/encoding"
-	"github.com/celestiaorg/celestia-app/v4/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/v4/pkg/user"
 	testutil "github.com/celestiaorg/celestia-app/v4/test/util"
 	"github.com/celestiaorg/celestia-app/v4/test/util/testfactory"
-	"github.com/celestiaorg/go-square/v2/share"
-	blobtx "github.com/celestiaorg/go-square/v2/tx"
-	"github.com/cometbft/cometbft/abci/types"
-	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -43,7 +43,7 @@ func BenchmarkCheckTx_PFB_Multi(b *testing.B) {
 		{blobSize: 500_000},
 		{blobSize: 1_000_000},
 		{blobSize: 2_000_000},
-		{blobSize: 3_000_000},
+		{blobSize: 3_000_000}, // once you get here you're over appconsts.MaxTxSize
 		{blobSize: 4_000_000},
 		{blobSize: 5_000_000},
 		{blobSize: 6_000_000},
@@ -57,7 +57,18 @@ func BenchmarkCheckTx_PFB_Multi(b *testing.B) {
 
 func benchmarkCheckTxPFB(b *testing.B, size int) {
 	testApp, rawTxs := generatePayForBlobTransactions(b, 1, size)
-	testApp.Commit()
+
+	finalizeBlockResp, err := testApp.FinalizeBlock(&types.RequestFinalizeBlock{
+		Time:   testutil.GenesisTime.Add(blockTime),
+		Height: testApp.LastBlockHeight() + 1,
+		Hash:   testApp.LastCommitID().Hash,
+	})
+	require.NotNil(b, finalizeBlockResp)
+	require.NoError(b, err)
+
+	commitResp, err := testApp.Commit()
+	require.NotNil(b, commitResp)
+	require.NoError(b, err)
 
 	checkTxRequest := types.RequestCheckTx{
 		Tx:   rawTxs[0],
@@ -74,7 +85,7 @@ func benchmarkCheckTxPFB(b *testing.B, size int) {
 	b.ReportMetric(float64(len(rawTxs[0])), "transaction_size(byte)")
 }
 
-func BenchmarkDeliverTx_PFB_Multi(b *testing.B) {
+func BenchmarkFinalizeBlock_PFB_Multi(b *testing.B) {
 	testCases := []struct {
 		blobSize int
 	}{
@@ -98,24 +109,27 @@ func BenchmarkDeliverTx_PFB_Multi(b *testing.B) {
 	}
 	for _, testCase := range testCases {
 		b.Run(fmt.Sprintf("%d bytes", testCase.blobSize), func(b *testing.B) {
-			benchmarkDeliverTxPFB(b, testCase.blobSize)
+			benchmarkFinalizeBlockPFB(b, testCase.blobSize)
 		})
 	}
 }
 
-func benchmarkDeliverTxPFB(b *testing.B, size int) {
+func benchmarkFinalizeBlockPFB(b *testing.B, size int) {
 	testApp, rawTxs := generatePayForBlobTransactions(b, 1, size)
 
 	blobTx, ok, err := blobtx.UnmarshalBlobTx(rawTxs[0])
 	require.NoError(b, err)
 	require.True(b, ok)
 
-	deliverTxRequest := types.RequestFinalizeBlock{
-		Txs: [][]byte{blobTx.Tx},
+	finalizeBlockReq := types.RequestFinalizeBlock{
+		Time:   testutil.GenesisTime.Add(blockTime),
+		Height: testApp.LastBlockHeight() + 1,
+		Hash:   testApp.LastCommitID().Hash,
+		Txs:    [][]byte{blobTx.Tx},
 	}
 
 	b.ResetTimer()
-	resp, err := testApp.FinalizeBlock(&deliverTxRequest)
+	resp, err := testApp.FinalizeBlock(&finalizeBlockReq)
 	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, uint32(0), resp.TxResults[0].Code)

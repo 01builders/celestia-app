@@ -26,8 +26,6 @@ import (
 	blobtypes "github.com/celestiaorg/celestia-app/v4/x/blob/types"
 )
 
-// const mebibyte = 1 << 20 // 1 MiB = 2^20 bytes = 1,048,576
-
 func BenchmarkGasPriceEstimation(b *testing.B) {
 	encfg := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	accounts := testfactory.GenerateAccounts(1)

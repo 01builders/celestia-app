@@ -64,13 +64,13 @@ func benchmarkIBCCheckTxUpdateClient(b *testing.B, numberOfValidators int) {
 	testApp, rawTxs := generateIBCUpdateClientTransaction(b, numberOfValidators, 1, 1)
 	testApp.Commit()
 
-	checkTxRequest := types.RequestCheckTx{
+	checkTxReq := types.RequestCheckTx{
 		Type: types.CheckTxType_New,
 		Tx:   rawTxs[0],
 	}
 
 	b.ResetTimer()
-	resp, err := testApp.CheckTx(&checkTxRequest)
+	resp, err := testApp.CheckTx(&checkTxReq)
 	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, uint32(0), resp.Code)
@@ -158,7 +158,7 @@ func BenchmarkIBC_PrepareProposal_Update_Client_Multi(b *testing.B) {
 }
 
 func benchmarkIBCPrepareProposalUpdateClient(b *testing.B, numberOfValidators, count int) {
-	testApp, rawTxs := generateIBCUpdateClientTransaction(b, numberOfValidators, count, 0)
+	testApp, rawTxs := generateIBCUpdateClientTransaction(b, numberOfValidators, count, count)
 
 	prepareProposalReq := types.RequestPrepareProposal{
 		Txs:    rawTxs,
@@ -207,33 +207,35 @@ func BenchmarkIBC_ProcessProposal_Update_Client_Multi(b *testing.B) {
 }
 
 func benchmarkIBCProcessProposalUpdateClient(b *testing.B, numberOfValidators, count int) {
-	testApp, rawTxs := generateIBCUpdateClientTransaction(b, numberOfValidators, count, 0)
+	testApp, rawTxs := generateIBCUpdateClientTransaction(b, numberOfValidators, count, count)
 
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalReq := types.RequestPrepareProposal{
 		Txs:    rawTxs,
-		Height: 10,
+		Height: testApp.LastBlockHeight() + 1,
 	}
 
-	prepareProposalResponse, err := testApp.PrepareProposal(&prepareProposalRequest)
+	prepareProposalResp, err := testApp.PrepareProposal(&prepareProposalReq)
 	require.NoError(b, err)
-	require.GreaterOrEqual(b, len(prepareProposalResponse.Txs), 1)
+	require.GreaterOrEqual(b, len(prepareProposalResp.Txs), 1)
 
-	processProposalRequest := types.RequestProcessProposal{
-		Txs:    prepareProposalResponse.Txs,
-		Height: 10,
+	processProposalReq := types.RequestProcessProposal{
+		Txs:          prepareProposalResp.Txs,
+		Height:       testApp.LastBlockHeight() + 1,
+		DataRootHash: prepareProposalResp.DataRootHash,
+		SquareSize:   prepareProposalResp.SquareSize,
 	}
 
 	b.ResetTimer()
-	resp, err := testApp.ProcessProposal(&processProposalRequest)
+	resp, err := testApp.ProcessProposal(&processProposalReq)
 	require.NoError(b, err)
 	b.StopTimer()
 	require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Status)
 
 	b.ReportMetric(float64(b.Elapsed().Nanoseconds()), "process_proposal_time(ns)")
-	b.ReportMetric(float64(len(prepareProposalResponse.Txs)), "number_of_transactions")
+	b.ReportMetric(float64(len(prepareProposalResp.Txs)), "number_of_transactions")
 	b.ReportMetric(float64(len(rawTxs[0])), "transactions_size(byte)")
-	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResponse.Txs), "block_size(mb)")
-	b.ReportMetric(float64(calculateTotalGasUsed(testApp, prepareProposalResponse.Txs)), "total_gas_used")
+	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResp.Txs), "block_size(mb)")
+	b.ReportMetric(float64(calculateTotalGasUsed(testApp, prepareProposalResp.Txs)), "total_gas_used")
 	b.ReportMetric(float64(numberOfValidators), "number_of_validators")
 	b.ReportMetric(float64(2*numberOfValidators/3), "number_of_verified_signatures")
 }

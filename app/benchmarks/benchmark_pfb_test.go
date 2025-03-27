@@ -170,20 +170,20 @@ func BenchmarkPrepareProposal_PFB_Multi(b *testing.B) {
 func benchmarkPrepareProposalPFB(b *testing.B, count, size int) {
 	testApp, rawTxs := generatePayForBlobTransactions(b, count, size)
 
-	prepareProposalRequest := types.RequestPrepareProposal{
+	prepareProposalReq := types.RequestPrepareProposal{
 		Txs:    rawTxs,
 		Height: testApp.LastBlockHeight() + 1,
 	}
 
 	b.ResetTimer()
-	prepareProposalResponse, err := testApp.PrepareProposal(&prepareProposalRequest)
+	prepareProposalResp, err := testApp.PrepareProposal(&prepareProposalReq)
 	require.NoError(b, err)
 	b.StopTimer()
-	require.GreaterOrEqual(b, len(prepareProposalResponse.Txs), 1)
+	require.GreaterOrEqual(b, len(prepareProposalResp.Txs), 1)
 	b.ReportMetric(float64(b.Elapsed().Nanoseconds()), "prepare_proposal_time(ns)")
-	b.ReportMetric(float64(len(prepareProposalResponse.Txs)), "number_of_transactions")
+	b.ReportMetric(float64(len(prepareProposalResp.Txs)), "number_of_transactions")
 	b.ReportMetric(float64(len(rawTxs[0])), "transactions_size(byte)")
-	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResponse.Txs), "block_size(mb)")
+	b.ReportMetric(calculateBlockSizeInMb(prepareProposalResp.Txs), "block_size(mb)")
 	b.ReportMetric(float64(calculateTotalGasUsed(testApp, rawTxs)), "total_gas_used")
 }
 

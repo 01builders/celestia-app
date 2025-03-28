@@ -11,6 +11,21 @@ import (
 	"path/filepath"
 )
 
+/*
+
+To run this script, you need to have the following tools installed:
+- git
+- go
+- make
+
+```go
+go run scripts/build.go <branch_name> <version>
+```
+
+This will generate a tar.gz archive for the given branch name in the `internal/embedding` directory.
+
+*/
+
 // Architecture holds the GOOS and GOARCH values.
 type Architecture struct {
 	GOOS   string
@@ -18,15 +33,16 @@ type Architecture struct {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <branch_name>\n", os.Args[0])
+	if len(os.Args) < 3 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <branch_name> <version>\n", os.Args[0])
 		os.Exit(1)
 	}
 	branchName := os.Args[1]
+	version := os.Args[2]
 
 	// Set variables
 	ceCelestiaRepo := "https://github.com/celestiaorg/celestia-app.git"
-	downloadDir := "./downloads"
+	binariesDir := "./binaries"
 	targetDir := "./internal/embedding"
 	repoDir := "celestia-app"
 
@@ -39,7 +55,7 @@ func main() {
 	}
 
 	// Create necessary directories
-	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+	if err := os.MkdirAll(binariesDir, 0755); err != nil {
 		log.Fatalf("Error creating downloads directory: %v", err)
 	}
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
@@ -100,19 +116,19 @@ func main() {
 
 		// Define the binary name and paths.
 		binarySrc := filepath.Join("build", "celestia-appd")
-		binaryName := fmt.Sprintf("celestia-app-v3_%s", archKey)
-		binaryDst := filepath.Join("..", downloadDir, binaryName)
+		binaryName := fmt.Sprintf("celestia-app-v%s_%s", version, archKey)
+		binaryDst := filepath.Join("..", binariesDir, binaryName)
 
-		// Copy binary to downloads directory.
+		// Copy binary to binaries directory.
 		copyFile(binarySrc, binaryDst)
 
-		// Change to downloads directory to package.
-		absDownloadDir, err := filepath.Abs(filepath.Join("..", downloadDir))
+		// Change to binaries directory to package.
+		absDownloadDir, err := filepath.Abs(filepath.Join("..", binariesDir))
 		if err != nil {
 			log.Fatalf("Error getting absolute path: %v", err)
 		}
 		if err := os.Chdir(absDownloadDir); err != nil {
-			log.Fatalf("Error changing directory to downloads directory: %v", err)
+			log.Fatalf("Error changing directory to binaries directory: %v", err)
 		}
 
 		// Create tar.gz archive.
@@ -135,7 +151,7 @@ func main() {
 		}
 		fmt.Printf("Tarball for %s moved to %s\n", archKey, newTarPath)
 
-		// Remove the uncompressed binary from downloads.
+		// Remove the uncompressed binary from binaries.
 		if err := os.Remove(binaryName); err != nil {
 			log.Printf("Warning: could not remove file %s: %v", binaryName, err)
 		}
@@ -150,8 +166,8 @@ func main() {
 		}
 	}
 
-	// Remove the downloaded directory.
-	if err := os.Remove(downloadDir); err != nil {
+	// Remove the binaries directory.
+	if err := os.Remove(binariesDir); err != nil {
 		log.Printf("Warning: could not remove directory %s: %v", repoDir, err)
 	}
 
@@ -170,7 +186,7 @@ func runCmd(name string, args ...string) {
 	}
 }
 
-// copyFile copies a file from src to dst.
+// copyFile copies a file from src to dst while preserving mode.
 func copyFile(src, dst string) {
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -178,7 +194,14 @@ func copyFile(src, dst string) {
 	}
 	defer srcFile.Close()
 
-	dstFile, err := os.Create(dst)
+	// Get source file mode
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		log.Fatalf("Error getting source file info: %v", err)
+	}
+
+	// Create destination with same permissions
+	dstFile, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
 	if err != nil {
 		log.Fatalf("Error creating destination file %s: %v", dst, err)
 	}

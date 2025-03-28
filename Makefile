@@ -208,7 +208,7 @@ test-race:
 ## test-bench: Run benchmark unit tests.
 test-bench:
 	@echo "--> Running benchmark tests"
-	@go test -timeout 60m -tags=benchmarks -bench=. ./app/benchmarks/...
+	@go test -timeout 30m -tags=benchmarks -bench=. ./app/benchmarks/...
 .PHONY: test-bench
 
 ## test-coverage: Generate test coverage.txt

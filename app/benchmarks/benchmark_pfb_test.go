@@ -42,11 +42,7 @@ func BenchmarkCheckTx_PFB_Multi(b *testing.B) {
 		{blobSize: 400_000},
 		{blobSize: 500_000},
 		{blobSize: 1_000_000},
-		{blobSize: 2_000_000},
-		{blobSize: 3_000_000}, // once you get here you're over appconsts.MaxTxSize
-		{blobSize: 4_000_000},
-		{blobSize: 5_000_000},
-		{blobSize: 6_000_000},
+		{blobSize: 2_000_000}, // maxTxSize is capped at 2MiB in checkTx
 	}
 	for _, testCase := range testCases {
 		b.Run(fmt.Sprintf("%d bytes", testCase.blobSize), func(b *testing.B) {
@@ -275,26 +271,21 @@ func BenchmarkProcessProposal_PFB_Half_Second(b *testing.B) {
 func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 	testApp, rawTxs := generatePayForBlobTransactions(b, count, size)
 
-	targetTimeLowerBound := 0.499
-	targetTimeUpperBound := 0.511
+	targetTimeLowerBound := time.Millisecond * 499
+	targetTimeUpperBound := time.Millisecond * 511
 
-	start := 0
-	end := count
-	segment := end - start
-	maxIterations := 100000
-	iterations := 0
-	for {
-		iterations++
-		if iterations >= maxIterations {
-			b.Errorf("Maximum iterations reached without achieving target processing time")
-			break
-		}
-		if segment == 1 {
-			break
-		}
+	start := 1
+	end := len(rawTxs)
+	var bestTime time.Duration
+	found := false
+
+	var processProposalReq types.RequestProcessProposal
+
+	for start <= end {
+		mid := (start + end) / 2
 
 		prepareProposalReq := types.RequestPrepareProposal{
-			Txs:    rawTxs[start:end],
+			Txs:    rawTxs[:mid],
 			Height: testApp.LastBlockHeight() + 1,
 		}
 
@@ -302,7 +293,7 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 		require.NoError(b, err)
 		require.GreaterOrEqual(b, len(prepareProposalResp.Txs), 1)
 
-		processProposalReq := types.RequestProcessProposal{
+		processProposalReq = types.RequestProcessProposal{
 			Txs:          prepareProposalResp.Txs,
 			Height:       testApp.LastBlockHeight() + 1,
 			DataRootHash: prepareProposalResp.DataRootHash,
@@ -312,44 +303,29 @@ func benchmarkProcessProposalPFBHalfSecond(b *testing.B, count, size int) {
 		startTime := time.Now()
 		resp, err := testApp.ProcessProposal(&processProposalReq)
 		require.NoError(b, err)
-		endTime := time.Now()
 		require.Equal(b, types.ResponseProcessProposal_ACCEPT, resp.Status)
+		timeElapsed := time.Since(startTime)
 
-		timeElapsed := float64(endTime.Sub(startTime).Nanoseconds()) / 1e9
-
-		switch {
-		case timeElapsed < targetTimeLowerBound:
-			newEnd := end + segment/2
-			if newEnd > len(rawTxs) {
-				newEnd = len(rawTxs)
-			}
-			end = newEnd
-			segment = end - start
-			if segment <= 1 {
-				break
-			}
-			continue
-		case timeElapsed > targetTimeUpperBound:
-			newEnd := end / 2
-			if newEnd <= start {
-				break
-			}
-			end = newEnd
-			segment = end - start
-			continue
-		default:
-			b.ReportMetric(
-				timeElapsed,
-				fmt.Sprintf(
-					"processProposalTime(s)_%d_%d_%f",
-					end-start,
-					size,
-					calculateBlockSizeInMb(prepareProposalResp.Txs[start:end]),
-				),
-			)
+		if timeElapsed < targetTimeLowerBound {
+			start = mid + 1
+		} else if timeElapsed > targetTimeUpperBound {
+			end = mid - 1
+		} else {
+			bestTime = timeElapsed
+			found = true
+			break
 		}
-		break
 	}
+
+	if !found {
+		b.Errorf("failed to find a tx count that falls within the target time window")
+		return
+	}
+
+	b.ReportMetric(bestTime.Seconds(), fmt.Sprintf("process_proposal_time(ms)"))
+	b.ReportMetric(float64(len(processProposalReq.Txs)), "num_txs")
+	b.ReportMetric(float64(size), "blob_size(bytes)")
+	b.ReportMetric(calculateBlockSizeInMb(processProposalReq.Txs), "block_size(mb)")
 }
 
 // generatePayForBlobTransactions creates a test app then generates a number

@@ -4,6 +4,7 @@ package testnet
 import (
 	"context"
 	"fmt"
+	tmtypes "github.com/cometbft/cometbft/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cometbft/cometbft/types"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -118,7 +118,7 @@ func NewNode(
 	if err != nil {
 		return nil, err
 	}
-	err = knInstance.Build().SetImage(ctx, DockerImageName(version))
+	err = knInstance.Build().SetImage(ctx, "ghcr.io/01builders/celestia-app-multiplexer:"+version)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func NewNode(
 	if err != nil {
 		return nil, err
 	}
-	args := []string{"start", fmt.Sprintf("--home=%s", remoteRootDir), "--rpc.laddr=tcp://0.0.0.0:26657"}
+	args := []string{"start", fmt.Sprintf("--home=%s", remoteRootDir), "--rpc.laddr=tcp://0.0.0.0:26657", "--log_level=debug"}
 	if disableBBR {
 		args = append(args, "--force-no-bbr")
 	}
@@ -198,7 +198,7 @@ func (n *Node) SetLatencyAndJitter(latency, jitter int64) error {
 	return n.netShaper.SetLatencyAndJitter(latency, jitter)
 }
 
-func (n *Node) Init(ctx context.Context, genesis *types.GenesisDoc, peers []string, configOptions ...Option) error {
+func (n *Node) Init(ctx context.Context, genesis *tmtypes.GenesisDoc, peers []string, configOptions ...Option) error {
 	if len(peers) == 0 {
 		return fmt.Errorf("no peers provided")
 	}

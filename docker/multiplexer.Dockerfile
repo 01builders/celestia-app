@@ -27,6 +27,12 @@ FROM ${CELESTIA_APP_REPOSITORY}:${CELESTIA_VERSION} AS base
 # See https://github.com/hadolint/hadolint/issues/339
 # hadolint ignore=DL3006
 FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS builder
+
+# must be specified for this build step.
+# TODO: remove hard coded values for TARGETOS and TARGETARCH
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
 # hadolint ignore=DL3018
@@ -50,7 +56,7 @@ COPY . .
 COPY --from=base /bin/celestia-appd /tmp/celestia-appd
 
 # compress the binary to the path to be embedded correctly.
-RUN tar -cvzf internal/embedding/celestia-app_Linux_v3_arm64.tar.gz /tmp/celestia-appd \
+RUN tar -cvzf internal/embedding/celestia-app_${TARGETOS}_v3_${TARGETARCH}.tar.gz /tmp/celestia-appd \
     && rm /tmp/celestia-appd
 
 RUN uname -a &&\

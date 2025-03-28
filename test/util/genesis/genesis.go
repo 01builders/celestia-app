@@ -47,6 +47,8 @@ type Genesis struct {
 	// Transactions are generated upon adding a validator to the genesis.
 	genTxs []sdk.Tx
 	genOps []Modifier
+
+	legacy bool
 }
 
 // Accounts getter
@@ -68,6 +70,7 @@ func (g *Genesis) Validators() []Validator {
 func NewDefaultGenesis() *Genesis {
 	enc := encoding.MakeTestConfig(app.ModuleEncodingRegisters...)
 	g := &Genesis{
+		legacy:          true, // TODO: configurable
 		ecfg:            enc,
 		ConsensusParams: app.DefaultConsensusParams(),
 		ChainID:         unsafe.Str(6),
@@ -195,8 +198,7 @@ func (g *Genesis) NewValidator(val Validator) error {
 	return g.AddValidator(val)
 }
 
-// Export returns the genesis document of the network.
-func (g *Genesis) Export() (*coretypes.GenesisDoc, error) {
+func (g *Genesis) getGenTxs() ([]json.RawMessage, error) {
 	gentxs := make([]json.RawMessage, 0, len(g.genTxs))
 	for _, val := range g.validators {
 		genTx, err := val.GenTx(g.ecfg, g.kr, g.ChainID)
@@ -209,20 +211,44 @@ func (g *Genesis) Export() (*coretypes.GenesisDoc, error) {
 			return nil, err
 		}
 
-		gentxs = append(gentxs, json.RawMessage(bz))
+		gentxs = append(gentxs, bz)
+	}
+	return gentxs, nil
+}
+
+// Export returns the genesis document of the network.
+func (g *Genesis) Export() (*coretypes.GenesisDoc, error) {
+	gentxs, err := g.getGenTxs()
+	if err != nil {
+		return nil, err
 	}
 
-	tempApp := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, 0, simtestutil.EmptyAppOptions{})
+	if !g.legacy {
+		tempApp := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, 0, simtestutil.EmptyAppOptions{})
+		return Document(
+			tempApp.DefaultGenesis(),
+			g.ecfg,
+			g.ConsensusParams,
+			g.ChainID,
+			gentxs,
+			g.accounts,
+			g.GenesisTime,
+		)
+	}
 
-	return Document(
-		tempApp.DefaultGenesis(),
+	var defaultAppState map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(v3GenesisAppState), &defaultAppState); err != nil {
+		return nil, err
+	}
+
+	return DocumentLegacy(
+		defaultAppState,
 		g.ecfg,
 		g.ConsensusParams,
 		g.ChainID,
 		gentxs,
 		g.accounts,
 		g.GenesisTime,
-		g.genOps...,
 	)
 }
 

@@ -5,6 +5,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/celestiaorg/celestia-app/multiplexer"
 	"github.com/celestiaorg/celestia-app/multiplexer/abci"
 	"github.com/celestiaorg/celestia-app/multiplexer/appd"
 	"github.com/celestiaorg/celestia-app/v4/app"

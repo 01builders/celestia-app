@@ -1,16 +1,17 @@
 //go:build multiplexer
 
-package nova
+package multiplexer
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/require"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiplexerSetup(t *testing.T) {

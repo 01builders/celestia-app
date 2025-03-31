@@ -1,4 +1,4 @@
-package nova
+package multiplexer
 
 import (
 	"errors"

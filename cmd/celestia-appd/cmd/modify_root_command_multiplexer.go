@@ -5,9 +5,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/01builders/nova"
-	"github.com/01builders/nova/abci"
-	"github.com/01builders/nova/appd"
+	"github.com/celestiaorg/celestia-app/multiplexer/abci"
+	"github.com/celestiaorg/celestia-app/multiplexer/appd"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/cosmos/cosmos-sdk/server"
 
@@ -44,7 +43,7 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 	}
 
 	rootCommand.AddCommand(
-		nova.NewPassthroughCmd(versions),
+		multiplexer.NewPassthroughCmd(versions),
 	)
 
 	// Add the following commands to the rootCommand: start, tendermint, export, version, and rollback and wire multiplexer.
@@ -55,7 +54,7 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 		appExporter,
 		server.StartCmdOptions{
 			AddFlags:            addStartFlags,
-			StartCommandHandler: nova.New(versions),
+			StartCommandHandler: multiplexer.New(versions),
 		},
 	)
 }

@@ -1,8 +1,6 @@
-module github.com/01builders/nova
+module github.com/celestiaorg/celestia-app/multiplexer
 
 go 1.23.1
-
-toolchain go1.24.1
 
 replace (
 	github.com/cometbft/cometbft => github.com/celestiaorg/celestia-core v0.38.11-0.20250327161336-69ddda76ed86

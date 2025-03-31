@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/01builders/nova/appd/internal/testdata"
+	"github.com/celestiaorg/celestia-app/multiplexer/appd/internal/testdata"
 	"github.com/stretchr/testify/require"
 )
 

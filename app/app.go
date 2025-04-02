@@ -514,6 +514,20 @@ func New(
 // Name returns the name of the App
 func (app *App) Name() string { return app.BaseApp.Name() }
 
+// Info implements the abci interface. It overrides baseapp's Info method, essentially becoming a decorator
+// in order to assign TimeoutInfo values in the response.
+func (app *App) Info(req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+	res, err := app.BaseApp.Info(req)
+	if err != nil {
+		return nil, err
+	}
+
+	res.TimeoutInfo.TimeoutCommit = app.TimeoutCommit()
+	res.TimeoutInfo.TimeoutPropose = app.TimeoutPropose()
+
+	return res, nil
+}
+
 // PreBlocker application updates every pre block
 func (app *App) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	return app.ModuleManager.PreBlock(ctx)

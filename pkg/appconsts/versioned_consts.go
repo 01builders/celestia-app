@@ -11,13 +11,13 @@ const (
 )
 
 var (
-	DefaultSubtreeRootThreshold = v4.SubtreeRootThreshold
 	DefaultSquareSizeUpperBound = v4.SquareSizeUpperBound
 	DefaultTxSizeCostPerByte    = v4.TxSizeCostPerByte
 	DefaultGasPerBlobByte       = v4.GasPerBlobByte
 	DefaultVersion              = v4.Version
 	DefaultUpgradeHeightDelay   = v4.UpgradeHeightDelay
 	DefaultMaxTxSize            = v4.MaxTxSize
+	SubtreeRootThreshold        = v4.SubtreeRootThreshold
 	TimeoutCommit               = v4.TimeoutCommit
 	TimeoutPropose              = v4.TimeoutPropose
 )

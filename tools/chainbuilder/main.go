@@ -376,8 +376,8 @@ func Run(ctx context.Context, cfg BuilderConfig, dir string) error {
 				}
 			}
 
-			txs := make([][]byte, len(block.Data.Txs))
-			for idx, tx := range block.Data.Txs {
+			txs := make([][]byte, len(block.Txs))
+			for idx, tx := range block.Txs {
 				blobTx, isBlobTx := types.UnmarshalBlobTx(tx)
 				if isBlobTx {
 					tx = blobTx.Tx
@@ -487,7 +487,7 @@ func generateSquareRoutine(
 		dataSquare, txs, err := square.Build(
 			[][]byte{tx},
 			maxSquareSize,
-			appconsts.DefaultSubtreeRootThreshold,
+			appconsts.SubtreeRootThreshold,
 		)
 		if err != nil {
 			return err

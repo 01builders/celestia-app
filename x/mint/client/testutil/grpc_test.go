@@ -30,7 +30,7 @@ func (s *IntegrationTestSuite) TestQueryGRPC() {
 			map[string]string{},
 			&mint.QueryInflationRateResponse{},
 			&mint.QueryInflationRateResponse{
-				InflationRate: math.LegacyNewDecWithPrec(8, 2),
+				InflationRate: math.LegacyNewDecWithPrec(536, 4),
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func (s *IntegrationTestSuite) TestQueryGRPC() {
 		s.Run(tc.name, func() {
 			resp, err := testutil.GetRequestWithHeaders(tc.url, tc.headers)
 			s.Require().NoError(err)
-			s.Require().NoError(s.cctx.Context.Codec.UnmarshalJSON(resp, tc.respType))
+			s.Require().NoError(s.cctx.Codec.UnmarshalJSON(resp, tc.respType))
 			s.Require().Equal(tc.expected.String(), tc.respType.String())
 		})
 	}

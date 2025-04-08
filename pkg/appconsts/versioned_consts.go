@@ -15,14 +15,15 @@ var (
 	DefaultTxSizeCostPerByte    = v4.TxSizeCostPerByte
 	DefaultGasPerBlobByte       = v4.GasPerBlobByte
 	DefaultVersion              = v4.Version
-	DefaultTimeoutCommit        = v4.TimeoutCommit
 	DefaultUpgradeHeightDelay   = v4.UpgradeHeightDelay
 	DefaultMaxTxSize            = v4.MaxTxSize
 	SubtreeRootThreshold        = v4.SubtreeRootThreshold
+	TimeoutCommit               = v4.TimeoutCommit
+	TimeoutPropose              = v4.TimeoutPropose
 )
 
 func GetTimeoutCommit(_ uint64) time.Duration {
-	return v4.TimeoutCommit // TODO: remove this fn currently just used in tests, those tests should fail with this currently logic.
+	return v4.TimeoutCommit
 }
 
 // UpgradeHeightDelay returns the delay in blocks after a quorum has been reached that the chain should upgrade to the new version.

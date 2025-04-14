@@ -3,13 +3,14 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-
+	"fmt"
 	"github.com/01builders/nova"
 	"github.com/01builders/nova/abci"
 	"github.com/01builders/nova/appd"
 	"github.com/celestiaorg/celestia-app/v4/app"
 	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/spf13/cobra"
+	"runtime"
 
 	embedding "github.com/celestiaorg/celestia-app/v4/internal/embedding"
 )
@@ -23,7 +24,7 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 
 	v3, err := appd.New("v3", v3AppBinary)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to create v3 app for platform %s: %w", platform(), err))
 	}
 
 	versions, err := abci.NewVersions(abci.Version{
@@ -31,12 +32,13 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 		ABCIVersion: abci.ABCIClientVersion1,
 		AppVersion:  3,
 		StartArgs: []string{
-			"--grpc.enable=true",
+			"--grpc.enable",
+			"--grpc.address=0.0.0.0:9090", // ensure the grpc address is accessible from hosts such as txsim. (not just localhost)
 			"--api.enable=true",
 			"--api.swagger=false",
 			"--with-tendermint=false",
 			"--transport=grpc",
-			// "--v2-upgrade-height=0",
+			"--address=0.0.0.0:26658",
 		},
 	})
 	if err != nil {
@@ -58,4 +60,8 @@ func modifyRootCommand(rootCommand *cobra.Command) {
 			StartCommandHandler: nova.New(versions),
 		},
 	)
+}
+
+func platform() string {
+	return runtime.GOOS + "_" + runtime.GOARCH
 }

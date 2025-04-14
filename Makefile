@@ -2,6 +2,8 @@ VERSION := $(shell echo $(shell git describe --tags 2>/dev/null || git log -1 --
 COMMIT := $(shell git rev-parse --short HEAD)
 DOCKER := $(shell which docker)
 PROJECTNAME=$(shell basename "$(PWD)")
+GOOS ?= linux
+GOARCH ?= amd64
 HTTPS_GIT := https://github.com/celestiaorg/celestia-app.git
 PACKAGE_NAME          := github.com/celestiaorg/celestia-app/v4
 # Before upgrading the GOLANG_CROSS_VERSION, please verify that a Docker image exists with the new tag.
@@ -123,7 +125,11 @@ docker-build: build-docker
 
 build-docker-multiplexer:
 	@echo "--> Building Multiplexer Docker image"
-	$(DOCKER) build -t celestiaorg/celestia-app-multiplexer:$(COMMIT) -f docker/multiplexer.Dockerfile .
+	$(DOCKER) build \
+		--build-arg TARGETOS=$(GOOS) \
+		--build-arg TARGETARCH=$(GOARCH) \
+		-t celestiaorg/celestia-app-multiplexer:$(COMMIT) \
+		-f docker/multiplexer.Dockerfile .
 .PHONY: build-docker-multiplexer
 
 ## build-ghcr-docker: Build the celestia-appd Docker image tagged with the current commit hash for GitHub Container Registry.
@@ -197,13 +203,8 @@ test-short:
 ## test-e2e: Run end to end tests via knuu. This command requires a kube/config file to configure kubernetes.
 test-e2e:
 	@echo "--> Running end to end tests"
-	go run ./test/e2e $(filter-out $@,$(MAKECMDGOALS))
+	IMAGE_TAG=$(tag) TEST=$(test) go run ./test/e2e $(filter-out $@,$(MAKECMDGOALS))
 .PHONY: test-e2e
-
-test-multiplexer:
-	@echo "--> Running multiplexer tests"
-	go test -tags multiplexer -v ./test/multiplexer/...
-.PHONY: test-multiplexer
 
 ## test-race: Run tests in race mode.
 test-race:
